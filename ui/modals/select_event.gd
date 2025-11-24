@@ -20,25 +20,33 @@ func _load_available_events() -> void:
 	"""Load all event scripts from the events folder."""
 	available_events.clear()
 	var events_path: String = "res://addons/flowkit/events"
-	var dir: DirAccess = DirAccess.open(events_path)
-	
+	_scan_directory_recursive(events_path)
+	print("Loaded ", available_events.size(), " events")
+
+func _scan_directory_recursive(path: String) -> void:
+	"""Recursively scan directories for event scripts."""
+	var dir: DirAccess = DirAccess.open(path)
 	if not dir:
-		print("Failed to open events directory")
 		return
 	
 	dir.list_dir_begin()
 	var file_name: String = dir.get_next()
 	
 	while file_name != "":
-		if file_name.ends_with(".gd") and not file_name.ends_with(".gd.uid"):
-			var event_script: GDScript = load(events_path + "/" + file_name)
+		var full_path: String = path + "/" + file_name
+		
+		if dir.current_is_dir() and not file_name.begins_with("."):
+			# Recursively scan subdirectory
+			_scan_directory_recursive(full_path)
+		elif file_name.ends_with(".gd") and not file_name.ends_with(".gd.uid"):
+			var event_script: GDScript = load(full_path)
 			if event_script:
 				var event_instance: Variant = event_script.new()
 				available_events.append(event_instance)
+		
 		file_name = dir.get_next()
 	
 	dir.list_dir_end()
-	print("Loaded ", available_events.size(), " events")
 
 func populate_events(node_path: String, node_class: String) -> void:
 	"""Populate the list with events compatible with the selected node."""

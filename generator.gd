@@ -356,7 +356,7 @@ func _create_signal_event(node_type: String, sig: Dictionary) -> void:
 	var event_id = "on_" + signal_name.to_lower()
 	var event_name = "On " + _humanize_name(signal_name)
 	
-	var dir_path = EVENTS_DIR
+	var dir_path = EVENTS_DIR + node_type
 	_ensure_directory_exists(dir_path)
 	
 	var file_path = dir_path + "/gen_" + event_id + ".gd"
