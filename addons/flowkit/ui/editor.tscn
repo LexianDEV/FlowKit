@@ -131,28 +131,6 @@ theme_override_styles/pressed = SubResource("StyleBoxFlat_button")
 theme_override_styles/hover = SubResource("StyleBoxFlat_button")
 text = "➕ Add Event"
 
-[node name="AddConditionButton" type="Button" parent="OuterVBox/BottomMargin/ButtonContainer"]
-visible = false
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.9, 0.95, 1, 1)
-theme_override_font_sizes/font_size = 14
-theme_override_styles/normal = SubResource("StyleBoxFlat_button")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_button")
-theme_override_styles/hover = SubResource("StyleBoxFlat_button")
-text = "➕ Add Condition"
-
-[node name="AddActionButton" type="Button" parent="OuterVBox/BottomMargin/ButtonContainer"]
-visible = false
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.9, 0.95, 1, 1)
-theme_override_font_sizes/font_size = 14
-theme_override_styles/normal = SubResource("StyleBoxFlat_button")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_button")
-theme_override_styles/hover = SubResource("StyleBoxFlat_button")
-text = "➕ Add Action"
-
 [node name="SelectNodeModal" parent="." instance=ExtResource("8_select")]
 
 [node name="SelectEventModal" parent="." instance=ExtResource("9_select_event")]
@@ -169,8 +147,6 @@ text = "➕ Add Action"
 [connection signal="id_pressed" from="OuterVBox/TopMargin/MenuBar/File" to="OuterVBox/TopMargin/MenuBar" method="_on_file_id_pressed"]
 [connection signal="id_pressed" from="OuterVBox/TopMargin/MenuBar/Edit" to="OuterVBox/TopMargin/MenuBar" method="_on_edit_id_pressed"]
 [connection signal="pressed" from="OuterVBox/BottomMargin/ButtonContainer/AddEventButton" to="." method="_on_add_event_button_pressed"]
-[connection signal="pressed" from="OuterVBox/BottomMargin/ButtonContainer/AddConditionButton" to="." method="_on_add_condition_button_pressed"]
-[connection signal="pressed" from="OuterVBox/BottomMargin/ButtonContainer/AddActionButton" to="." method="_on_add_action_button_pressed"]
 [connection signal="node_selected" from="SelectNodeModal" to="." method="_on_node_selected"]
 [connection signal="event_selected" from="SelectEventModal" to="." method="_on_event_selected"]
 [connection signal="action_selected" from="SelectActionModal" to="." method="_on_action_selected"]

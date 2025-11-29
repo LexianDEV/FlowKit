@@ -1,0 +1,54 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://addons/flowkit/ui/workspace/action_item.gd" id="1_actitem"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_item"]
+bg_color = Color(0.14, 0.15, 0.18, 1)
+border_width_left = 2
+border_color = Color(0.4, 0.6, 0.95, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[node name="ActionItem" type="MarginContainer"]
+custom_minimum_size = Vector2(0, 24)
+script = ExtResource("1_actitem")
+
+[node name="Panel" type="PanelContainer" parent="."]
+layout_mode = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_item")
+
+[node name="Margin" type="MarginContainer" parent="Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 6
+theme_override_constants/margin_top = 2
+theme_override_constants/margin_right = 6
+theme_override_constants/margin_bottom = 2
+
+[node name="HBox" type="HBoxContainer" parent="Panel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Icon" type="Label" parent="Panel/Margin/HBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.6, 0.95, 1)
+theme_override_font_sizes/font_size = 11
+text = "▸"
+
+[node name="Label" type="Label" parent="Panel/Margin/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.9, 0.92, 0.95, 1)
+theme_override_font_sizes/font_size = 11
+text = "Action"
+text_overrun_behavior = 3
+
+[node name="ContextMenu" type="PopupMenu" parent="."]
+size = Vector2i(100, 80)
+item_count = 2
+item_0/text = "Edit"
+item_0/id = 0
+item_1/text = "Delete"
+item_1/id = 1

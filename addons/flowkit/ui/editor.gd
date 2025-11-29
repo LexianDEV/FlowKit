@@ -6,17 +6,13 @@ var registry: Node
 var generator
 var current_scene_name: String = ""
 
-# Scene preloads
-const EVENT_SCENE = preload("res://addons/flowkit/ui/workspace/event.tscn")
-const CONDITION_SCENE = preload("res://addons/flowkit/ui/workspace/condition.tscn")
-const ACTION_SCENE = preload("res://addons/flowkit/ui/workspace/action.tscn")
+# Scene preloads - GDevelop-style event rows
+const EVENT_ROW_SCENE = preload("res://addons/flowkit/ui/workspace/event_row.tscn")
 
 # UI References
 @onready var blocks_container := $OuterVBox/ScrollContainer/MarginContainer/BlocksContainer
 @onready var empty_label := $OuterVBox/ScrollContainer/MarginContainer/BlocksContainer/EmptyLabel
 @onready var add_event_btn := $OuterVBox/BottomMargin/ButtonContainer/AddEventButton
-@onready var add_condition_btn := $OuterVBox/BottomMargin/ButtonContainer/AddConditionButton
-@onready var add_action_btn := $OuterVBox/BottomMargin/ButtonContainer/AddActionButton
 
 # Modals
 @onready var select_node_modal := $SelectNodeModal
@@ -26,17 +22,20 @@ const ACTION_SCENE = preload("res://addons/flowkit/ui/workspace/action.tscn")
 @onready var expression_modal := $ExpressionModal
 
 # Workflow state
-var pending_block_type: String = ""  # "event", "condition", "action"
+var pending_block_type: String = ""  # "event", "condition", "action", "event_replace", etc.
 var pending_node_path: String = ""
 var pending_id: String = ""
-var pending_target_node = null  # For insert/replace operations
-var selected_block = null  # Currently selected block for visual feedback
-var clipboard_blocks: Array = []  # Stores copied block data for paste
+var pending_target_row = null  # The event row being modified
+var pending_target_item = null  # The specific condition/action item being edited
+var selected_row = null  # Currently selected event row
+var selected_item = null  # Currently selected condition/action item
+var clipboard_events: Array = []  # Stores copied event data for paste
 
 func _ready() -> void:
 	_setup_ui()
 	# Connect block_moved signal for autosave on drag-and-drop reorder
-	blocks_container.block_moved.connect(_save_sheet)
+	if blocks_container.has_signal("block_moved"):
+		blocks_container.block_moved.connect(_save_sheet)
 
 func _setup_ui() -> void:
 	"""Initialize UI state."""
@@ -83,12 +82,12 @@ func _input(event: InputEvent) -> void:
 	
 	# Handle Delete key
 	if event.keycode == KEY_DELETE:
-		if selected_block and is_instance_valid(selected_block):
-			_delete_selected_block()
+		if selected_row and is_instance_valid(selected_row):
+			_delete_selected_row()
 	# Handle Ctrl+C (copy)
 	elif event.keycode == KEY_C and event.ctrl_pressed:
-		if selected_block and is_instance_valid(selected_block):
-			_copy_selected_block()
+		if selected_row and is_instance_valid(selected_row):
+			_copy_selected_row()
 	# Handle Ctrl+V (paste)
 	elif event.keycode == KEY_V and event.ctrl_pressed:
 		_paste_from_clipboard()
@@ -98,165 +97,113 @@ func _is_mouse_in_blocks_area() -> bool:
 	var mouse_pos = get_global_mouse_position()
 	return blocks_container.get_global_rect().has_point(mouse_pos)
 
-func _is_standalone_condition(block) -> bool:
-	"""Check if a condition has no event before it (making it standalone)."""
-	var blocks = _get_blocks()
-	var block_idx = blocks.find(block)
-	
-	for i in range(block_idx):
-		if blocks[i].has_method("get_event_data"):
-			return false  # Found an event before this condition
-	
-	return true
-
-func _get_block_children(block) -> Array:
-	"""Get all blocks that should be cascade-deleted with this block."""
-	var children = []
-	var blocks = _get_blocks()
-	var block_idx = blocks.find(block)
-	
-	if block_idx == -1:
-		return children
-	
-	# Events: collect everything until next event
-	if block.has_method("get_event_data"):
-		for i in range(block_idx + 1, blocks.size()):
-			var next_block = blocks[i]
-			if next_block.has_method("get_event_data"):
-				break
-			children.append(next_block)
-		return children
-	
-	# Any condition: collect actions until next condition/event
-	if block.has_method("get_condition_data"):
-		for i in range(block_idx + 1, blocks.size()):
-			var next_block = blocks[i]
-			if next_block.has_method("get_event_data") or next_block.has_method("get_condition_data"):
-				break
-			children.append(next_block)
-		return children
-	
-	# Actions have no children
-	return children
-
-func _delete_selected_block() -> void:
-	"""Delete the currently selected block and its children."""
-	var block_to_delete = selected_block
+func _delete_selected_row() -> void:
+	"""Delete the currently selected event row."""
+	var row_to_delete = selected_row
 	
 	# Clear selection first
-	if block_to_delete.has_method("set_selected"):
-		block_to_delete.set_selected(false)
-	selected_block = null
+	if row_to_delete.has_method("set_selected"):
+		row_to_delete.set_selected(false)
+	selected_row = null
 	
-	# Get children to cascade delete
-	var children = _get_block_children(block_to_delete)
-	
-	# Delete children first
-	for child in children:
-		blocks_container.remove_child(child)
-		child.queue_free()
-	
-	# Delete the main block
-	blocks_container.remove_child(block_to_delete)
-	block_to_delete.queue_free()
+	# Delete the row
+	blocks_container.remove_child(row_to_delete)
+	row_to_delete.queue_free()
 	_save_sheet()
 
-func _copy_selected_block() -> void:
-	"""Copy selected block and its children to clipboard."""
-	if not selected_block or not is_instance_valid(selected_block):
+func _copy_selected_row() -> void:
+	"""Copy selected event row to clipboard."""
+	if not selected_row or not is_instance_valid(selected_row):
 		return
 	
-	clipboard_blocks.clear()
+	clipboard_events.clear()
 	
-	# Get block + children
-	var blocks = [selected_block]
-	blocks.append_array(_get_block_children(selected_block))
-	
-	# Store data (not nodes) for each block
-	for block in blocks:
-		if block.has_method("get_event_data"):
-			var data = block.get_event_data()
-			clipboard_blocks.append({
-				"type": "event",
+	if selected_row.has_method("get_event_data"):
+		var data = selected_row.get_event_data()
+		if data:
+			clipboard_events.append({
 				"event_id": data.event_id,
 				"target_node": data.target_node,
-				"inputs": data.inputs.duplicate()
-			})
-		elif block.has_method("get_condition_data"):
-			var data = block.get_condition_data()
-			clipboard_blocks.append({
-				"type": "condition",
-				"condition_id": data.condition_id,
-				"target_node": data.target_node,
 				"inputs": data.inputs.duplicate(),
-				"negated": data.negated
-			})
-		elif block.has_method("get_action_data"):
-			var data = block.get_action_data()
-			clipboard_blocks.append({
-				"type": "action",
-				"action_id": data.action_id,
-				"target_node": data.target_node,
-				"inputs": data.inputs.duplicate()
+				"conditions": _duplicate_conditions(data.conditions),
+				"actions": _duplicate_actions(data.actions)
 			})
 	
-	print("Copied %d block(s) to clipboard" % clipboard_blocks.size())
+	print("Copied %d event(s) to clipboard" % clipboard_events.size())
+
+func _duplicate_conditions(conditions: Array) -> Array:
+	var result = []
+	for cond in conditions:
+		result.append({
+			"condition_id": cond.condition_id,
+			"target_node": cond.target_node,
+			"inputs": cond.inputs.duplicate(),
+			"negated": cond.negated
+		})
+	return result
+
+func _duplicate_actions(actions: Array) -> Array:
+	var result = []
+	for act in actions:
+		result.append({
+			"action_id": act.action_id,
+			"target_node": act.target_node,
+			"inputs": act.inputs.duplicate()
+		})
+	return result
 
 func _paste_from_clipboard() -> void:
-	"""Paste blocks from clipboard after selected block (or at end)."""
-	if clipboard_blocks.is_empty():
+	"""Paste events from clipboard after selected row (or at end)."""
+	if clipboard_events.is_empty():
 		return
 	
 	# Calculate insert position
-	var insert_idx = blocks_container.get_child_count()  # Default: end
-	if selected_block and is_instance_valid(selected_block):
-		insert_idx = selected_block.get_index() + 1
-		# Insert after children of selected block
-		insert_idx += _get_block_children(selected_block).size()
+	var insert_idx = blocks_container.get_child_count()
+	if selected_row and is_instance_valid(selected_row):
+		insert_idx = selected_row.get_index() + 1
 	
-	# Create and insert blocks
-	var first_new_block = null
-	for block_data in clipboard_blocks:
-		var new_node = null
-		match block_data["type"]:
-			"event":
-				var data = FKEventBlock.new()
-				data.event_id = block_data["event_id"]
-				data.target_node = block_data["target_node"]
-				data.inputs = block_data["inputs"].duplicate()
-				data.conditions = [] as Array[FKEventCondition]
-				data.actions = [] as Array[FKEventAction]
-				new_node = _create_event_block(data)
-			"condition":
-				var data = FKEventCondition.new()
-				data.condition_id = block_data["condition_id"]
-				data.target_node = block_data["target_node"]
-				data.inputs = block_data["inputs"].duplicate()
-				data.negated = block_data["negated"]
-				data.actions = [] as Array[FKEventAction]
-				new_node = _create_condition_block(data)
-			"action":
-				var data = FKEventAction.new()
-				data.action_id = block_data["action_id"]
-				data.target_node = block_data["target_node"]
-				data.inputs = block_data["inputs"].duplicate()
-				new_node = _create_action_block(data)
+	# Create and insert event rows
+	var first_new_row = null
+	for event_data_dict in clipboard_events:
+		var data = FKEventBlock.new()
+		data.event_id = event_data_dict["event_id"]
+		data.target_node = event_data_dict["target_node"]
+		data.inputs = event_data_dict["inputs"].duplicate()
+		data.conditions = [] as Array[FKEventCondition]
+		data.actions = [] as Array[FKEventAction]
 		
-		if new_node:
-			blocks_container.add_child(new_node)
-			blocks_container.move_child(new_node, insert_idx)
-			insert_idx += 1
-			if not first_new_block:
-				first_new_block = new_node
+		# Restore conditions
+		for cond_dict in event_data_dict["conditions"]:
+			var cond = FKEventCondition.new()
+			cond.condition_id = cond_dict["condition_id"]
+			cond.target_node = cond_dict["target_node"]
+			cond.inputs = cond_dict["inputs"].duplicate()
+			cond.negated = cond_dict["negated"]
+			data.conditions.append(cond)
+		
+		# Restore actions
+		for act_dict in event_data_dict["actions"]:
+			var act = FKEventAction.new()
+			act.action_id = act_dict["action_id"]
+			act.target_node = act_dict["target_node"]
+			act.inputs = act_dict["inputs"].duplicate()
+			data.actions.append(act)
+		
+		var new_row = _create_event_row(data)
+		blocks_container.add_child(new_row)
+		blocks_container.move_child(new_row, insert_idx)
+		insert_idx += 1
+		if not first_new_row:
+			first_new_row = new_row
 	
 	_show_content_state()
 	_save_sheet()
 	
-	# Select the first pasted block
-	if first_new_block:
-		_on_block_selected(first_new_block)
+	# Select the first pasted row
+	if first_new_row:
+		_on_row_selected(first_new_row)
 	
-	print("Pasted %d block(s) from clipboard" % clipboard_blocks.size())
+	print("Pasted %d event(s) from clipboard" % clipboard_events.size())
 func _set_expression_interface(interface: EditorInterface) -> void:
 	if expression_modal:
 		expression_modal.set_editor_interface(interface)
@@ -307,22 +254,16 @@ func _show_empty_state() -> void:
 	"""Show empty state UI (no scene loaded)."""
 	empty_label.visible = true
 	add_event_btn.visible = false
-	add_condition_btn.visible = false
-	add_action_btn.visible = false
 
 func _show_empty_blocks_state() -> void:
 	"""Show state when scene is loaded but has no blocks."""
 	empty_label.visible = false
 	add_event_btn.visible = true
-	add_condition_btn.visible = true
-	add_action_btn.visible = true
 
 func _show_content_state() -> void:
 	"""Show content state UI."""
 	empty_label.visible = false
 	add_event_btn.visible = true
-	add_condition_btn.visible = true
-	add_action_btn.visible = true
 
 # === File Operations ===
 
@@ -350,31 +291,14 @@ func _load_scene_sheet() -> void:
 	_show_content_state()
 
 func _populate_from_sheet(sheet: FKEventSheet) -> void:
-	"""Create block nodes from event sheet data."""
-	# Add standalone conditions
-	for condition_data in sheet.standalone_conditions:
-		var condition_node = _create_condition_block(condition_data)
-		blocks_container.add_child(condition_node)
-		
-		# Add its actions
-		for action_data in condition_data.actions:
-			var action_node = _create_action_block(action_data)
-			blocks_container.add_child(action_node)
+	"""Create event rows from event sheet data (GDevelop-style)."""
+	# Note: standalone_conditions are deprecated in GDevelop-style layout
+	# but we still load them for backwards compatibility as event rows without events
 	
-	# Add events
+	# Add events as event rows
 	for event_data in sheet.events:
-		var event_node = _create_event_block(event_data)
-		blocks_container.add_child(event_node)
-		
-		# Add its conditions
-		for condition_data in event_data.conditions:
-			var condition_node = _create_condition_block(condition_data)
-			blocks_container.add_child(condition_node)
-		
-		# Add its actions
-		for action_data in event_data.actions:
-			var action_node = _create_action_block(action_data)
-			blocks_container.add_child(action_node)
+		var event_row = _create_event_row(event_data)
+		blocks_container.add_child(event_row)
 
 func _save_sheet() -> void:
 	"""Generate and save event sheet from current blocks."""
@@ -396,67 +320,42 @@ func _save_sheet() -> void:
 		push_error("Failed to save event sheet: ", error)
 
 func _generate_sheet_from_blocks() -> FKEventSheet:
-	"""Build event sheet from block nodes in order."""
+	"""Build event sheet from event rows (GDevelop-style)."""
 	var sheet = FKEventSheet.new()
 	var events: Array[FKEventBlock] = []
 	var standalone_conditions: Array[FKEventCondition] = []
 	
-	var current_event: FKEventBlock = null
-	var current_standalone: FKEventCondition = null
-	
-	for block in _get_blocks():
-		if block.has_method("get_event_data"):
-			# Save previous context
-			if current_event:
-				events.append(current_event)
-			if current_standalone:
-				standalone_conditions.append(current_standalone)
-			
-			# Start new event
-			var data = block.get_event_data()
-			current_event = FKEventBlock.new()
-			current_event.event_id = data.event_id
-			current_event.target_node = data.target_node
-			current_event.inputs = data.inputs.duplicate()
-			current_event.conditions = [] as Array[FKEventCondition]
-			current_event.actions = [] as Array[FKEventAction]
-			current_standalone = null
-			
-		elif block.has_method("get_condition_data"):
-			var data = block.get_condition_data()
-			var new_cond = FKEventCondition.new()
-			new_cond.condition_id = data.condition_id
-			new_cond.target_node = data.target_node
-			new_cond.inputs = data.inputs.duplicate()
-			new_cond.negated = data.negated
-			new_cond.actions = [] as Array[FKEventAction]
-			
-			if current_event:
-				# Belongs to event
-				current_event.conditions.append(new_cond)
-			else:
-				# Standalone condition
-				if current_standalone:
-					standalone_conditions.append(current_standalone)
-				current_standalone = new_cond
-			
-		elif block.has_method("get_action_data"):
-			var data = block.get_action_data()
-			var new_action = FKEventAction.new()
-			new_action.action_id = data.action_id
-			new_action.target_node = data.target_node
-			new_action.inputs = data.inputs.duplicate()
-			
-			if current_standalone:
-				current_standalone.actions.append(new_action)
-			elif current_event:
-				current_event.actions.append(new_action)
-	
-	# Save final context
-	if current_event:
-		events.append(current_event)
-	if current_standalone:
-		standalone_conditions.append(current_standalone)
+	for row in _get_blocks():
+		if row.has_method("get_event_data"):
+			var data = row.get_event_data()
+			if data:
+				# Create a clean copy of the event with its conditions and actions
+				var event_copy = FKEventBlock.new()
+				event_copy.event_id = data.event_id
+				event_copy.target_node = data.target_node
+				event_copy.inputs = data.inputs.duplicate()
+				event_copy.conditions = [] as Array[FKEventCondition]
+				event_copy.actions = [] as Array[FKEventAction]
+				
+				# Copy conditions
+				for cond in data.conditions:
+					var cond_copy = FKEventCondition.new()
+					cond_copy.condition_id = cond.condition_id
+					cond_copy.target_node = cond.target_node
+					cond_copy.inputs = cond.inputs.duplicate()
+					cond_copy.negated = cond.negated
+					cond_copy.actions = [] as Array[FKEventAction]
+					event_copy.conditions.append(cond_copy)
+				
+				# Copy actions
+				for act in data.actions:
+					var act_copy = FKEventAction.new()
+					act_copy.action_id = act.action_id
+					act_copy.target_node = act.target_node
+					act_copy.inputs = act.inputs.duplicate()
+					event_copy.actions.append(act_copy)
+				
+				events.append(event_copy)
 	
 	sheet.events = events
 	sheet.standalone_conditions = standalone_conditions
@@ -471,11 +370,11 @@ func _new_sheet() -> void:
 	_clear_all_blocks()
 	_show_content_state()
 
-# === Block Creation ===
+# === Event Row Creation ===
 
-func _create_event_block(data: FKEventBlock) -> Control:
-	"""Create event block node from data."""
-	var node = EVENT_SCENE.instantiate()
+func _create_event_row(data: FKEventBlock) -> Control:
+	"""Create event row node from data (GDevelop-style)."""
+	var row = EVENT_ROW_SCENE.instantiate()
 	
 	var copy = FKEventBlock.new()
 	copy.event_id = data.event_id
@@ -484,64 +383,39 @@ func _create_event_block(data: FKEventBlock) -> Control:
 	copy.conditions = [] as Array[FKEventCondition]
 	copy.actions = [] as Array[FKEventAction]
 	
-	node.set_event_data(copy)
-	node.set_registry(registry)
-	_connect_event_signals(node)
-	return node
-
-func _create_condition_block(data: FKEventCondition) -> Control:
-	"""Create condition block node from data."""
-	var node = CONDITION_SCENE.instantiate()
+	# Copy conditions
+	for cond in data.conditions:
+		var cond_copy = FKEventCondition.new()
+		cond_copy.condition_id = cond.condition_id
+		cond_copy.target_node = cond.target_node
+		cond_copy.inputs = cond.inputs.duplicate()
+		cond_copy.negated = cond.negated
+		cond_copy.actions = [] as Array[FKEventAction]
+		copy.conditions.append(cond_copy)
 	
-	var copy = FKEventCondition.new()
-	copy.condition_id = data.condition_id
-	copy.target_node = data.target_node
-	copy.inputs = data.inputs.duplicate()
-	copy.negated = data.negated
-	copy.actions = [] as Array[FKEventAction]
+	# Copy actions
+	for act in data.actions:
+		var act_copy = FKEventAction.new()
+		act_copy.action_id = act.action_id
+		act_copy.target_node = act.target_node
+		act_copy.inputs = act.inputs.duplicate()
+		copy.actions.append(act_copy)
 	
-	node.set_condition_data(copy)
-	node.set_registry(registry)
-	_connect_condition_signals(node)
-	return node
-
-func _create_action_block(data: FKEventAction) -> Control:
-	"""Create action block node from data."""
-	var node = ACTION_SCENE.instantiate()
-	
-	var copy = FKEventAction.new()
-	copy.action_id = data.action_id
-	copy.target_node = data.target_node
-	copy.inputs = data.inputs.duplicate()
-	
-	node.set_action_data(copy)
-	node.set_registry(registry)
-	_connect_action_signals(node)
-	return node
+	row.set_event_data(copy)
+	row.set_registry(registry)
+	_connect_event_row_signals(row)
+	return row
 
 # === Signal Connections ===
 
-func _connect_event_signals(node) -> void:
-	node.insert_condition_requested.connect(_on_event_insert_condition.bind(node))
-	node.replace_event_requested.connect(_on_event_replace.bind(node))
-	node.delete_event_requested.connect(_on_event_delete.bind(node))
-	node.edit_event_requested.connect(_on_event_edit.bind(node))
-	node.selected.connect(_on_block_selected)
-
-func _connect_condition_signals(node) -> void:
-	node.insert_condition_requested.connect(_on_condition_insert_condition.bind(node))
-	node.replace_condition_requested.connect(_on_condition_replace.bind(node))
-	node.delete_condition_requested.connect(_on_condition_delete.bind(node))
-	node.negate_condition_requested.connect(_on_condition_negate.bind(node))
-	node.edit_condition_requested.connect(_on_condition_edit.bind(node))
-	node.selected.connect(_on_block_selected)
-
-func _connect_action_signals(node) -> void:
-	node.insert_action_requested.connect(_on_action_insert_action.bind(node))
-	node.replace_action_requested.connect(_on_action_replace.bind(node))
-	node.delete_action_requested.connect(_on_action_delete.bind(node))
-	node.edit_action_requested.connect(_on_action_edit.bind(node))
-	node.selected.connect(_on_block_selected)
+func _connect_event_row_signals(row) -> void:
+	row.insert_event_below_requested.connect(_on_row_insert_below.bind(row))
+	row.replace_event_requested.connect(_on_row_replace.bind(row))
+	row.delete_event_requested.connect(_on_row_delete.bind(row))
+	row.edit_event_requested.connect(_on_row_edit.bind(row))
+	row.add_condition_requested.connect(_on_row_add_condition.bind(row))
+	row.add_action_requested.connect(_on_row_add_action.bind(row))
+	row.selected.connect(_on_row_selected)
 
 # === Menu Button Handlers ===
 
@@ -602,35 +476,23 @@ func _on_add_event_button_pressed() -> void:
 		return
 	_start_add_workflow("event")
 
-func _on_add_condition_button_pressed() -> void:
-	if not editor_interface:
-		return
-	# Use selected block as insert target
-	_start_add_workflow("condition", selected_block)
-
-func _on_add_action_button_pressed() -> void:
-	if not editor_interface:
-		return
-	# Use selected block as insert target
-	_start_add_workflow("action", selected_block)
-
-func _on_block_selected(block) -> void:
-	"""Handle block selection with visual feedback."""
-	# Deselect previous block
-	if selected_block and is_instance_valid(selected_block) and selected_block.has_method("set_selected"):
-		selected_block.set_selected(false)
+func _on_row_selected(row) -> void:
+	"""Handle row selection with visual feedback."""
+	# Deselect previous row
+	if selected_row and is_instance_valid(selected_row) and selected_row.has_method("set_selected"):
+		selected_row.set_selected(false)
 	
-	# Select new block
-	selected_block = block
-	if selected_block and selected_block.has_method("set_selected"):
-		selected_block.set_selected(true)
+	# Select new row
+	selected_row = row
+	if selected_row and selected_row.has_method("set_selected"):
+		selected_row.set_selected(true)
 
 # === Workflow System ===
 
-func _start_add_workflow(block_type: String, target_node = null) -> void:
+func _start_add_workflow(block_type: String, target_row = null) -> void:
 	"""Start workflow to add a new block."""
 	pending_block_type = block_type
-	pending_target_node = target_node
+	pending_target_row = target_row
 	
 	var scene_root = editor_interface.get_edited_scene_root()
 	if not scene_root:
@@ -723,7 +585,7 @@ func _on_expressions_confirmed(_node_path: String, _id: String, expressions: Dic
 			_replace_action(expressions)
 
 func _finalize_event_creation(inputs: Dictionary) -> void:
-	"""Create and add event block."""
+	"""Create and add event row (GDevelop-style)."""
 	var data = FKEventBlock.new()
 	data.event_id = pending_id
 	data.target_node = pending_node_path
@@ -731,21 +593,21 @@ func _finalize_event_creation(inputs: Dictionary) -> void:
 	data.conditions = [] as Array[FKEventCondition]
 	data.actions = [] as Array[FKEventAction]
 	
-	var node = _create_event_block(data)
+	var row = _create_event_row(data)
 	
-	if pending_target_node:
-		var insert_idx = pending_target_node.get_index() + 1
-		blocks_container.add_child(node)
-		blocks_container.move_child(node, insert_idx)
+	if pending_target_row:
+		var insert_idx = pending_target_row.get_index() + 1
+		blocks_container.add_child(row)
+		blocks_container.move_child(row, insert_idx)
 	else:
-		blocks_container.add_child(node)
+		blocks_container.add_child(row)
 	
 	_show_content_state()
 	_reset_workflow()
 	_save_sheet()
 
 func _finalize_condition_creation(inputs: Dictionary) -> void:
-	"""Create and add condition block."""
+	"""Add condition to the current event row."""
 	var data = FKEventCondition.new()
 	data.condition_id = pending_id
 	data.target_node = pending_node_path
@@ -753,78 +615,66 @@ func _finalize_condition_creation(inputs: Dictionary) -> void:
 	data.negated = false
 	data.actions = [] as Array[FKEventAction]
 	
-	var node = _create_condition_block(data)
-	
-	if pending_target_node:
-		var insert_idx = pending_target_node.get_index() + 1
-		blocks_container.add_child(node)
-		blocks_container.move_child(node, insert_idx)
-	else:
-		blocks_container.add_child(node)
+	if pending_target_row and pending_target_row.has_method("add_condition"):
+		pending_target_row.add_condition(data)
 	
 	_show_content_state()
 	_reset_workflow()
 	_save_sheet()
 
 func _finalize_action_creation(inputs: Dictionary) -> void:
-	"""Create and add action block."""
+	"""Add action to the current event row."""
 	var data = FKEventAction.new()
 	data.action_id = pending_id
 	data.target_node = pending_node_path
 	data.inputs = inputs
 	
-	var node = _create_action_block(data)
-	
-	if pending_target_node:
-		var insert_idx = pending_target_node.get_index() + 1
-		blocks_container.add_child(node)
-		blocks_container.move_child(node, insert_idx)
-	else:
-		blocks_container.add_child(node)
+	if pending_target_row and pending_target_row.has_method("add_action"):
+		pending_target_row.add_action(data)
 	
 	_show_content_state()
 	_reset_workflow()
 	_save_sheet()
 
 func _update_event_inputs(expressions: Dictionary) -> void:
-	"""Update existing event block with new inputs."""
-	if pending_target_node:
-		var data = pending_target_node.get_event_data()
+	"""Update existing event row with new inputs."""
+	if pending_target_row:
+		var data = pending_target_row.get_event_data()
 		if data:
 			data.inputs = expressions
-			pending_target_node.update_display()
+			pending_target_row.update_display()
 	_reset_workflow()
 	_save_sheet()
 
 func _update_condition_inputs(expressions: Dictionary) -> void:
-	"""Update existing condition block with new inputs."""
-	if pending_target_node:
-		var data = pending_target_node.get_condition_data()
+	"""Update existing condition item with new inputs."""
+	if pending_target_item:
+		var data = pending_target_item.get_condition_data()
 		if data:
 			data.inputs = expressions
-			pending_target_node.update_display()
+			pending_target_item.update_display()
 	_reset_workflow()
 	_save_sheet()
 
 func _update_action_inputs(expressions: Dictionary) -> void:
-	"""Update existing action block with new inputs."""
-	if pending_target_node:
-		var data = pending_target_node.get_action_data()
+	"""Update existing action item with new inputs."""
+	if pending_target_item:
+		var data = pending_target_item.get_action_data()
 		if data:
 			data.inputs = expressions
-			pending_target_node.update_display()
+			pending_target_item.update_display()
 	_reset_workflow()
 	_save_sheet()
 
 func _replace_event(expressions: Dictionary) -> void:
-	"""Replace existing event block with new type."""
-	if not pending_target_node:
+	"""Replace existing event row with new type."""
+	if not pending_target_row:
 		_reset_workflow()
 		return
 	
-	# Get old block's position and conditions/actions
-	var old_data = pending_target_node.get_event_data()
-	var old_index = pending_target_node.get_index()
+	# Get old row's position and conditions/actions
+	var old_data = pending_target_row.get_event_data()
+	var old_index = pending_target_row.get_index()
 	
 	# Create new event data
 	var new_data = FKEventBlock.new()
@@ -834,96 +684,48 @@ func _replace_event(expressions: Dictionary) -> void:
 	new_data.conditions = old_data.conditions if old_data else ([] as Array[FKEventCondition])
 	new_data.actions = old_data.actions if old_data else ([] as Array[FKEventAction])
 	
-	# Create new block
-	var new_node = _create_event_block(new_data)
+	# Create new row
+	var new_row = _create_event_row(new_data)
 	
-	# Remove old block and insert new one at same position
-	blocks_container.remove_child(pending_target_node)
-	pending_target_node.queue_free()
-	blocks_container.add_child(new_node)
-	blocks_container.move_child(new_node, old_index)
+	# Remove old row and insert new one at same position
+	blocks_container.remove_child(pending_target_row)
+	pending_target_row.queue_free()
+	blocks_container.add_child(new_row)
+	blocks_container.move_child(new_row, old_index)
 	
 	_reset_workflow()
 	_save_sheet()
 
 func _replace_condition(expressions: Dictionary) -> void:
-	"""Replace existing condition block with new type."""
-	if not pending_target_node:
-		_reset_workflow()
-		return
-	
-	# Get old block's position and actions
-	var old_data = pending_target_node.get_condition_data()
-	var old_index = pending_target_node.get_index()
-	
-	# Create new condition data
-	var new_data = FKEventCondition.new()
-	new_data.condition_id = pending_id
-	new_data.target_node = pending_node_path
-	new_data.inputs = expressions
-	new_data.negated = old_data.negated if old_data else false
-	new_data.actions = old_data.actions if old_data else ([] as Array[FKEventAction])
-	
-	# Create new block
-	var new_node = _create_condition_block(new_data)
-	
-	# Remove old block and insert new one at same position
-	blocks_container.remove_child(pending_target_node)
-	pending_target_node.queue_free()
-	blocks_container.add_child(new_node)
-	blocks_container.move_child(new_node, old_index)
-	
+	"""Replace condition is not used in GDevelop-style layout."""
 	_reset_workflow()
-	_save_sheet()
 
 func _replace_action(expressions: Dictionary) -> void:
-	"""Replace existing action block with new type."""
-	if not pending_target_node:
-		_reset_workflow()
-		return
-	
-	# Get old block's position
-	var old_index = pending_target_node.get_index()
-	
-	# Create new action data
-	var new_data = FKEventAction.new()
-	new_data.action_id = pending_id
-	new_data.target_node = pending_node_path
-	new_data.inputs = expressions
-	
-	# Create new block
-	var new_node = _create_action_block(new_data)
-	
-	# Remove old block and insert new one at same position
-	blocks_container.remove_child(pending_target_node)
-	pending_target_node.queue_free()
-	blocks_container.add_child(new_node)
-	blocks_container.move_child(new_node, old_index)
-	
+	"""Replace action is not used in GDevelop-style layout."""
 	_reset_workflow()
-	_save_sheet()
 
 func _reset_workflow() -> void:
 	"""Clear workflow state."""
 	pending_block_type = ""
 	pending_node_path = ""
 	pending_id = ""
-	pending_target_node = null
+	pending_target_row = null
+	pending_target_item = null
 
-# === Event Block Handlers ===
+# === Event Row Handlers ===
 
-func _on_event_insert_condition(signal_node, bound_node) -> void:
-	pending_target_node = bound_node
-	_start_add_workflow("condition")
+func _on_row_insert_below(signal_row, bound_row) -> void:
+	pending_target_row = bound_row
+	_start_add_workflow("event", bound_row)
 
-func _on_event_replace(signal_node, bound_node) -> void:
-	pending_target_node = bound_node
+func _on_row_replace(signal_row, bound_row) -> void:
+	pending_target_row = bound_row
 	pending_block_type = "event_replace"
 	
-	# Get current node path from the block being replaced
-	var data = bound_node.get_event_data()
+	# Get current node path from the row being replaced
+	var data = bound_row.get_event_data()
 	if data:
-		pending_node_path = data.target_node
+		pending_node_path = str(data.target_node)
 	
 	# Open node selector
 	var scene_root = editor_interface.get_edited_scene_root()
@@ -934,13 +736,13 @@ func _on_event_replace(signal_node, bound_node) -> void:
 	select_node_modal.populate_from_scene(scene_root)
 	select_node_modal.popup_centered()
 
-func _on_event_delete(signal_node, bound_node) -> void:
-	blocks_container.remove_child(bound_node)
-	bound_node.queue_free()
+func _on_row_delete(signal_row, bound_row) -> void:
+	blocks_container.remove_child(bound_row)
+	bound_row.queue_free()
 	_save_sheet()
 
-func _on_event_edit(signal_node, bound_node) -> void:
-	var data = bound_node.get_event_data()
+func _on_row_edit(signal_row, bound_row) -> void:
+	var data = bound_row.get_event_data()
 	if not data:
 		return
 	
@@ -955,131 +757,21 @@ func _on_event_edit(signal_node, bound_node) -> void:
 	
 	if provider_inputs.size() > 0:
 		# Set up editing mode
-		pending_target_node = bound_node
+		pending_target_row = bound_row
 		pending_block_type = "event_edit"
 		pending_id = data.event_id
-		pending_node_path = data.target_node
+		pending_node_path = str(data.target_node)
 		
 		# Open expression modal with current values
-		expression_modal.populate_inputs(data.target_node, data.event_id, provider_inputs, data.inputs)
+		expression_modal.populate_inputs(str(data.target_node), data.event_id, provider_inputs, data.inputs)
 		expression_modal.popup_centered()
 	else:
 		print("Event has no inputs to edit")
 
-# === Condition Block Handlers ===
+func _on_row_add_condition(signal_row, bound_row) -> void:
+	pending_target_row = bound_row
+	_start_add_workflow("condition", bound_row)
 
-func _on_condition_insert_condition(signal_node, bound_node) -> void:
-	pending_target_node = bound_node
-	_start_add_workflow("condition")
-
-func _on_condition_replace(signal_node, bound_node) -> void:
-	pending_target_node = bound_node
-	pending_block_type = "condition_replace"
-	
-	# Get current node path from the block being replaced
-	var data = bound_node.get_condition_data()
-	if data:
-		pending_node_path = data.target_node
-	
-	# Open node selector
-	var scene_root = editor_interface.get_edited_scene_root()
-	if not scene_root:
-		return
-	
-	select_node_modal.set_editor_interface(editor_interface)
-	select_node_modal.populate_from_scene(scene_root)
-	select_node_modal.popup_centered()
-
-func _on_condition_delete(signal_node, bound_node) -> void:
-	blocks_container.remove_child(bound_node)
-	bound_node.queue_free()
-	_save_sheet()
-
-func _on_condition_negate(signal_node, bound_node) -> void:
-	var data = bound_node.get_condition_data()
-	data.negated = not data.negated
-	bound_node.update_display()
-	_save_sheet()
-
-func _on_condition_edit(signal_node, bound_node) -> void:
-	var data = bound_node.get_condition_data()
-	if not data:
-		return
-	
-	# Get condition provider to check if it has inputs
-	var provider_inputs = []
-	if registry:
-		for provider in registry.condition_providers:
-			if provider.has_method("get_id") and provider.get_id() == data.condition_id:
-				if provider.has_method("get_inputs"):
-					provider_inputs = provider.get_inputs()
-				break
-	
-	if provider_inputs.size() > 0:
-		# Set up editing mode
-		pending_target_node = bound_node
-		pending_block_type = "condition_edit"
-		pending_id = data.condition_id
-		pending_node_path = data.target_node
-		
-		# Open expression modal with current values
-		expression_modal.populate_inputs(data.target_node, data.condition_id, provider_inputs, data.inputs)
-		expression_modal.popup_centered()
-	else:
-		print("Condition has no inputs to edit")
-
-# === Action Block Handlers ===
-
-func _on_action_insert_action(signal_node, bound_node) -> void:
-	pending_target_node = bound_node
-	_start_add_workflow("action")
-
-func _on_action_replace(signal_node, bound_node) -> void:
-	pending_target_node = bound_node
-	pending_block_type = "action_replace"
-	
-	# Get current node path from the block being replaced
-	var data = bound_node.get_action_data()
-	if data:
-		pending_node_path = data.target_node
-	
-	# Open node selector
-	var scene_root = editor_interface.get_edited_scene_root()
-	if not scene_root:
-		return
-	
-	select_node_modal.set_editor_interface(editor_interface)
-	select_node_modal.populate_from_scene(scene_root)
-	select_node_modal.popup_centered()
-
-func _on_action_delete(signal_node, bound_node) -> void:
-	blocks_container.remove_child(bound_node)
-	bound_node.queue_free()
-	_save_sheet()
-
-func _on_action_edit(signal_node, bound_node) -> void:
-	var data = bound_node.get_action_data()
-	if not data:
-		return
-	
-	# Get action provider to check if it has inputs
-	var provider_inputs = []
-	if registry:
-		for provider in registry.action_providers:
-			if provider.has_method("get_id") and provider.get_id() == data.action_id:
-				if provider.has_method("get_inputs"):
-					provider_inputs = provider.get_inputs()
-				break
-	
-	if provider_inputs.size() > 0:
-		# Set up editing mode
-		pending_target_node = bound_node
-		pending_block_type = "action_edit"
-		pending_id = data.action_id
-		pending_node_path = data.target_node
-		
-		# Open expression modal with current values
-		expression_modal.populate_inputs(data.target_node, data.action_id, provider_inputs, data.inputs)
-		expression_modal.popup_centered()
-	else:
-		print("Action has no inputs to edit")
+func _on_row_add_action(signal_row, bound_row) -> void:
+	pending_target_row = bound_row
+	_start_add_workflow("action", bound_row)
