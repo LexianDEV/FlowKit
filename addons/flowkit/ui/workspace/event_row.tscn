@@ -40,20 +40,24 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_row")
 
 [node name="HBox" type="HBoxContainer" parent="Panel"]
 layout_mode = 2
+mouse_filter = 2
 theme_override_constants/separation = 0
 
 [node name="ConditionsColumn" type="VBoxContainer" parent="Panel/HBox"]
 layout_mode = 2
+mouse_filter = 2
 size_flags_horizontal = 3
 size_flags_stretch_ratio = 1.0
 theme_override_constants/separation = 0
 
 [node name="EventHeader" type="PanelContainer" parent="Panel/HBox/ConditionsColumn"]
 layout_mode = 2
+mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_event_header")
 
 [node name="MarginContainer" type="MarginContainer" parent="Panel/HBox/ConditionsColumn/EventHeader"]
 layout_mode = 2
+mouse_filter = 2
 theme_override_constants/margin_left = 10
 theme_override_constants/margin_top = 6
 theme_override_constants/margin_right = 10
@@ -61,17 +65,20 @@ theme_override_constants/margin_bottom = 6
 
 [node name="EventLabel" type="Label" parent="Panel/HBox/ConditionsColumn/EventHeader/MarginContainer"]
 layout_mode = 2
+mouse_filter = 2
 theme_override_colors/font_color = Color(0.4, 0.75, 1, 1)
 theme_override_font_sizes/font_size = 13
 text = "⚡ Event"
 
 [node name="ConditionsPanel" type="PanelContainer" parent="Panel/HBox/ConditionsColumn"]
 layout_mode = 2
+mouse_filter = 2
 size_flags_vertical = 3
 theme_override_styles/panel = SubResource("StyleBoxFlat_conditions")
 
 [node name="ConditionsMargin" type="MarginContainer" parent="Panel/HBox/ConditionsColumn/ConditionsPanel"]
 layout_mode = 2
+mouse_filter = 2
 size_flags_vertical = 3
 theme_override_constants/margin_left = 4
 theme_override_constants/margin_top = 4
@@ -80,6 +87,7 @@ theme_override_constants/margin_bottom = 4
 
 [node name="ConditionsContainer" type="VBoxContainer" parent="Panel/HBox/ConditionsColumn/ConditionsPanel/ConditionsMargin"]
 layout_mode = 2
+mouse_filter = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 2
 
@@ -92,21 +100,25 @@ text = "Add condition"
 
 [node name="VSeparator" type="VSeparator" parent="Panel/HBox"]
 layout_mode = 2
+mouse_filter = 2
 theme_override_constants/separation = 1
 
 [node name="ActionsColumn" type="VBoxContainer" parent="Panel/HBox"]
 layout_mode = 2
+mouse_filter = 2
 size_flags_horizontal = 3
 size_flags_stretch_ratio = 1.0
 theme_override_constants/separation = 0
 
 [node name="ActionsPanel" type="PanelContainer" parent="Panel/HBox/ActionsColumn"]
 layout_mode = 2
+mouse_filter = 2
 size_flags_vertical = 3
 theme_override_styles/panel = SubResource("StyleBoxFlat_actions")
 
 [node name="ActionsMargin" type="MarginContainer" parent="Panel/HBox/ActionsColumn/ActionsPanel"]
 layout_mode = 2
+mouse_filter = 2
 size_flags_vertical = 3
 theme_override_constants/margin_left = 4
 theme_override_constants/margin_top = 4
@@ -115,6 +127,7 @@ theme_override_constants/margin_bottom = 4
 
 [node name="ActionsContainer" type="VBoxContainer" parent="Panel/HBox/ActionsColumn/ActionsPanel/ActionsMargin"]
 layout_mode = 2
+mouse_filter = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 2
 
