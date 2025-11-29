@@ -4,6 +4,7 @@ class_name FlowKitEngine
 var registry: FKRegistry
 var active_sheets: Array = []
 var last_scene: Node = null
+var active_behavior_nodes: Array = []  # Track nodes with active behaviors
 
 func _ready() -> void:
 	# Load registry
@@ -20,11 +21,17 @@ func _process(delta: float) -> void:
 	_check_for_scene_change()
 	for sheet in active_sheets:
 		_run_sheet(sheet)
+	
+	# Process behaviors (process callback)
+	_process_behaviors(delta, false)
 
 func _physics_process(delta: float) -> void:
 	# Run sheets in physics process for physics-based events
 	for sheet in active_sheets:
 		_run_sheet(sheet)
+	
+	# Process behaviors (physics_process callback)
+	_process_behaviors(delta, true)
 
 
 # --- Scene detection helpers -----------------------------------------------
@@ -42,6 +49,8 @@ func _check_for_scene_change() -> void:
 
 func _on_scene_changed(scene_root: Node) -> void:
 	last_scene = scene_root
+	active_behavior_nodes.clear()  # Clear behavior tracking on scene change
+	
 	if scene_root == null:
 		# Scene unloaded: clear active sheets (optional)
 		active_sheets.clear()
@@ -56,6 +65,9 @@ func _on_scene_changed(scene_root: Node) -> void:
 	var system: Node = get_tree().root.get_node_or_null("/root/FlowKitSystem")
 	if system and system.has_method("sync_scene_node_variables"):
 		system.sync_scene_node_variables(scene_root)
+	
+	# Scan and activate behaviors for all nodes in the scene
+	_scan_and_activate_behaviors(scene_root)
 	
 	_load_sheet_for_scene(scene_name)
 
@@ -160,3 +172,62 @@ func _run_sheet(sheet: FKEventSheet) -> void:
 					continue
 			
 			registry.execute_action(act.action_id, anode, act.inputs)
+
+
+# --- Behavior processing ---------------------------------------------------
+func _scan_and_activate_behaviors(scene_root: Node) -> void:
+	# Recursively scan all nodes in the scene for behaviors
+	_scan_node_for_behavior(scene_root)
+
+func _scan_node_for_behavior(node: Node) -> void:
+	# Check if this node has a behavior set
+	if node.has_meta("flowkit_behavior"):
+		var behavior_data: Dictionary = node.get_meta("flowkit_behavior", {})
+		var behavior_id: String = behavior_data.get("id", "")
+		var inputs: Dictionary = behavior_data.get("inputs", {})
+		
+		if not behavior_id.is_empty():
+			# Apply the behavior
+			registry.apply_behavior(behavior_id, node, inputs)
+			
+			# Track this node for behavior processing
+			if not active_behavior_nodes.has(node):
+				active_behavior_nodes.append(node)
+			
+			print("[FlowKit] Activated behavior '%s' on node: %s" % [behavior_id, node.name])
+	
+	# Recursively scan children
+	for child in node.get_children():
+		_scan_node_for_behavior(child)
+
+func _process_behaviors(delta: float, is_physics: bool) -> void:
+	# Process all active behaviors
+	# First, clean up invalid nodes
+	var valid_nodes: Array = []
+	for node in active_behavior_nodes:
+		if is_instance_valid(node):
+			valid_nodes.append(node)
+	active_behavior_nodes = valid_nodes
+	
+	for node in active_behavior_nodes:
+		if not node.has_meta("flowkit_behavior"):
+			continue
+		
+		var behavior_data: Dictionary = node.get_meta("flowkit_behavior", {})
+		var behavior_id: String = behavior_data.get("id", "")
+		var inputs: Dictionary = behavior_data.get("inputs", {})
+		
+		if behavior_id.is_empty():
+			continue
+		
+		var behavior: Variant = registry.get_behavior(behavior_id)
+		if not behavior:
+			continue
+		
+		# Call the appropriate process method
+		if is_physics:
+			if behavior.has_method("physics_process"):
+				behavior.physics_process(node, delta, inputs)
+		else:
+			if behavior.has_method("process"):
+				behavior.process(node, delta, inputs)
