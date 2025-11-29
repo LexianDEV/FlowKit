@@ -4,6 +4,15 @@
 
 ---
 
+## 💬 Join the Community
+
+**Discord Server:**  
+Come hang out, ask questions, get help, and share your FlowKit creations!
+
+👉 https://discord.gg/flowkit
+
+---
+
 A **Clickteam Fusion 2.5/Construct** inspired visual scripting addon for **Godot 4**, enabling event-driven programming through an intuitive event sheet interface.
 
 ![Godot Version](https://img.shields.io/badge/Godot-4.5-blue.svg)
@@ -69,19 +78,21 @@ FlowKit operates as a dual-mode system:
 ### Event Sheet Structure
 
 ```
+
 FKEventSheet (Resource)
-  └─ events: Array[FKEventBlock]
-      ├─ event_id: String (e.g., "on_process")
-      ├─ target_node: NodePath
-      ├─ conditions: Array[FKEventCondition]
-      │   ├─ condition_id: String
-      │   ├─ target_node: NodePath
-      │   └─ inputs: Dictionary
-      └─ actions: Array[FKEventAction]
-          ├─ action_id: String
-          ├─ target_node: NodePath
-          └─ inputs: Dictionary
-```
+└─ events: Array[FKEventBlock]
+├─ event_id: String (e.g., "on_process")
+├─ target_node: NodePath
+├─ conditions: Array[FKEventCondition]
+│   ├─ condition_id: String
+│   ├─ target_node: NodePath
+│   └─ inputs: Dictionary
+└─ actions: Array[FKEventAction]
+├─ action_id: String
+├─ target_node: NodePath
+└─ inputs: Dictionary
+
+````
 
 ## 📦 Built-in Providers
 
@@ -118,10 +129,6 @@ FlowKit's provider system makes it easy to extend functionality. Providers are a
 
 ### Creating a Custom Action
 
-1. Create a new `.gd` file in `addons/flowkit/actions/{NodeType}/`
-2. Extend the `FKAction` base class
-3. Implement required methods:
-
 ```gdscript
 extends FKAction
 
@@ -132,10 +139,9 @@ func get_name() -> String:
     return "My Custom Action"
 
 func get_supported_types() -> Array:
-    return ["Node2D"]  # Compatible node types
+    return ["Node2D"]
 
 func get_inputs() -> Array:
-    # Define parameters (empty if none needed)
     return [
         {"name": "amount", "type": "float"},
         {"name": "message", "type": "String"}
@@ -144,14 +150,10 @@ func get_inputs() -> Array:
 func execute(node: Node, inputs: Dictionary) -> void:
     var amount = inputs.get("amount", 0.0)
     var message = inputs.get("message", "")
-    # Your action logic here
     print(message, " - ", amount)
-```
+````
 
 ### Creating a Custom Condition
-
-1. Create a new `.gd` file in `addons/flowkit/conditions/`
-2. Extend the `FKCondition` base class:
 
 ```gdscript
 extends FKCondition
@@ -170,14 +172,10 @@ func get_inputs() -> Array:
 
 func check(node: Node, inputs: Dictionary) -> bool:
     var threshold = inputs.get("threshold", 0.0)
-    # Your condition logic here
-    return true  # or false
+    return true
 ```
 
 ### Creating a Custom Event
-
-1. Create a new `.gd` file in `addons/flowkit/events/`
-2. Extend the `FKEvent` base class:
 
 ```gdscript
 extends FKEvent
@@ -192,84 +190,55 @@ func get_supported_types() -> Array:
     return ["Node"]
 
 func poll(node: Node) -> bool:
-    # Return true when event should trigger
     return false
 ```
-
-The registry will automatically discover and register your custom providers when the plugin loads.
 
 ## 📁 File Structure
 
 ```
 flowkit/
-├── flowkit.gd                 # Main plugin entry point
-├── registry.gd                # Provider discovery and management
-├── actions/                   # Action providers
-│   ├── Node/                  # Node-compatible actions
-│   └── CharacterBody2D/       # CharacterBody2D-compatible actions
-├── conditions/                # Condition providers
-├── events/                    # Event providers
-├── resources/                 # Resource type definitions
-│   ├── event_sheet.gd
-│   ├── event_block.gd
-│   ├── event_action.gd
-│   ├── event_condition.gd
-│   ├── fk_action.gd
-│   ├── fk_condition.gd
-│   └── fk_event.gd
-├── runtime/                   # Runtime execution engine
-│   └── flowkit_engine.gd
-├── ui/                        # Editor interface
-│   ├── editor.gd
-│   ├── modals/                # Dialog windows
-│   └── workspace/             # Event sheet UI components
-└── saved/                     # Generated event sheets
-    └── event_sheet/           # Scene-specific .tres files
+├── flowkit.gd
+├── registry.gd
+├── actions/
+├── conditions/
+├── events/
+├── resources/
+├── runtime/
+├── ui/
+└── saved/
 ```
 
 ## 💡 Usage Tips
 
-- **Scene Naming**: Event sheets are automatically matched to scenes by filename (e.g., `world.tscn` → `world.tres`)
-- **Node Paths**: All node paths are relative to the scene root
-- **Expressions**: Action/condition inputs support GDScript expressions (e.g., `position.x + 10`, `Vector2(100, 200)`)
-- **Organization**: Group related providers in subdirectories for better organization
-- **Debugging**: Check the Godot console for FlowKit engine logs during runtime
+* Event sheets match scenes by filename
+* Node paths are relative to the scene root
+* Inputs support GDScript expressions
+* Group providers in folders
+* Check the console for FlowKit logs
 
 ## 🛠️ Development
 
-### Requirements
-
-- Godot 4.5 or higher
-- Basic understanding of Godot's plugin system
-- GDScript knowledge for creating custom providers
-
-### Contributing
-
-Contributions are welcome! To contribute:
-
-1. Fork the repository
-2. Create a feature branch
-3. Add your custom providers or improvements
-4. Test thoroughly in the Godot editor
-5. Submit a pull request
+* Godot 4.5+
+* Knowledge of GDScript
+* Understanding of Godot plugins
 
 ## 📄 License
 
-This project is licensed under the MIT License.
+MIT License.
 
 ## 🙏 Acknowledgments
 
-Inspired by:
-
-- **Clickteam Fusion 2.5** - Event-based game development tool
-- **Construct** - HTML5 game engine with visual scripting
-- **Scratch** - Block-based programming language for beginners
-- **Godot Engine** - Open-source game engine
+* Clickteam Fusion 2.5
+* Construct
+* Scratch
+* Godot Engine
 
 ## 📞 Support
 
-For bug reports, feature requests, or questions, please open an issue on the GitHub repository.
+Open an issue on GitHub for questions or bugs, alternatively you can ask in the Discussions or Discord community, but issues are preferred.
 
 ---
 
 **Made with ❤️ for the Godot community by LexianDEV**
+
+```
