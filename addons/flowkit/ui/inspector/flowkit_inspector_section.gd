@@ -257,8 +257,9 @@ func _add_behavior_param_row(param_name: String, param_type: String, value: Vari
 	hbox.add_theme_constant_override("separation", 4)
 	behavior_params_container.add_child(hbox)
 	
-	# Store the param name as metadata on the hbox
+	# Store the param name and type as metadata on the hbox
 	hbox.set_meta("param_name", param_name)
+	hbox.set_meta("param_type", param_type)
 	
 	# Parameter name label
 	var name_label: Label = Label.new()
@@ -271,8 +272,13 @@ func _add_behavior_param_row(param_name: String, param_type: String, value: Vari
 	value_edit.text = str(value)
 	value_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	value_edit.placeholder_text = param_type
-	value_edit.text_changed.connect(func(new_text: String): _on_behavior_param_changed(param_name, new_text, param_type))
+	value_edit.text_changed.connect(_on_behavior_param_text_changed.bind(hbox))
 	hbox.add_child(value_edit)
+
+func _on_behavior_param_text_changed(new_text: String, hbox: HBoxContainer) -> void:
+	var param_name: String = hbox.get_meta("param_name", "")
+	var param_type: String = hbox.get_meta("param_type", "String")
+	_on_behavior_param_changed(param_name, new_text, param_type)
 
 func _on_behavior_param_changed(param_name: String, new_value: String, param_type: String) -> void:
 	if not node:

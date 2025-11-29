@@ -202,10 +202,14 @@ func _scan_node_for_behavior(node: Node) -> void:
 
 func _process_behaviors(delta: float, is_physics: bool) -> void:
 	# Process all active behaviors
+	# First, clean up invalid nodes
+	var valid_nodes: Array = []
 	for node in active_behavior_nodes:
-		if not is_instance_valid(node):
-			continue
-		
+		if is_instance_valid(node):
+			valid_nodes.append(node)
+	active_behavior_nodes = valid_nodes
+	
+	for node in active_behavior_nodes:
 		if not node.has_meta("flowkit_behavior"):
 			continue
 		

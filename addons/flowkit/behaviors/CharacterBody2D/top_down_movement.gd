@@ -26,13 +26,14 @@ func get_supported_types() -> Array[String]:
 	return ["CharacterBody2D"]
 
 func apply(node: Node, inputs: Dictionary) -> void:
-	# Store the behavior data in node metadata
-	node.set_meta("flowkit_behavior_top_down_movement", inputs)
+	# Store the behavior data in node metadata using the behavior ID
+	node.set_meta("flowkit_behavior_" + get_id(), inputs)
 
 func remove(node: Node) -> void:
 	# Remove the behavior metadata
-	if node.has_meta("flowkit_behavior_top_down_movement"):
-		node.remove_meta("flowkit_behavior_top_down_movement")
+	var meta_key: String = "flowkit_behavior_" + get_id()
+	if node.has_meta(meta_key):
+		node.remove_meta(meta_key)
 
 func physics_process(node: Node, delta: float, inputs: Dictionary) -> void:
 	if not node is CharacterBody2D:
