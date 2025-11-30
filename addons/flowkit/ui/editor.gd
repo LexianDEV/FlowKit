@@ -102,6 +102,16 @@ func _popup_centered_on_editor(popup: Window) -> void:
 	popup.popup()
 
 func _input(event: InputEvent) -> void:
+	# Handle mouse click to deselect when clicking outside selected elements
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		var mouse_pos = get_global_mouse_position()
+		
+		# Check if we have any selection (row or item)
+		if selected_row or selected_item:
+			# Deselect if click is outside all event rows
+			if not _is_click_on_event_row(mouse_pos):
+				_deselect_all()
+	
 	# Only handle key press (not echo/repeat)
 	if not (event is InputEventKey and event.pressed and not event.echo):
 		return
@@ -112,15 +122,28 @@ func _input(event: InputEvent) -> void:
 	
 	# Handle Delete key
 	if event.keycode == KEY_DELETE:
-		if selected_row and is_instance_valid(selected_row):
+		if selected_item and is_instance_valid(selected_item):
+			_delete_selected_item()
+			get_viewport().set_input_as_handled()
+		elif selected_row and is_instance_valid(selected_row):
 			_delete_selected_row()
+			get_viewport().set_input_as_handled()
 	# Handle Ctrl+C (copy)
 	elif event.keycode == KEY_C and event.ctrl_pressed:
 		if selected_row and is_instance_valid(selected_row):
 			_copy_selected_row()
+			get_viewport().set_input_as_handled()
 	# Handle Ctrl+V (paste)
 	elif event.keycode == KEY_V and event.ctrl_pressed:
 		_paste_from_clipboard()
+		get_viewport().set_input_as_handled()
+
+func _is_click_on_event_row(mouse_pos: Vector2) -> bool:
+	"""Check if the mouse position is over any event row."""
+	for block in _get_blocks():
+		if block.get_global_rect().has_point(mouse_pos):
+			return true
+	return false
 
 func _is_mouse_in_blocks_area() -> bool:
 	"""Check if mouse is hovering over the blocks container."""
@@ -140,6 +163,50 @@ func _delete_selected_row() -> void:
 	blocks_container.remove_child(row_to_delete)
 	row_to_delete.queue_free()
 	_save_sheet()
+
+func _delete_selected_item() -> void:
+	"""Delete the currently selected condition or action item."""
+	if not selected_item or not is_instance_valid(selected_item):
+		return
+	
+	var item_to_delete = selected_item
+	
+	# Find the parent event_row
+	var parent_row = _find_parent_event_row(item_to_delete)
+	if not parent_row:
+		return
+	
+	# Check if it's a condition or action
+	if item_to_delete.has_method("get_condition_data"):
+		var cond_data = item_to_delete.get_condition_data()
+		var event_data = parent_row.get_event_data()
+		if cond_data and event_data:
+			var idx = event_data.conditions.find(cond_data)
+			if idx >= 0:
+				event_data.conditions.remove_at(idx)
+	elif item_to_delete.has_method("get_action_data"):
+		var act_data = item_to_delete.get_action_data()
+		var event_data = parent_row.get_event_data()
+		if act_data and event_data:
+			var idx = event_data.actions.find(act_data)
+			if idx >= 0:
+				event_data.actions.remove_at(idx)
+	
+	# Clear selection
+	_deselect_item()
+	
+	# Update display and save
+	parent_row.update_display()
+	_save_sheet()
+
+func _find_parent_event_row(node: Node):
+	"""Find the event_row that contains this node."""
+	var current = node.get_parent()
+	while current:
+		if current.has_method("get_event_data"):
+			return current
+		current = current.get_parent()
+	return null
 
 func _copy_selected_row() -> void:
 	"""Copy selected event row to clipboard."""
@@ -446,6 +513,12 @@ func _connect_event_row_signals(row) -> void:
 	row.add_condition_requested.connect(_on_row_add_condition.bind(row))
 	row.add_action_requested.connect(_on_row_add_action.bind(row))
 	row.selected.connect(_on_row_selected)
+	row.condition_selected.connect(_on_condition_selected_in_row)
+	row.action_selected.connect(_on_action_selected_in_row)
+	row.condition_edit_requested.connect(_on_condition_edit_requested.bind(row))
+	row.action_edit_requested.connect(_on_action_edit_requested.bind(row))
+	row.condition_dropped.connect(_on_condition_dropped)
+	row.action_dropped.connect(_on_action_dropped)
 	row.data_changed.connect(_save_sheet)
 
 # === Menu Button Handlers ===
@@ -509,6 +582,9 @@ func _on_add_event_button_pressed() -> void:
 
 func _on_row_selected(row) -> void:
 	"""Handle row selection with visual feedback."""
+	# Deselect previous item (condition/action)
+	_deselect_item()
+	
 	# Deselect previous row
 	if selected_row and is_instance_valid(selected_row) and selected_row.has_method("set_selected"):
 		selected_row.set_selected(false)
@@ -517,6 +593,49 @@ func _on_row_selected(row) -> void:
 	selected_row = row
 	if selected_row and selected_row.has_method("set_selected"):
 		selected_row.set_selected(true)
+
+func _on_condition_selected_in_row(condition_node) -> void:
+	"""Handle condition item selection."""
+	# Deselect previous row
+	if selected_row and is_instance_valid(selected_row) and selected_row.has_method("set_selected"):
+		selected_row.set_selected(false)
+	selected_row = null
+	
+	# Deselect previous item
+	_deselect_item()
+	
+	# Select new item
+	selected_item = condition_node
+	if selected_item and selected_item.has_method("set_selected"):
+		selected_item.set_selected(true)
+
+func _on_action_selected_in_row(action_node) -> void:
+	"""Handle action item selection."""
+	# Deselect previous row
+	if selected_row and is_instance_valid(selected_row) and selected_row.has_method("set_selected"):
+		selected_row.set_selected(false)
+	selected_row = null
+	
+	# Deselect previous item
+	_deselect_item()
+	
+	# Select new item
+	selected_item = action_node
+	if selected_item and selected_item.has_method("set_selected"):
+		selected_item.set_selected(true)
+
+func _deselect_item() -> void:
+	"""Deselect current condition/action item."""
+	if selected_item and is_instance_valid(selected_item) and selected_item.has_method("set_selected"):
+		selected_item.set_selected(false)
+	selected_item = null
+
+func _deselect_all() -> void:
+	"""Deselect all rows and items."""
+	if selected_row and is_instance_valid(selected_row) and selected_row.has_method("set_selected"):
+		selected_row.set_selected(false)
+	selected_row = null
+	_deselect_item()
 
 # === Workflow System ===
 
@@ -806,3 +925,117 @@ func _on_row_add_condition(signal_row, bound_row) -> void:
 func _on_row_add_action(signal_row, bound_row) -> void:
 	pending_target_row = bound_row
 	_start_add_workflow("action", bound_row)
+
+# === Condition/Action Edit Handlers ===
+
+func _on_condition_edit_requested(condition_item, bound_row) -> void:
+	"""Handle double-click on condition to edit its inputs."""
+	var cond_data = condition_item.get_condition_data()
+	if not cond_data:
+		return
+	
+	# Get condition provider to check if it has inputs
+	var provider_inputs = []
+	if registry:
+		for provider in registry.condition_providers:
+			if provider.has_method("get_id") and provider.get_id() == cond_data.condition_id:
+				if provider.has_method("get_inputs"):
+					provider_inputs = provider.get_inputs()
+				break
+	
+	if provider_inputs.size() > 0:
+		pending_target_row = bound_row
+		pending_target_item = condition_item
+		pending_block_type = "condition_edit"
+		pending_id = cond_data.condition_id
+		pending_node_path = str(cond_data.target_node)
+		
+		expression_modal.populate_inputs(str(cond_data.target_node), cond_data.condition_id, provider_inputs, cond_data.inputs)
+		_popup_centered_on_editor(expression_modal)
+	else:
+		print("Condition has no inputs to edit")
+
+func _on_action_edit_requested(action_item, bound_row) -> void:
+	"""Handle double-click on action to edit its inputs."""
+	var act_data = action_item.get_action_data()
+	if not act_data:
+		return
+	
+	# Get action provider to check if it has inputs
+	var provider_inputs = []
+	if registry:
+		for provider in registry.action_providers:
+			if provider.has_method("get_id") and provider.get_id() == act_data.action_id:
+				if provider.has_method("get_inputs"):
+					provider_inputs = provider.get_inputs()
+				break
+	
+	if provider_inputs.size() > 0:
+		pending_target_row = bound_row
+		pending_target_item = action_item
+		pending_block_type = "action_edit"
+		pending_id = act_data.action_id
+		pending_node_path = str(act_data.target_node)
+		
+		expression_modal.populate_inputs(str(act_data.target_node), act_data.action_id, provider_inputs, act_data.inputs)
+		_popup_centered_on_editor(expression_modal)
+	else:
+		print("Action has no inputs to edit")
+
+# === Drag and Drop Handlers ===
+
+func _on_condition_dropped(source_row, condition_data: FKEventCondition, target_row) -> void:
+	"""Handle condition dropped from one event row to another."""
+	if not source_row or not target_row or not condition_data:
+		return
+	
+	# Remove from source
+	var source_data = source_row.get_event_data()
+	if source_data:
+		var idx = source_data.conditions.find(condition_data)
+		if idx >= 0:
+			source_data.conditions.remove_at(idx)
+			source_row.update_display()
+	
+	# Add to target
+	var target_data = target_row.get_event_data()
+	if target_data:
+		# Create a copy of the condition data
+		var cond_copy = FKEventCondition.new()
+		cond_copy.condition_id = condition_data.condition_id
+		cond_copy.target_node = condition_data.target_node
+		cond_copy.inputs = condition_data.inputs.duplicate()
+		cond_copy.negated = condition_data.negated
+		cond_copy.actions = [] as Array[FKEventAction]
+		
+		target_data.conditions.append(cond_copy)
+		target_row.update_display()
+	
+	_save_sheet()
+
+func _on_action_dropped(source_row, action_data: FKEventAction, target_row) -> void:
+	"""Handle action dropped from one event row to another."""
+	if not source_row or not target_row or not action_data:
+		return
+	
+	# Remove from source
+	var source_data = source_row.get_event_data()
+	if source_data:
+		var idx = source_data.actions.find(action_data)
+		if idx >= 0:
+			source_data.actions.remove_at(idx)
+			source_row.update_display()
+	
+	# Add to target
+	var target_data = target_row.get_event_data()
+	if target_data:
+		# Create a copy of the action data
+		var act_copy = FKEventAction.new()
+		act_copy.action_id = action_data.action_id
+		act_copy.target_node = action_data.target_node
+		act_copy.inputs = action_data.inputs.duplicate()
+		
+		target_data.actions.append(act_copy)
+		target_row.update_display()
+	
+	_save_sheet()

@@ -97,7 +97,7 @@ theme_override_constants/margin_bottom = 8
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-theme_override_constants/separation = 8
+theme_override_constants/separation = 2
 script = ExtResource("2_blocks")
 
 [node name="EmptyLabel" type="Label" parent="OuterVBox/ScrollContainer/MarginContainer/BlocksContainer"]

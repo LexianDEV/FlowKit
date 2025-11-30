@@ -47,13 +47,17 @@ func _setup_context_menu() -> void:
 func _on_gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed:
 		if event.button_index == MOUSE_BUTTON_LEFT:
-			selected.emit(self)
+			if event.double_click:
+				edit_requested.emit(self)
+			else:
+				selected.emit(self)
+			get_viewport().set_input_as_handled()
 		elif event.button_index == MOUSE_BUTTON_RIGHT:
 			selected.emit(self)
 			if context_menu:
 				context_menu.position = DisplayServer.mouse_get_position()
 				context_menu.popup()
-				get_viewport().set_input_as_handled()
+			get_viewport().set_input_as_handled()
 
 func _on_context_menu_id_pressed(id: int) -> void:
 	match id:
@@ -108,3 +112,26 @@ func set_selected(value: bool) -> void:
 			panel.add_theme_stylebox_override("panel", selected_stylebox)
 		else:
 			panel.add_theme_stylebox_override("panel", normal_stylebox)
+
+func _get_drag_data(at_position: Vector2):
+	if not action_data:
+		return null
+	
+	var preview_label := Label.new()
+	preview_label.text = label.text if label else "Action"
+	preview_label.add_theme_color_override("font_color", Color(0.5, 0.7, 1.0, 0.9))
+	
+	var preview_margin := MarginContainer.new()
+	preview_margin.add_theme_constant_override("margin_left", 8)
+	preview_margin.add_theme_constant_override("margin_top", 4)
+	preview_margin.add_theme_constant_override("margin_right", 8)
+	preview_margin.add_theme_constant_override("margin_bottom", 4)
+	preview_margin.add_child(preview_label)
+	
+	set_drag_preview(preview_margin)
+	
+	return {
+		"type": "action_item",
+		"node": self,
+		"data": action_data
+	}

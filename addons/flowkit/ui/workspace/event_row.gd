@@ -9,8 +9,12 @@ signal add_condition_requested(event_row)
 signal add_action_requested(event_row)
 signal condition_selected(condition_node)
 signal action_selected(action_node)
+signal condition_edit_requested(condition_item)
+signal action_edit_requested(action_item)
 signal selected(block_node)
 signal data_changed()
+signal condition_dropped(source_row, condition_data, target_row)
+signal action_dropped(source_row, action_data, target_row)
 
 # Data
 var event_data: FKEventBlock
@@ -28,6 +32,8 @@ var conditions_container: VBoxContainer
 var actions_container: VBoxContainer
 var add_condition_label: Label
 var add_action_label: Label
+var condition_drop_zone: Control
+var action_drop_zone: Control
 var context_menu: PopupMenu
 var normal_stylebox: StyleBox
 var selected_stylebox: StyleBox
@@ -42,8 +48,10 @@ func _setup_references() -> void:
 	event_header_label = get_node_or_null("Panel/HBox/ConditionsColumn/EventHeader/MarginContainer/EventLabel")
 	conditions_container = get_node_or_null("Panel/HBox/ConditionsColumn/ConditionsPanel/ConditionsMargin/ConditionsContainer")
 	actions_container = get_node_or_null("Panel/HBox/ActionsColumn/ActionsPanel/ActionsMargin/ActionsContainer")
-	add_condition_label = get_node_or_null("Panel/HBox/ConditionsColumn/AddConditionLabel")
-	add_action_label = get_node_or_null("Panel/HBox/ActionsColumn/AddActionLabel")
+	condition_drop_zone = get_node_or_null("Panel/HBox/ConditionsColumn/ConditionDropZone")
+	action_drop_zone = get_node_or_null("Panel/HBox/ActionsColumn/ActionDropZone")
+	add_condition_label = get_node_or_null("Panel/HBox/ConditionsColumn/ConditionDropZone/AddConditionLabel")
+	add_action_label = get_node_or_null("Panel/HBox/ActionsColumn/ActionDropZone/AddActionLabel")
 	context_menu = get_node_or_null("ContextMenu")
 
 func _setup_styles() -> void:
@@ -53,10 +61,10 @@ func _setup_styles() -> void:
 			selected_stylebox = normal_stylebox.duplicate()
 			if selected_stylebox is StyleBoxFlat:
 				selected_stylebox.border_color = Color(1.0, 1.0, 1.0, 1.0)
-				selected_stylebox.border_width_left = 3
-				selected_stylebox.border_width_top = 2
-				selected_stylebox.border_width_right = 2
-				selected_stylebox.border_width_bottom = 2
+				selected_stylebox.border_width_left = 2
+				selected_stylebox.border_width_top = 1
+				selected_stylebox.border_width_right = 1
+				selected_stylebox.border_width_bottom = 1
 
 func _setup_signals() -> void:
 	gui_input.connect(_on_gui_input)
@@ -70,8 +78,17 @@ func _setup_context_menu() -> void:
 func _setup_add_labels() -> void:
 	if add_condition_label:
 		add_condition_label.gui_input.connect(_on_add_condition_input)
+		add_condition_label.mouse_entered.connect(_on_add_condition_hover.bind(true))
+		add_condition_label.mouse_exited.connect(_on_add_condition_hover.bind(false))
 	if add_action_label:
 		add_action_label.gui_input.connect(_on_add_action_input)
+		add_action_label.mouse_entered.connect(_on_add_action_hover.bind(true))
+		add_action_label.mouse_exited.connect(_on_add_action_hover.bind(false))
+	# Connect drop zone signals
+	if condition_drop_zone and condition_drop_zone.has_signal("item_dropped"):
+		condition_drop_zone.item_dropped.connect(_on_condition_drop_zone_dropped)
+	if action_drop_zone and action_drop_zone.has_signal("item_dropped"):
+		action_drop_zone.item_dropped.connect(_on_action_drop_zone_dropped)
 
 func _on_gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed:
@@ -84,12 +101,43 @@ func _on_gui_input(event: InputEvent) -> void:
 				context_menu.popup()
 
 func _on_add_condition_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		add_condition_requested.emit(self)
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		if event.pressed:
+			_flash_label(add_condition_label)
+			add_condition_requested.emit(self)
 
 func _on_add_action_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		add_action_requested.emit(self)
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		if event.pressed:
+			_flash_label(add_action_label)
+			add_action_requested.emit(self)
+
+func _on_add_condition_hover(is_hovering: bool) -> void:
+	if add_condition_label:
+		if is_hovering:
+			add_condition_label.add_theme_color_override("font_color", Color(0.7, 0.75, 0.8, 1))
+		else:
+			add_condition_label.add_theme_color_override("font_color", Color(0.5, 0.55, 0.6, 1))
+
+func _on_add_action_hover(is_hovering: bool) -> void:
+	if add_action_label:
+		if is_hovering:
+			add_action_label.add_theme_color_override("font_color", Color(0.7, 0.75, 0.8, 1))
+		else:
+			add_action_label.add_theme_color_override("font_color", Color(0.5, 0.55, 0.6, 1))
+
+func _flash_label(label: Label) -> void:
+	if not label:
+		return
+	# Change color to light blue on click
+	label.add_theme_color_override("font_color", Color(0.6, 0.85, 1.0, 1))
+	# Restore color after a short delay
+	var tween = create_tween()
+	tween.tween_interval(0.15)
+	tween.tween_callback(func():
+		if is_instance_valid(label):
+			label.add_theme_color_override("font_color", Color(0.5, 0.55, 0.6, 1))
+	)
 
 func _on_context_menu_id_pressed(id: int) -> void:
 	match id:
@@ -200,8 +248,7 @@ func _connect_action_item_signals(item) -> void:
 		item.delete_requested.connect(_on_action_item_delete)
 
 func _on_condition_item_edit(item) -> void:
-	# Will be handled by editor.gd through signal forwarding
-	pass
+	condition_edit_requested.emit(item)
 
 func _on_condition_item_delete(item) -> void:
 	var cond_data = item.get_condition_data()
@@ -219,8 +266,7 @@ func _on_condition_item_negate(item) -> void:
 		item.update_display()
 
 func _on_action_item_edit(item) -> void:
-	# Will be handled by editor.gd through signal forwarding
-	pass
+	action_edit_requested.emit(item)
 
 func _on_action_item_delete(item) -> void:
 	var act_data = item.get_action_data()
@@ -272,7 +318,92 @@ func _get_drag_data(at_position: Vector2):
 	}
 
 func _can_drop_data(at_position: Vector2, data) -> bool:
+	if not data is Dictionary:
+		return false
+	
+	var drag_type = data.get("type", "")
+	if drag_type != "condition_item" and drag_type != "action_item":
+		return false
+	
+	# Use simple half-width check: left half = conditions, right half = actions
+	var half_width = size.x / 2.0
+	var is_left_side = at_position.x < half_width
+	
+	if drag_type == "condition_item" and is_left_side:
+		return true
+	elif drag_type == "action_item" and not is_left_side:
+		return true
+	
 	return false
 
 func _drop_data(at_position: Vector2, data) -> void:
-	pass
+	if not data is Dictionary:
+		return
+	
+	var drag_type = data.get("type", "")
+	var source_node = data.get("node")
+	
+	if not source_node or not is_instance_valid(source_node):
+		return
+	
+	# Find the source event_row
+	var source_row = _find_parent_event_row(source_node)
+	if not source_row:
+		return
+	
+	# Don't drop on same row (reordering within same row not implemented yet)
+	if source_row == self:
+		return
+	
+	# Use simple half-width check
+	var half_width = size.x / 2.0
+	var is_left_side = at_position.x < half_width
+	
+	match drag_type:
+		"condition_item":
+			if is_left_side:
+				var cond_data = data.get("data")
+				if cond_data:
+					condition_dropped.emit(source_row, cond_data, self)
+		"action_item":
+			if not is_left_side:
+				var act_data = data.get("data")
+				if act_data:
+					action_dropped.emit(source_row, act_data, self)
+
+func _find_parent_event_row(node: Node):
+	"""Find the event_row that contains this node."""
+	var current = node.get_parent()
+	while current:
+		if current.has_method("get_event_data"):
+			return current
+		current = current.get_parent()
+	return null
+
+func _on_condition_drop_zone_dropped(drag_data: Dictionary) -> void:
+	"""Handle condition dropped on the condition drop zone."""
+	var source_node = drag_data.get("node")
+	if not source_node or not is_instance_valid(source_node):
+		return
+	
+	var source_row = _find_parent_event_row(source_node)
+	if not source_row or source_row == self:
+		return
+	
+	var cond_data = drag_data.get("data")
+	if cond_data:
+		condition_dropped.emit(source_row, cond_data, self)
+
+func _on_action_drop_zone_dropped(drag_data: Dictionary) -> void:
+	"""Handle action dropped on the action drop zone."""
+	var source_node = drag_data.get("node")
+	if not source_node or not is_instance_valid(source_node):
+		return
+	
+	var source_row = _find_parent_event_row(source_node)
+	if not source_row or source_row == self:
+		return
+	
+	var act_data = drag_data.get("data")
+	if act_data:
+		action_dropped.emit(source_row, act_data, self)

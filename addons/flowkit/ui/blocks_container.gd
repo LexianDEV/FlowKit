@@ -2,6 +2,7 @@
 extends VBoxContainer
 
 signal block_moved
+signal empty_area_clicked
 
 func _can_drop_data(at_position: Vector2, data) -> bool:
 	if not data is Dictionary:
@@ -50,3 +51,17 @@ func _calculate_drop_index(at_position: Vector2) -> int:
 			return i
 	
 	return get_child_count()
+
+func _gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		# Check if click is on empty area (not on any child)
+		var mouse_pos = event.position
+		var clicked_on_child = false
+		for child in get_children():
+			if child.visible and child.name != "EmptyLabel":
+				if child.get_rect().has_point(mouse_pos):
+					clicked_on_child = true
+					break
+		
+		if not clicked_on_child:
+			empty_area_clicked.emit()

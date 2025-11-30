@@ -1,6 +1,7 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://addons/flowkit/ui/workspace/event_row.gd" id="1_eventrow"]
+[ext_resource type="Script" path="res://addons/flowkit/ui/workspace/drop_zone.gd" id="2_dropzone"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_row"]
 bg_color = Color(0.14, 0.15, 0.18, 1)
@@ -30,7 +31,7 @@ bg_color = Color(0.13, 0.14, 0.17, 1)
 
 [node name="EventRow" type="MarginContainer"]
 custom_minimum_size = Vector2(0, 60)
-theme_override_constants/margin_bottom = 4
+theme_override_constants/margin_bottom = 2
 script = ExtResource("1_eventrow")
 
 [node name="Panel" type="PanelContainer" parent="."]
@@ -91,9 +92,15 @@ mouse_filter = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 2
 
-[node name="AddConditionLabel" type="Label" parent="Panel/HBox/ConditionsColumn"]
+[node name="ConditionDropZone" type="MarginContainer" parent="Panel/HBox/ConditionsColumn"]
 layout_mode = 2
 mouse_filter = 0
+script = ExtResource("2_dropzone")
+accept_type = "condition_item"
+
+[node name="AddConditionLabel" type="Label" parent="Panel/HBox/ConditionsColumn/ConditionDropZone"]
+layout_mode = 2
+mouse_filter = 1
 theme_override_colors/font_color = Color(0.5, 0.55, 0.6, 1)
 theme_override_font_sizes/font_size = 11
 text = "Add condition"
@@ -131,9 +138,15 @@ mouse_filter = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 2
 
-[node name="AddActionLabel" type="Label" parent="Panel/HBox/ActionsColumn"]
+[node name="ActionDropZone" type="MarginContainer" parent="Panel/HBox/ActionsColumn"]
 layout_mode = 2
 mouse_filter = 0
+script = ExtResource("2_dropzone")
+accept_type = "action_item"
+
+[node name="AddActionLabel" type="Label" parent="Panel/HBox/ActionsColumn/ActionDropZone"]
+layout_mode = 2
+mouse_filter = 1
 theme_override_colors/font_color = Color(0.5, 0.55, 0.6, 1)
 theme_override_font_sizes/font_size = 11
 text = "Add action"
