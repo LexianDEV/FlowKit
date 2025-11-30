@@ -1,7 +1,7 @@
 extends FKAction
 
 func get_description() -> String:
-	return "This event occurs when an Action from the input map is pressed."
+	return "This event occurs when an action from the input map is pressed."
 
 func get_id() -> String:
     return "on_action_pressed"
