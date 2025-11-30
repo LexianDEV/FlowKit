@@ -2,6 +2,7 @@
 extends VBoxContainer
 
 signal block_moved
+signal before_block_moved  # Emitted before block is moved for undo state capture
 
 func _can_drop_data(at_position: Vector2, data) -> bool:
 	if not data is Dictionary:
@@ -31,6 +32,9 @@ func _drop_data(at_position: Vector2, data) -> void:
 	# Adjust target if moving down (index shifts after removal)
 	if target_idx > current_idx:
 		target_idx -= 1
+	
+	# Emit before signal for undo state capture
+	before_block_moved.emit()
 	
 	# Move the block
 	remove_child(node)

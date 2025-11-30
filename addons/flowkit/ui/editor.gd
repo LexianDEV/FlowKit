@@ -13,6 +13,7 @@ const EVENT_ROW_SCENE = preload("res://addons/flowkit/ui/workspace/event_row.tsc
 @onready var blocks_container := $OuterVBox/ScrollContainer/MarginContainer/BlocksContainer
 @onready var empty_label := $OuterVBox/ScrollContainer/MarginContainer/BlocksContainer/EmptyLabel
 @onready var add_event_btn := $OuterVBox/BottomMargin/ButtonContainer/AddEventButton
+@onready var menu_bar := $OuterVBox/TopMargin/MenuBar
 
 # Modals
 @onready var select_node_modal := $SelectNodeModal
@@ -117,7 +118,22 @@ func _input(event: InputEvent) -> void:
 	if not (event is InputEventKey and event.pressed and not event.echo):
 		return
 	
-	# Safety: Only act if mouse is within our blocks area
+	# Handle Ctrl+Z (undo) and Ctrl+Shift+Z / Ctrl+Y (redo) when FlowKit panel is visible
+	# This allows undo/redo to work even when keyboard navigating or mouse is outside
+	if visible and (_is_mouse_in_editor_area() or _has_focus_in_subtree()):
+		if event.keycode == KEY_Z and event.ctrl_pressed:
+			if event.shift_pressed:
+				_redo()
+			else:
+				_undo()
+			get_viewport().set_input_as_handled()
+			return
+		elif event.keycode == KEY_Y and event.ctrl_pressed:
+			_redo()
+			get_viewport().set_input_as_handled()
+			return
+	
+	# Safety: Only act if mouse is within our blocks area for other shortcuts
 	if not _is_mouse_in_blocks_area():
 		return
 	
@@ -138,8 +154,157 @@ func _is_mouse_in_blocks_area() -> bool:
 	var mouse_pos = get_global_mouse_position()
 	return blocks_container.get_global_rect().has_point(mouse_pos)
 
+func _is_mouse_in_editor_area() -> bool:
+	"""Check if mouse is hovering over the FlowKit editor panel."""
+	var mouse_pos = get_global_mouse_position()
+	return get_global_rect().has_point(mouse_pos)
+
+func _has_focus_in_subtree() -> bool:
+	"""Check if any child control has focus."""
+	var focused = get_viewport().gui_get_focus_owner()
+	if focused == null:
+		return false
+	return focused == self or is_ancestor_of(focused)
+
+# === Undo/Redo System ===
+
+func _capture_sheet_state() -> Array:
+	"""Capture current sheet state as serialized data."""
+	var state: Array = []
+	for row in _get_blocks():
+		if row.has_method("get_event_data"):
+			var data = row.get_event_data()
+			if data:
+				state.append(_serialize_event_block(data))
+	return state
+
+func _serialize_event_block(data: FKEventBlock) -> Dictionary:
+	"""Serialize an event block to a dictionary."""
+	var result = {
+		"event_id": data.event_id,
+		"target_node": str(data.target_node),
+		"inputs": data.inputs.duplicate(),
+		"conditions": [],
+		"actions": []
+	}
+	
+	for cond in data.conditions:
+		result["conditions"].append({
+			"condition_id": cond.condition_id,
+			"target_node": str(cond.target_node),
+			"inputs": cond.inputs.duplicate(),
+			"negated": cond.negated
+		})
+	
+	for act in data.actions:
+		result["actions"].append({
+			"action_id": act.action_id,
+			"target_node": str(act.target_node),
+			"inputs": act.inputs.duplicate()
+		})
+	
+	return result
+
+func _push_undo_state() -> void:
+	"""Push current state to undo stack before making changes."""
+	var state = _capture_sheet_state()
+	undo_stack.append(state)
+	
+	# Limit undo stack size
+	while undo_stack.size() > MAX_UNDO_STATES:
+		undo_stack.pop_front()
+	
+	# Clear redo stack when new action is performed
+	redo_stack.clear()
+
+func _clear_undo_history() -> void:
+	"""Clear undo/redo history (called when switching scenes)."""
+	undo_stack.clear()
+	redo_stack.clear()
+
+func _undo() -> void:
+	"""Undo the last action."""
+	if undo_stack.is_empty():
+		return
+	
+	# Push current state to redo stack
+	var current_state = _capture_sheet_state()
+	redo_stack.append(current_state)
+	
+	# Pop previous state from undo stack
+	var previous_state = undo_stack.pop_back()
+	
+	# Restore state
+	_restore_sheet_state(previous_state)
+	_save_sheet()
+	print("[FlowKit] Undo performed")
+
+func _redo() -> void:
+	"""Redo the last undone action."""
+	if redo_stack.is_empty():
+		return
+	
+	# Push current state to undo stack
+	var current_state = _capture_sheet_state()
+	undo_stack.append(current_state)
+	
+	# Pop next state from redo stack
+	var next_state = redo_stack.pop_back()
+	
+	# Restore state
+	_restore_sheet_state(next_state)
+	_save_sheet()
+	print("[FlowKit] Redo performed")
+
+func _restore_sheet_state(state: Array) -> void:
+	"""Restore sheet to a previous state."""
+	# Clear current blocks
+	_clear_all_blocks()
+	
+	# Recreate blocks from state
+	for event_dict in state:
+		var data = _deserialize_event_block(event_dict)
+		var row = _create_event_row(data)
+		blocks_container.add_child(row)
+	
+	# Update UI state
+	if _get_blocks().size() > 0:
+		_show_content_state()
+	else:
+		_show_empty_blocks_state()
+
+func _deserialize_event_block(dict: Dictionary) -> FKEventBlock:
+	"""Deserialize a dictionary to an event block."""
+	var data = FKEventBlock.new()
+	data.event_id = dict.get("event_id", "")
+	data.target_node = NodePath(dict.get("target_node", ""))
+	data.inputs = dict.get("inputs", {}).duplicate()
+	data.conditions = [] as Array[FKEventCondition]
+	data.actions = [] as Array[FKEventAction]
+	
+	for cond_dict in dict.get("conditions", []):
+		var cond = FKEventCondition.new()
+		cond.condition_id = cond_dict.get("condition_id", "")
+		cond.target_node = NodePath(cond_dict.get("target_node", ""))
+		cond.inputs = cond_dict.get("inputs", {}).duplicate()
+		cond.negated = cond_dict.get("negated", false)
+		cond.actions = [] as Array[FKEventAction]
+		data.conditions.append(cond)
+	
+	for act_dict in dict.get("actions", []):
+		var act = FKEventAction.new()
+		act.action_id = act_dict.get("action_id", "")
+		act.target_node = NodePath(act_dict.get("target_node", ""))
+		act.inputs = act_dict.get("inputs", {}).duplicate()
+		data.actions.append(act)
+	
+	return data
+
 func _delete_selected_row() -> void:
 	"""Delete the currently selected event row."""
+	# Push undo state before deleting
+	_push_undo_state()
+	
 	var row_to_delete = selected_row
 	
 	# Clear selection first
@@ -197,6 +362,9 @@ func _paste_from_clipboard() -> void:
 	"""Paste events from clipboard after selected row (or at end)."""
 	if clipboard_events.is_empty():
 		return
+	
+	# Push undo state before pasting
+	_push_undo_state()
 	
 	# Calculate insert position
 	var insert_idx = blocks_container.get_child_count()
@@ -258,6 +426,7 @@ func _process(_delta: float) -> void:
 		if current_scene_name != "":
 			current_scene_name = ""
 			_clear_all_blocks()
+			_clear_undo_history()
 			_show_empty_state()
 		return
 	
@@ -266,12 +435,14 @@ func _process(_delta: float) -> void:
 		if current_scene_name != "":
 			current_scene_name = ""
 			_clear_all_blocks()
+			_clear_undo_history()
 			_show_empty_state()
 		return
 	
 	var scene_name = scene_path.get_file().get_basename()
 	if scene_name != current_scene_name:
 		current_scene_name = scene_name
+		_clear_undo_history()
 		_load_scene_sheet()
 
 # === Block Management ===
@@ -458,6 +629,7 @@ func _connect_event_row_signals(row) -> void:
 	row.add_action_requested.connect(_on_row_add_action.bind(row))
 	row.selected.connect(_on_row_selected)
 	row.data_changed.connect(_save_sheet)
+	row.before_data_changed.connect(_push_undo_state)
 
 # === Menu Button Handlers ===
 
@@ -665,6 +837,9 @@ func _on_expressions_confirmed(_node_path: String, _id: String, expressions: Dic
 
 func _finalize_event_creation(inputs: Dictionary) -> void:
 	"""Create and add event row (GDevelop-style)."""
+	# Push undo state before adding event
+	_push_undo_state()
+	
 	var data = FKEventBlock.new()
 	data.event_id = pending_id
 	data.target_node = pending_node_path
@@ -687,6 +862,9 @@ func _finalize_event_creation(inputs: Dictionary) -> void:
 
 func _finalize_condition_creation(inputs: Dictionary) -> void:
 	"""Add condition to the current event row."""
+	# Push undo state before adding condition
+	_push_undo_state()
+	
 	var data = FKEventCondition.new()
 	data.condition_id = pending_id
 	data.target_node = pending_node_path
@@ -703,6 +881,9 @@ func _finalize_condition_creation(inputs: Dictionary) -> void:
 
 func _finalize_action_creation(inputs: Dictionary) -> void:
 	"""Add action to the current event row."""
+	# Push undo state before adding action
+	_push_undo_state()
+	
 	var data = FKEventAction.new()
 	data.action_id = pending_id
 	data.target_node = pending_node_path
@@ -717,6 +898,9 @@ func _finalize_action_creation(inputs: Dictionary) -> void:
 
 func _update_event_inputs(expressions: Dictionary) -> void:
 	"""Update existing event row with new inputs."""
+	# Push undo state before editing event
+	_push_undo_state()
+	
 	if pending_target_row:
 		var data = pending_target_row.get_event_data()
 		if data:
@@ -727,6 +911,9 @@ func _update_event_inputs(expressions: Dictionary) -> void:
 
 func _update_condition_inputs(expressions: Dictionary) -> void:
 	"""Update existing condition item with new inputs."""
+	# Push undo state before editing condition
+	_push_undo_state()
+	
 	if pending_target_item:
 		var data = pending_target_item.get_condition_data()
 		if data:
@@ -737,6 +924,9 @@ func _update_condition_inputs(expressions: Dictionary) -> void:
 
 func _update_action_inputs(expressions: Dictionary) -> void:
 	"""Update existing action item with new inputs."""
+	# Push undo state before editing action
+	_push_undo_state()
+	
 	if pending_target_item:
 		var data = pending_target_item.get_action_data()
 		if data:
@@ -750,6 +940,9 @@ func _replace_event(expressions: Dictionary) -> void:
 	if not pending_target_row:
 		_reset_workflow()
 		return
+	
+	# Push undo state before replacing event
+	_push_undo_state()
 	
 	# Get old row's position and conditions/actions
 	var old_data = pending_target_row.get_event_data()
@@ -816,6 +1009,9 @@ func _on_row_replace(signal_row, bound_row) -> void:
 	_popup_centered_on_editor(select_node_modal)
 
 func _on_row_delete(signal_row, bound_row) -> void:
+	# Push undo state before deleting row
+	_push_undo_state()
+	
 	blocks_container.remove_child(bound_row)
 	bound_row.queue_free()
 	_save_sheet()

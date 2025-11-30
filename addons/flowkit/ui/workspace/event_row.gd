@@ -11,6 +11,7 @@ signal condition_selected(condition_node)
 signal action_selected(action_node)
 signal selected(block_node)
 signal data_changed()
+signal before_data_changed()  # Emitted before any data modification for undo state capture
 
 # Data
 var event_data: FKEventBlock
@@ -204,6 +205,7 @@ func _on_condition_item_edit(item) -> void:
 	pass
 
 func _on_condition_item_delete(item) -> void:
+	before_data_changed.emit()  # Signal for undo state capture
 	var cond_data = item.get_condition_data()
 	if cond_data and event_data:
 		var idx = event_data.conditions.find(cond_data)
@@ -213,16 +215,19 @@ func _on_condition_item_delete(item) -> void:
 			data_changed.emit()
 
 func _on_condition_item_negate(item) -> void:
+	before_data_changed.emit()  # Signal for undo state capture
 	var cond_data = item.get_condition_data()
 	if cond_data:
 		cond_data.negated = not cond_data.negated
 		item.update_display()
+		data_changed.emit()
 
 func _on_action_item_edit(item) -> void:
 	# Will be handled by editor.gd through signal forwarding
 	pass
 
 func _on_action_item_delete(item) -> void:
+	before_data_changed.emit()  # Signal for undo state capture
 	var act_data = item.get_action_data()
 	if act_data and event_data:
 		var idx = event_data.actions.find(act_data)

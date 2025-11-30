@@ -75,12 +75,19 @@ item_1/id = 1
 
 [node name="Edit" type="PopupMenu" parent="OuterVBox/TopMargin/MenuBar"]
 oversampling_override = 1.0
-size = Vector2i(150, 120)
-item_count = 2
-item_0/text = "Generate Events/Conditions/Actions (MAY BE UNSTABLE)"
+size = Vector2i(150, 180)
+item_count = 5
+item_0/text = "Undo (Ctrl+Z)"
 item_0/id = 0
-item_1/text = "Generate Provider Manifest (for Export)"
+item_1/text = "Redo (Ctrl+Shift+Z)"
 item_1/id = 1
+item_2/text = ""
+item_2/id = -1
+item_2/separator = true
+item_3/text = "Generate Events/Conditions/Actions (MAY BE UNSTABLE)"
+item_3/id = 2
+item_4/text = "Generate Provider Manifest (for Export)"
+item_4/id = 3
 
 [node name="ScrollContainer" type="ScrollContainer" parent="OuterVBox"]
 layout_mode = 2
@@ -146,7 +153,9 @@ text = "➕ Add Event"
 [connection signal="generate_manifest" from="OuterVBox/TopMargin/MenuBar" to="." method="_on_generate_manifest"]
 [connection signal="generate_providers" from="OuterVBox/TopMargin/MenuBar" to="." method="_on_generate_providers"]
 [connection signal="new_sheet" from="OuterVBox/TopMargin/MenuBar" to="." method="_on_new_sheet"]
+[connection signal="redo_requested" from="OuterVBox/TopMargin/MenuBar" to="." method="_redo"]
 [connection signal="save_sheet" from="OuterVBox/TopMargin/MenuBar" to="." method="_on_save_sheet"]
+[connection signal="undo_requested" from="OuterVBox/TopMargin/MenuBar" to="." method="_undo"]
 [connection signal="id_pressed" from="OuterVBox/TopMargin/MenuBar/File" to="OuterVBox/TopMargin/MenuBar" method="_on_file_id_pressed"]
 [connection signal="id_pressed" from="OuterVBox/TopMargin/MenuBar/Edit" to="OuterVBox/TopMargin/MenuBar" method="_on_edit_id_pressed"]
 [connection signal="pressed" from="OuterVBox/BottomMargin/ButtonContainer/AddEventButton" to="." method="_on_add_event_button_pressed"]
