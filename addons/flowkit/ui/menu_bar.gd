@@ -7,7 +7,6 @@ signal generate_providers
 signal generate_manifest
 signal undo_requested
 signal redo_requested
-
 func _on_file_id_pressed(id: int) -> void:
 	match id:
 		0: # New Event Sheet

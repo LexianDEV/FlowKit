@@ -5,6 +5,7 @@ signal selected(item)
 signal edit_requested(item)
 signal delete_requested(item)
 signal negate_requested(item)
+signal reorder_requested(source_item, target_item, drop_above: bool)
 
 var condition_data: FKEventCondition
 var registry: Node
@@ -17,9 +18,15 @@ var context_menu: PopupMenu
 var normal_stylebox: StyleBox
 var selected_stylebox: StyleBox
 
+# Drop indicator
+var drop_indicator: ColorRect
+var is_drop_target: bool = false
+var drop_above: bool = true
+
 func _ready() -> void:
 	_setup_references()
 	_setup_styles()
+	_setup_drop_indicator()
 	gui_input.connect(_on_gui_input)
 	call_deferred("_setup_context_menu")
 
@@ -129,6 +136,31 @@ func set_selected(value: bool) -> void:
 		else:
 			panel.add_theme_stylebox_override("panel", normal_stylebox)
 
+func _setup_drop_indicator() -> void:
+	drop_indicator = ColorRect.new()
+	drop_indicator.color = Color(1.0, 0.8, 0.4, 0.8)
+	drop_indicator.custom_minimum_size = Vector2(0, 2)
+	drop_indicator.visible = false
+	drop_indicator.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(drop_indicator)
+
+func _show_drop_indicator(above: bool) -> void:
+	if not drop_indicator:
+		return
+	drop_above = above
+	is_drop_target = true
+	drop_indicator.visible = true
+	drop_indicator.size = Vector2(size.x, 2)
+	if above:
+		drop_indicator.position = Vector2(0, 0)
+	else:
+		drop_indicator.position = Vector2(0, size.y - 2)
+
+func _hide_drop_indicator() -> void:
+	if drop_indicator:
+		drop_indicator.visible = false
+	is_drop_target = false
+
 func _get_drag_data(at_position: Vector2):
 	if not condition_data:
 		return null
@@ -151,3 +183,75 @@ func _get_drag_data(at_position: Vector2):
 		"node": self,
 		"data": condition_data
 	}
+
+func _can_drop_data(at_position: Vector2, data) -> bool:
+	if not data is Dictionary:
+		_hide_drop_indicator()
+		return false
+	
+	var drag_type = data.get("type", "")
+	if drag_type != "condition_item":
+		_hide_drop_indicator()
+		return false
+	
+	var source_node = data.get("node")
+	if source_node == self:
+		_hide_drop_indicator()
+		return false
+	
+	# Check if source is adjacent and prevent indicator on the shared edge
+	var above = at_position.y < size.y / 2.0
+	if _is_adjacent_to_source(source_node, above):
+		_hide_drop_indicator()
+		return false
+	
+	_show_drop_indicator(above)
+	return true
+
+func _is_adjacent_to_source(source_node: Node, drop_above: bool) -> bool:
+	"""Check if dropping would result in no actual movement (adjacent items)."""
+	var parent = get_parent()
+	if not parent:
+		return false
+	
+	var my_index = get_index()
+	var source_index = -1
+	
+	for i in parent.get_child_count():
+		if parent.get_child(i) == source_node:
+			source_index = i
+			break
+	
+	if source_index < 0:
+		return false
+	
+	# If dropping above and source is directly above us, no movement needed
+	if drop_above and source_index == my_index - 1:
+		return true
+	
+	# If dropping below and source is directly below us, no movement needed
+	if not drop_above and source_index == my_index + 1:
+		return true
+	
+	return false
+
+func _drop_data(at_position: Vector2, data) -> void:
+	_hide_drop_indicator()
+	
+	if not data is Dictionary:
+		return
+	
+	var drag_type = data.get("type", "")
+	if drag_type != "condition_item":
+		return
+	
+	var source_node = data.get("node")
+	if not source_node or source_node == self:
+		return
+	
+	var above = at_position.y < size.y / 2.0
+	reorder_requested.emit(source_node, self, above)
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_DRAG_END:
+		_hide_drop_indicator()

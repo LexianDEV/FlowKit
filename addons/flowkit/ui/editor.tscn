@@ -60,11 +60,15 @@ theme_override_constants/margin_top = 12
 theme_override_constants/margin_right = 12
 theme_override_constants/margin_bottom = 0
 
-[node name="MenuBar" type="MenuBar" parent="OuterVBox/TopMargin"]
+[node name="TopBar" type="HBoxContainer" parent="OuterVBox/TopMargin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="MenuBar" type="MenuBar" parent="OuterVBox/TopMargin/TopBar"]
 layout_mode = 2
 script = ExtResource("2_tc3av")
 
-[node name="File" type="PopupMenu" parent="OuterVBox/TopMargin/MenuBar"]
+[node name="File" type="PopupMenu" parent="OuterVBox/TopMargin/TopBar/MenuBar"]
 oversampling_override = 1.0
 size = Vector2i(150, 120)
 item_count = 2
@@ -73,7 +77,7 @@ item_0/id = 0
 item_1/text = "Save Event Sheet"
 item_1/id = 1
 
-[node name="Edit" type="PopupMenu" parent="OuterVBox/TopMargin/MenuBar"]
+[node name="Edit" type="PopupMenu" parent="OuterVBox/TopMargin/TopBar/MenuBar"]
 oversampling_override = 1.0
 size = Vector2i(150, 180)
 item_count = 5
@@ -88,6 +92,22 @@ item_3/text = "Generate Events/Conditions/Actions (MAY BE UNSTABLE)"
 item_3/id = 2
 item_4/text = "Generate Provider Manifest (for Export)"
 item_4/id = 3
+
+[node name="AddCommentButton" type="Button" parent="OuterVBox/TopMargin/TopBar"]
+layout_mode = 2
+tooltip_text = "Add Comment"
+theme_override_colors/font_color = Color(0.85, 0.75, 0.2, 1)
+theme_override_font_sizes/font_size = 16
+flat = true
+text = "📝"
+
+[node name="AddGroupButton" type="Button" parent="OuterVBox/TopMargin/TopBar"]
+layout_mode = 2
+tooltip_text = "Add Group"
+theme_override_colors/font_color = Color(0.4, 0.7, 1.0, 1)
+theme_override_font_sizes/font_size = 16
+flat = true
+text = "📁"
 
 [node name="ScrollContainer" type="ScrollContainer" parent="OuterVBox"]
 layout_mode = 2
@@ -150,14 +170,16 @@ text = "➕ Add Event"
 
 [node name="ExpressionModal" parent="." instance=ExtResource("11_expression_editor")]
 
-[connection signal="generate_manifest" from="OuterVBox/TopMargin/MenuBar" to="." method="_on_generate_manifest"]
-[connection signal="generate_providers" from="OuterVBox/TopMargin/MenuBar" to="." method="_on_generate_providers"]
-[connection signal="new_sheet" from="OuterVBox/TopMargin/MenuBar" to="." method="_on_new_sheet"]
-[connection signal="redo_requested" from="OuterVBox/TopMargin/MenuBar" to="." method="_redo"]
-[connection signal="save_sheet" from="OuterVBox/TopMargin/MenuBar" to="." method="_on_save_sheet"]
-[connection signal="undo_requested" from="OuterVBox/TopMargin/MenuBar" to="." method="_undo"]
-[connection signal="id_pressed" from="OuterVBox/TopMargin/MenuBar/File" to="OuterVBox/TopMargin/MenuBar" method="_on_file_id_pressed"]
-[connection signal="id_pressed" from="OuterVBox/TopMargin/MenuBar/Edit" to="OuterVBox/TopMargin/MenuBar" method="_on_edit_id_pressed"]
+[connection signal="generate_manifest" from="OuterVBox/TopMargin/TopBar/MenuBar" to="." method="_on_generate_manifest"]
+[connection signal="generate_providers" from="OuterVBox/TopMargin/TopBar/MenuBar" to="." method="_on_generate_providers"]
+[connection signal="new_sheet" from="OuterVBox/TopMargin/TopBar/MenuBar" to="." method="_on_new_sheet"]
+[connection signal="redo_requested" from="OuterVBox/TopMargin/TopBar/MenuBar" to="." method="_redo"]
+[connection signal="save_sheet" from="OuterVBox/TopMargin/TopBar/MenuBar" to="." method="_on_save_sheet"]
+[connection signal="undo_requested" from="OuterVBox/TopMargin/TopBar/MenuBar" to="." method="_undo"]
+[connection signal="id_pressed" from="OuterVBox/TopMargin/TopBar/MenuBar/File" to="OuterVBox/TopMargin/TopBar/MenuBar" method="_on_file_id_pressed"]
+[connection signal="id_pressed" from="OuterVBox/TopMargin/TopBar/MenuBar/Edit" to="OuterVBox/TopMargin/TopBar/MenuBar" method="_on_edit_id_pressed"]
+[connection signal="pressed" from="OuterVBox/TopMargin/TopBar/AddCommentButton" to="." method="_on_add_comment_button_pressed"]
+[connection signal="pressed" from="OuterVBox/TopMargin/TopBar/AddGroupButton" to="." method="_on_add_group_button_pressed"]
 [connection signal="pressed" from="OuterVBox/BottomMargin/ButtonContainer/AddEventButton" to="." method="_on_add_event_button_pressed"]
 [connection signal="node_selected" from="SelectNodeModal" to="." method="_on_node_selected"]
 [connection signal="event_selected" from="SelectEventModal" to="." method="_on_event_selected"]

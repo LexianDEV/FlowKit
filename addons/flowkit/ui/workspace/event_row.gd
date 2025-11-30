@@ -239,6 +239,8 @@ func _connect_condition_item_signals(item) -> void:
 		item.delete_requested.connect(_on_condition_item_delete)
 	if item.has_signal("negate_requested"):
 		item.negate_requested.connect(_on_condition_item_negate)
+	if item.has_signal("reorder_requested"):
+		item.reorder_requested.connect(_on_condition_reorder)
 
 func _connect_action_item_signals(item) -> void:
 	if item.has_signal("selected"):
@@ -247,6 +249,8 @@ func _connect_action_item_signals(item) -> void:
 		item.edit_requested.connect(_on_action_item_edit)
 	if item.has_signal("delete_requested"):
 		item.delete_requested.connect(_on_action_item_delete)
+	if item.has_signal("reorder_requested"):
+		item.reorder_requested.connect(_on_action_reorder)
 
 func _on_condition_item_edit(item) -> void:
 	condition_edit_requested.emit(item)
@@ -281,6 +285,110 @@ func _on_action_item_delete(item) -> void:
 			event_data.actions.remove_at(idx)
 			_update_actions()
 			data_changed.emit()
+
+func _on_condition_reorder(source_item, target_item, drop_above: bool) -> void:
+	"""Handle reordering conditions within the same event block."""
+	if not event_data:
+		return
+	
+	var source_data = source_item.get_condition_data()
+	var target_data = target_item.get_condition_data()
+	
+	if not source_data or not target_data:
+		return
+	
+	var source_idx = event_data.conditions.find(source_data)
+	var target_idx = event_data.conditions.find(target_data)
+	
+	# Source not in this event block - it's a cross-block drag, let the existing system handle it
+	if source_idx < 0:
+		return
+	
+	if target_idx < 0:
+		return
+	
+	# Same position, no change needed
+	if source_idx == target_idx:
+		return
+	
+	# Calculate final position
+	var final_idx: int
+	if drop_above:
+		final_idx = target_idx if source_idx > target_idx else target_idx - 1
+	else:
+		final_idx = target_idx + 1 if source_idx > target_idx else target_idx
+	
+	# No actual movement needed
+	if source_idx == final_idx:
+		return
+	
+	before_data_changed.emit()
+	
+	# Remove from source position
+	event_data.conditions.remove_at(source_idx)
+	
+	# Recalculate target index after removal
+	if source_idx < target_idx:
+		target_idx -= 1
+	
+	# Insert at new position
+	var insert_idx = target_idx if drop_above else target_idx + 1
+	event_data.conditions.insert(insert_idx, source_data)
+	
+	_update_conditions()
+	data_changed.emit()
+
+func _on_action_reorder(source_item, target_item, drop_above: bool) -> void:
+	"""Handle reordering actions within the same event block."""
+	if not event_data:
+		return
+	
+	var source_data = source_item.get_action_data()
+	var target_data = target_item.get_action_data()
+	
+	if not source_data or not target_data:
+		return
+	
+	var source_idx = event_data.actions.find(source_data)
+	var target_idx = event_data.actions.find(target_data)
+	
+	# Source not in this event block - it's a cross-block drag, let the existing system handle it
+	if source_idx < 0:
+		return
+	
+	if target_idx < 0:
+		return
+	
+	# Same position, no change needed
+	if source_idx == target_idx:
+		return
+	
+	# Calculate final position
+	var final_idx: int
+	if drop_above:
+		final_idx = target_idx if source_idx > target_idx else target_idx - 1
+	else:
+		final_idx = target_idx + 1 if source_idx > target_idx else target_idx
+	
+	# No actual movement needed
+	if source_idx == final_idx:
+		return
+	
+	before_data_changed.emit()
+	
+	# Remove from source position
+	event_data.actions.remove_at(source_idx)
+	
+	# Recalculate target index after removal
+	if source_idx < target_idx:
+		target_idx -= 1
+	
+	# Insert at new position
+	var insert_idx = target_idx if drop_above else target_idx + 1
+	event_data.actions.insert(insert_idx, source_data)
+	
+	_update_actions()
+	data_changed.emit()
 
 func add_condition(condition_data: FKEventCondition) -> void:
 	if event_data:
@@ -327,6 +435,16 @@ func _can_drop_data(at_position: Vector2, data) -> bool:
 		return false
 	
 	var drag_type = data.get("type", "")
+	
+	# For event_row, comment, or group drags, let the parent (blocks_container or group) handle it
+	if drag_type in ["event_row", "comment", "group"]:
+		# Forward to parent
+		var parent = get_parent()
+		if parent and parent.has_method("_can_drop_data"):
+			var parent_pos = at_position + position
+			return parent._can_drop_data(parent_pos, data)
+		return false
+	
 	if drag_type != "condition_item" and drag_type != "action_item":
 		return false
 	
@@ -346,6 +464,15 @@ func _drop_data(at_position: Vector2, data) -> void:
 		return
 	
 	var drag_type = data.get("type", "")
+	
+	# For event_row, comment, or group drags, let the parent handle it
+	if drag_type in ["event_row", "comment", "group"]:
+		var parent = get_parent()
+		if parent and parent.has_method("_drop_data"):
+			var parent_pos = at_position + position
+			parent._drop_data(parent_pos, data)
+		return
+	
 	var source_node = data.get("node")
 	
 	if not source_node or not is_instance_valid(source_node):

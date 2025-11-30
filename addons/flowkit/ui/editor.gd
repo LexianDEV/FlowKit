@@ -8,12 +8,14 @@ var current_scene_name: String = ""
 
 # Scene preloads - GDevelop-style event rows
 const EVENT_ROW_SCENE = preload("res://addons/flowkit/ui/workspace/event_row.tscn")
+const COMMENT_SCENE = preload("res://addons/flowkit/ui/workspace/comment.tscn")
+const GROUP_SCENE = preload("res://addons/flowkit/ui/workspace/group.tscn")
 
 # UI References
 @onready var blocks_container := $OuterVBox/ScrollContainer/MarginContainer/BlocksContainer
 @onready var empty_label := $OuterVBox/ScrollContainer/MarginContainer/BlocksContainer/EmptyLabel
 @onready var add_event_btn := $OuterVBox/BottomMargin/ButtonContainer/AddEventButton
-@onready var menu_bar := $OuterVBox/TopMargin/MenuBar
+@onready var menu_bar := $"OuterVBox/TopMargin/TopBar/MenuBar"
 
 # Modals
 @onready var select_node_modal := $SelectNodeModal
@@ -194,16 +196,32 @@ func _has_focus_in_subtree() -> bool:
 func _capture_sheet_state() -> Array:
 	"""Capture current sheet state as serialized data."""
 	var state: Array = []
-	for row in _get_blocks():
-		if row.has_method("get_event_data"):
-			var data = row.get_event_data()
+	for block in _get_blocks():
+		if block.has_method("get_event_data"):
+			var data = block.get_event_data()
 			if data:
 				state.append(_serialize_event_block(data))
+		elif block.has_method("get_comment_data"):
+			var data = block.get_comment_data()
+			if data:
+				state.append(_serialize_comment_block(data))
+		elif block.has_method("get_group_data"):
+			var data = block.get_group_data()
+			if data:
+				state.append(_serialize_group_block(data))
 	return state
+
+func _serialize_comment_block(data: FKCommentBlock) -> Dictionary:
+	"""Serialize a comment block to a dictionary."""
+	return {
+		"type": "comment",
+		"text": data.text
+	}
 
 func _serialize_event_block(data: FKEventBlock) -> Dictionary:
 	"""Serialize an event block to a dictionary."""
 	var result = {
+		"type": "event",
 		"event_id": data.event_id,
 		"target_node": str(data.target_node),
 		"inputs": data.inputs.duplicate(),
@@ -225,6 +243,29 @@ func _serialize_event_block(data: FKEventBlock) -> Dictionary:
 			"target_node": str(act.target_node),
 			"inputs": act.inputs.duplicate()
 		})
+	
+	return result
+
+func _serialize_group_block(data: FKGroupBlock) -> Dictionary:
+	"""Serialize a group block to a dictionary."""
+	var result = {
+		"type": "group",
+		"title": data.title,
+		"collapsed": data.collapsed,
+		"color": data.color,
+		"children": []
+	}
+	
+	for child_dict in data.children:
+		var child_type = child_dict.get("type", "")
+		var child_data = child_dict.get("data")
+		
+		if child_type == "event" and child_data is FKEventBlock:
+			result["children"].append(_serialize_event_block(child_data))
+		elif child_type == "comment" and child_data is FKCommentBlock:
+			result["children"].append(_serialize_comment_block(child_data))
+		elif child_type == "group" and child_data is FKGroupBlock:
+			result["children"].append(_serialize_group_block(child_data))
 	
 	return result
 
@@ -285,16 +326,32 @@ func _restore_sheet_state(state: Array) -> void:
 	_clear_all_blocks()
 	
 	# Recreate blocks from state
-	for event_dict in state:
-		var data = _deserialize_event_block(event_dict)
-		var row = _create_event_row(data)
-		blocks_container.add_child(row)
+	for item_dict in state:
+		var item_type = item_dict.get("type", "event")
+		if item_type == "comment":
+			var data = _deserialize_comment_block(item_dict)
+			var comment = _create_comment_block(data)
+			blocks_container.add_child(comment)
+		elif item_type == "group":
+			var data = _deserialize_group_block(item_dict)
+			var group = _create_group_block(data)
+			blocks_container.add_child(group)
+		else:
+			var data = _deserialize_event_block(item_dict)
+			var row = _create_event_row(data)
+			blocks_container.add_child(row)
 	
 	# Update UI state
 	if _get_blocks().size() > 0:
 		_show_content_state()
 	else:
 		_show_empty_blocks_state()
+
+func _deserialize_comment_block(dict: Dictionary) -> FKCommentBlock:
+	"""Deserialize a dictionary to a comment block."""
+	var data = FKCommentBlock.new()
+	data.text = dict.get("text", "")
+	return data
 
 func _deserialize_event_block(dict: Dictionary) -> FKEventBlock:
 	"""Deserialize a dictionary to an event block."""
@@ -320,6 +377,28 @@ func _deserialize_event_block(dict: Dictionary) -> FKEventBlock:
 		act.target_node = NodePath(act_dict.get("target_node", ""))
 		act.inputs = act_dict.get("inputs", {}).duplicate()
 		data.actions.append(act)
+	
+	return data
+
+func _deserialize_group_block(dict: Dictionary) -> FKGroupBlock:
+	"""Deserialize a dictionary to a group block."""
+	var data = FKGroupBlock.new()
+	data.title = dict.get("title", "Group")
+	data.collapsed = dict.get("collapsed", false)
+	data.color = dict.get("color", Color(0.25, 0.22, 0.35, 1.0))
+	data.children = [] as Array[Dictionary]
+	
+	for child_dict in dict.get("children", []):
+		var child_type = child_dict.get("type", "event")
+		if child_type == "event":
+			var child_data = _deserialize_event_block(child_dict)
+			data.children.append({"type": "event", "data": child_data})
+		elif child_type == "comment":
+			var child_data = _deserialize_comment_block(child_dict)
+			data.children.append({"type": "comment", "data": child_data})
+		elif child_type == "group":
+			var child_data = _deserialize_group_block(child_dict)
+			data.children.append({"type": "group", "data": child_data})
 	
 	return data
 
@@ -570,14 +649,27 @@ func _load_scene_sheet() -> void:
 	_show_content_state()
 
 func _populate_from_sheet(sheet: FKEventSheet) -> void:
-	"""Create event rows from event sheet data (GDevelop-style)."""
-	# Note: standalone_conditions are deprecated in GDevelop-style layout
-	# but we still load them for backwards compatibility as event rows without events
-	
-	# Add events as event rows
-	for event_data in sheet.events:
-		var event_row = _create_event_row(event_data)
-		blocks_container.add_child(event_row)
+	"""Create event rows and comments from event sheet data (GDevelop-style)."""
+	# If we have item_order, use it to restore the correct order
+	if sheet.item_order.size() > 0:
+		for item in sheet.item_order:
+			var item_type = item.get("type", "")
+			var item_index = item.get("index", 0)
+			
+			if item_type == "event" and item_index < sheet.events.size():
+				var event_row = _create_event_row(sheet.events[item_index])
+				blocks_container.add_child(event_row)
+			elif item_type == "comment" and item_index < sheet.comments.size():
+				var comment = _create_comment_block(sheet.comments[item_index])
+				blocks_container.add_child(comment)
+			elif item_type == "group" and item_index < sheet.groups.size():
+				var group = _create_group_block(sheet.groups[item_index])
+				blocks_container.add_child(group)
+	else:
+		# Fallback: load events only (backwards compatibility)
+		for event_data in sheet.events:
+			var event_row = _create_event_row(event_data)
+			blocks_container.add_child(event_row)
 
 func _save_sheet() -> void:
 	"""Generate and save event sheet from current blocks."""
@@ -599,46 +691,93 @@ func _save_sheet() -> void:
 		push_error("Failed to save event sheet: ", error)
 
 func _generate_sheet_from_blocks() -> FKEventSheet:
-	"""Build event sheet from event rows (GDevelop-style)."""
+	"""Build event sheet from event rows, comments, and groups (GDevelop-style)."""
 	var sheet = FKEventSheet.new()
 	var events: Array[FKEventBlock] = []
+	var comments: Array[FKCommentBlock] = []
+	var groups: Array[FKGroupBlock] = []
+	var item_order: Array[Dictionary] = []
 	var standalone_conditions: Array[FKEventCondition] = []
 	
-	for row in _get_blocks():
-		if row.has_method("get_event_data"):
-			var data = row.get_event_data()
+	for block in _get_blocks():
+		if block.has_method("get_event_data"):
+			var data = block.get_event_data()
 			if data:
-				# Create a clean copy of the event with its conditions and actions
-				var event_copy = FKEventBlock.new()
-				event_copy.event_id = data.event_id
-				event_copy.target_node = data.target_node
-				event_copy.inputs = data.inputs.duplicate()
-				event_copy.conditions = [] as Array[FKEventCondition]
-				event_copy.actions = [] as Array[FKEventAction]
-				
-				# Copy conditions
-				for cond in data.conditions:
-					var cond_copy = FKEventCondition.new()
-					cond_copy.condition_id = cond.condition_id
-					cond_copy.target_node = cond.target_node
-					cond_copy.inputs = cond.inputs.duplicate()
-					cond_copy.negated = cond.negated
-					cond_copy.actions = [] as Array[FKEventAction]
-					event_copy.conditions.append(cond_copy)
-				
-				# Copy actions
-				for act in data.actions:
-					var act_copy = FKEventAction.new()
-					act_copy.action_id = act.action_id
-					act_copy.target_node = act.target_node
-					act_copy.inputs = act.inputs.duplicate()
-					event_copy.actions.append(act_copy)
-				
+				var event_copy = _copy_event_block(data)
+				item_order.append({"type": "event", "index": events.size()})
 				events.append(event_copy)
+		
+		elif block.has_method("get_comment_data"):
+			var data = block.get_comment_data()
+			if data:
+				var comment_copy = FKCommentBlock.new()
+				comment_copy.text = data.text
+				item_order.append({"type": "comment", "index": comments.size()})
+				comments.append(comment_copy)
+		
+		elif block.has_method("get_group_data"):
+			var data = block.get_group_data()
+			if data:
+				var group_copy = _copy_group_block(data)
+				item_order.append({"type": "group", "index": groups.size()})
+				groups.append(group_copy)
 	
 	sheet.events = events
+	sheet.comments = comments
+	sheet.groups = groups
+	sheet.item_order = item_order
 	sheet.standalone_conditions = standalone_conditions
 	return sheet
+
+func _copy_event_block(data: FKEventBlock) -> FKEventBlock:
+	"""Create a clean copy of an event block."""
+	var event_copy = FKEventBlock.new()
+	event_copy.event_id = data.event_id
+	event_copy.target_node = data.target_node
+	event_copy.inputs = data.inputs.duplicate()
+	event_copy.conditions = [] as Array[FKEventCondition]
+	event_copy.actions = [] as Array[FKEventAction]
+	
+	for cond in data.conditions:
+		var cond_copy = FKEventCondition.new()
+		cond_copy.condition_id = cond.condition_id
+		cond_copy.target_node = cond.target_node
+		cond_copy.inputs = cond.inputs.duplicate()
+		cond_copy.negated = cond.negated
+		cond_copy.actions = [] as Array[FKEventAction]
+		event_copy.conditions.append(cond_copy)
+	
+	for act in data.actions:
+		var act_copy = FKEventAction.new()
+		act_copy.action_id = act.action_id
+		act_copy.target_node = act.target_node
+		act_copy.inputs = act.inputs.duplicate()
+		event_copy.actions.append(act_copy)
+	
+	return event_copy
+
+func _copy_group_block(data: FKGroupBlock) -> FKGroupBlock:
+	"""Create a clean copy of a group block with all children."""
+	var group_copy = FKGroupBlock.new()
+	group_copy.title = data.title
+	group_copy.collapsed = data.collapsed
+	group_copy.color = data.color
+	group_copy.children = [] as Array[Dictionary]
+	
+	for child_dict in data.children:
+		var child_type = child_dict.get("type", "")
+		var child_data = child_dict.get("data")
+		
+		if child_type == "event" and child_data is FKEventBlock:
+			group_copy.children.append({"type": "event", "data": _copy_event_block(child_data)})
+		elif child_type == "comment" and child_data is FKCommentBlock:
+			var comment_copy = FKCommentBlock.new()
+			comment_copy.text = child_data.text
+			group_copy.children.append({"type": "comment", "data": comment_copy})
+		elif child_type == "group" and child_data is FKGroupBlock:
+			group_copy.children.append({"type": "group", "data": _copy_group_block(child_data)})
+	
+	return group_copy
 
 func _new_sheet() -> void:
 	"""Create new empty sheet."""
@@ -684,6 +823,95 @@ func _create_event_row(data: FKEventBlock) -> Control:
 	row.set_registry(registry)
 	_connect_event_row_signals(row)
 	return row
+
+func _create_comment_block(data: FKCommentBlock) -> Control:
+	"""Create comment block node from data."""
+	var comment = COMMENT_SCENE.instantiate()
+	
+	var copy = FKCommentBlock.new()
+	copy.text = data.text
+	
+	comment.set_comment_data(copy)
+	_connect_comment_signals(comment)
+	return comment
+
+func _connect_comment_signals(comment) -> void:
+	comment.selected.connect(_on_comment_selected)
+	comment.delete_requested.connect(_on_comment_delete.bind(comment))
+	comment.data_changed.connect(_save_sheet)
+
+func _create_group_block(data: FKGroupBlock) -> Control:
+	"""Create group block node from data."""
+	var group = GROUP_SCENE.instantiate()
+	
+	var copy = FKGroupBlock.new()
+	copy.title = data.title
+	copy.collapsed = data.collapsed
+	copy.color = data.color
+	copy.children = [] as Array[Dictionary]
+	
+	# Deep copy children
+	for child_dict in data.children:
+		var child_type = child_dict.get("type", "")
+		var child_data = child_dict.get("data")
+		
+		if child_type == "event" and child_data is FKEventBlock:
+			copy.children.append({"type": "event", "data": _copy_event_block(child_data)})
+		elif child_type == "comment" and child_data is FKCommentBlock:
+			var comment_copy = FKCommentBlock.new()
+			comment_copy.text = child_data.text
+			copy.children.append({"type": "comment", "data": comment_copy})
+		elif child_type == "group" and child_data is FKGroupBlock:
+			copy.children.append({"type": "group", "data": _copy_group_block(child_data)})
+	
+	group.set_group_data(copy)
+	group.set_registry(registry)
+	_connect_group_signals(group)
+	return group
+
+func _connect_group_signals(group) -> void:
+	group.selected.connect(_on_group_selected)
+	group.delete_requested.connect(_on_group_delete.bind(group))
+	group.data_changed.connect(_save_sheet)
+	group.before_data_changed.connect(_push_undo_state)
+
+func _on_group_selected(group_node) -> void:
+	"""Handle group block selection."""
+	_deselect_item()
+	
+	if selected_row and is_instance_valid(selected_row) and selected_row.has_method("set_selected"):
+		selected_row.set_selected(false)
+	
+	selected_row = group_node
+	if selected_row and selected_row.has_method("set_selected"):
+		selected_row.set_selected(true)
+
+func _on_group_delete(group) -> void:
+	"""Delete a group block."""
+	_push_undo_state()
+	
+	if selected_row == group:
+		selected_row = null
+	
+	blocks_container.remove_child(group)
+	group.queue_free()
+	_save_sheet()
+
+func _on_add_group_button_pressed() -> void:
+	"""Add a new group block."""
+	_push_undo_state()
+	
+	var data = FKGroupBlock.new()
+	data.title = "New Group"
+	data.collapsed = false
+	data.color = Color(0.25, 0.22, 0.35, 1.0)
+	data.children = [] as Array[Dictionary]
+	
+	var group = _create_group_block(data)
+	blocks_container.add_child(group)
+	
+	_show_content_state()
+	_save_sheet()
 
 # === Signal Connections ===
 
@@ -800,6 +1028,19 @@ func _on_add_event_button_pressed() -> void:
 		return
 	_start_add_workflow("event")
 
+func _on_add_comment_button_pressed() -> void:
+	"""Add a new comment block."""
+	_push_undo_state()
+	
+	var data = FKCommentBlock.new()
+	data.text = ""
+	
+	var comment = _create_comment_block(data)
+	blocks_container.add_child(comment)
+	
+	_show_content_state()
+	_save_sheet()
+
 func _on_row_selected(row) -> void:
 	"""Handle row selection with visual feedback."""
 	# Deselect previous item (condition/action)
@@ -813,6 +1054,28 @@ func _on_row_selected(row) -> void:
 	selected_row = row
 	if selected_row and selected_row.has_method("set_selected"):
 		selected_row.set_selected(true)
+
+func _on_comment_selected(comment_node) -> void:
+	"""Handle comment block selection."""
+	_deselect_item()
+	
+	if selected_row and is_instance_valid(selected_row) and selected_row.has_method("set_selected"):
+		selected_row.set_selected(false)
+	
+	selected_row = comment_node
+	if selected_row and selected_row.has_method("set_selected"):
+		selected_row.set_selected(true)
+
+func _on_comment_delete(comment) -> void:
+	"""Delete a comment block."""
+	_push_undo_state()
+	
+	if selected_row == comment:
+		selected_row = null
+	
+	blocks_container.remove_child(comment)
+	comment.queue_free()
+	_save_sheet()
 
 func _on_condition_selected_in_row(condition_node) -> void:
 	"""Handle condition item selection."""
