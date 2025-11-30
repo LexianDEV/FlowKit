@@ -2,7 +2,7 @@ extends Node
 class_name FlowKitEngine
 
 var registry: FKRegistry
-var active_sheets: Array = []
+var active_sheets: Array = []  # Each entry: {"sheet": FKEventSheet, "root": Node, "scene_name": String, "uid": int}
 var last_scene: Node = null
 var active_behavior_nodes: Array = []  # Track nodes with active behaviors
 
@@ -19,16 +19,16 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	# Regularly check if the current_scene changed (robust against timing issues).
 	_check_for_scene_change()
-	for sheet in active_sheets:
-		_run_sheet(sheet)
+	for entry in active_sheets:
+		_run_sheet(entry)
 	
 	# Process behaviors (process callback)
 	_process_behaviors(delta, false)
 
 func _physics_process(delta: float) -> void:
 	# Run sheets in physics process for physics-based events
-	for sheet in active_sheets:
-		_run_sheet(sheet)
+	for entry in active_sheets:
+		_run_sheet(entry)
 	
 	# Process behaviors (physics_process callback)
 	_process_behaviors(delta, true)
@@ -50,7 +50,7 @@ func _check_for_scene_change() -> void:
 func _on_scene_changed(scene_root: Node) -> void:
 	last_scene = scene_root
 	active_behavior_nodes.clear()  # Clear behavior tracking on scene change
-	
+    
 	if scene_root == null:
 		# Scene unloaded: clear active sheets (optional)
 		active_sheets.clear()
@@ -58,43 +58,82 @@ func _on_scene_changed(scene_root: Node) -> void:
 		return
 
 	var scene_path: String = scene_root.scene_file_path
+	var scene_uid = ResourceLoader.get_resource_uid(scene_path)
 	var scene_name: String = scene_path.get_file().get_basename()
-	print("[FlowKit] Scene detected:", scene_name, " (", scene_root.name, ")")
-	
+	print("[FlowKit] Scene detected:", scene_name, " (", scene_root.name, ") UID:", scene_uid)
+
 	# Sync node variables from metadata to FlowKitSystem
 	var system: Node = get_tree().root.get_node_or_null("/root/FlowKitSystem")
 	if system and system.has_method("sync_scene_node_variables"):
 		system.sync_scene_node_variables(scene_root)
-	
+
 	# Scan and activate behaviors for all nodes in the scene
 	_scan_and_activate_behaviors(scene_root)
-	
-	_load_sheet_for_scene(scene_name)
+
+	# Load event sheets for the scene root and any instanced child scenes
+	_load_sheets_for_scene(scene_root)
 
 
-func _load_sheet_for_scene(scene_name: String) -> void:
-	# Clear previous sheet(s)
+
+func _load_sheets_for_scene(scene_root: Node) -> void:
+	# Clear previous sheets
 	active_sheets.clear()
 
-	var sheet_path: String = "res://addons/flowkit/saved/event_sheet/%s.tres" % scene_name
+	# Collect unique scene_file_path UIDs and map to their root node instances
+	var uid_to_node: Dictionary = {}
 
-	# Debug: show whether the file exists
-	if ResourceLoader.exists(sheet_path):
-		var sheet: FKEventSheet = load(sheet_path)
-		if sheet:
-			active_sheets.append(sheet)
-			print("[FlowKit] Loaded event sheet for scene: ", scene_name, " with ", sheet.events.size(), " events")
+	# Start from the scene root
+	_collect_node_paths(scene_root, uid_to_node)
+
+	# Load sheets for each discovered scene UID
+	for uid in uid_to_node.keys():
+		var node_root: Node = uid_to_node[uid]
+		var scene_path: String = node_root.scene_file_path
+		var scene_name: String = scene_path.get_file().get_basename()
+		var sheet_path: String = "res://addons/flowkit/saved/event_sheet/%d.tres" % uid
+
+		if ResourceLoader.exists(sheet_path):
+			var sheet: FKEventSheet = load(sheet_path)
+			if sheet:
+				active_sheets.append({"sheet": sheet, "root": node_root, "scene_name": scene_name, "uid": uid})
+				print("[FlowKit] Loaded event sheet for scene: ", scene_name, " (node: ", node_root.name, ") with ", sheet.events.size(), " events")
+			else:
+				print("[FlowKit] Failed to load sheet resource at: ", sheet_path)
 		else:
-			print("[FlowKit] Failed to load sheet resource at: ", sheet_path)
-	else:
-		print("[FlowKit] No sheet found for scene: ", scene_name, " (expected at ", sheet_path, ")")
+			print("[FlowKit] No sheet found for scene: ", scene_name, " (expected at ", sheet_path, ")")
 
 
-# --- Event loop ------------------------------------------------------------
-func _run_sheet(sheet: FKEventSheet) -> void:
-	# Defensive: ensure we have a current scene
-	var current_scene: Node = get_tree().current_scene
-	if not current_scene:
+# Helper method moved outside
+func _collect_node_paths(node: Node, uid_to_node: Dictionary) -> void:
+	var path: String = node.scene_file_path
+	if path and path != "":
+		# Only consider nodes that are the topmost root of their instanced scene
+		var parent = node.get_parent()
+		var parent_path: String = ""
+		if parent:
+			parent_path = parent.scene_file_path
+
+		if parent_path != path:
+			var uid = ResourceLoader.get_resource_uid(path)
+			if uid >= 0 and not uid_to_node.has(uid):
+				uid_to_node[uid] = node
+
+	for child in node.get_children():
+		_collect_node_paths(child, uid_to_node)
+
+
+func _run_sheet(entry: Dictionary) -> void:
+	# Entry is a dictionary with keys: "sheet" and "root"
+	var sheet: FKEventSheet = entry.get("sheet", null)
+	var root_node: Node = entry.get("root", null)
+
+	if not sheet:
+		return
+
+	# Root node for resolving node paths in this sheet
+	var current_root: Node = root_node
+	if not current_root or not is_instance_valid(current_root):
+		# If the root is invalid, skip this sheet
 		return
 
 	# Process standalone conditions (run every frame)
@@ -103,7 +142,7 @@ func _run_sheet(sheet: FKEventSheet) -> void:
 		if str(standalone_cond.target_node) == "System":
 			cnode = get_node("/root/FlowKitSystem")
 		else:
-			cnode = current_scene.get_node_or_null(standalone_cond.target_node)
+			cnode = current_root.get_node_or_null(standalone_cond.target_node)
 			if not cnode:
 				continue
 
@@ -115,28 +154,47 @@ func _run_sheet(sheet: FKEventSheet) -> void:
 				if str(act.target_node) == "System":
 					anode = get_node("/root/FlowKitSystem")
 				else:
-					anode = current_scene.get_node_or_null(act.target_node)
+					anode = current_root.get_node_or_null(act.target_node)
 					if not anode:
 						print("[FlowKit] Standalone condition action target node not found: ", act.target_node)
 						continue
-				
 				registry.execute_action(act.action_id, anode, act.inputs)
 
+	# Group events by event_id to poll each event only once per _run_sheet call
+	var event_groups: Dictionary = {}
+	var event_nodes: Dictionary = {}
 	for block in sheet.events:
-		# Resolve target node (relative to the current scene)
-		# Handle "System" as the FlowKitSystem singleton
-		var node: Node = null
-		if str(block.target_node) == "System":
-			node = get_node("/root/FlowKitSystem")
-		else:
-			node = current_scene.get_node_or_null(block.target_node)
-			if not node:
-				# Optionally debug: print missing node paths if you want
-				# print("[FlowKit] Missing target node for block:", block.target_node)
-				continue
+		var event_id = block.event_id
+		if not event_groups.has(event_id):
+			event_groups[event_id] = []
 
-		# Event trigger
-		var event_triggered: bool = registry.poll_event(block.event_id, node, block.inputs)
+		event_groups[event_id].append(block)
+
+		# Resolve target node for polling (use the first block's node for each event_id)
+		if not event_nodes.has(event_id):
+			var node: Node = null
+			if str(block.target_node) == "System":
+				node = get_node("/root/FlowKitSystem")
+			else:
+				node = current_root.get_node_or_null(block.target_node)
+				if not node:
+					print("[FlowKit] Event polling target node not found: ", block.target_node, " in scene root: ", current_root.name)
+			event_nodes[event_id] = node
+
+	# Poll each event once
+	var event_triggered_status: Dictionary = {}
+	for event_id in event_groups.keys():
+		var node = event_nodes[event_id]
+		if node:
+			var triggered = registry.poll_event(event_id, node, {})  # Use empty inputs for polling
+			event_triggered_status[event_id] = triggered
+		else:
+			print("[FlowKit] Event '", event_id, "' has no node in scene '", entry.get("scene_name", "") , "'")
+			event_triggered_status[event_id] = false
+
+	# Process each block
+	for block in sheet.events:
+		var event_triggered = event_triggered_status.get(block.event_id, false)
 		if not event_triggered:
 			continue
 
@@ -147,7 +205,7 @@ func _run_sheet(sheet: FKEventSheet) -> void:
 			if str(cond.target_node) == "System":
 				cnode = get_node("/root/FlowKitSystem")
 			else:
-				cnode = current_scene.get_node_or_null(cond.target_node)
+				cnode = current_root.get_node_or_null(cond.target_node)
 				if not cnode:
 					passed = false
 					break
@@ -166,11 +224,10 @@ func _run_sheet(sheet: FKEventSheet) -> void:
 			if str(act.target_node) == "System":
 				anode = get_node("/root/FlowKitSystem")
 			else:
-				anode = current_scene.get_node_or_null(act.target_node)
+				anode = current_root.get_node_or_null(act.target_node)
 				if not anode:
 					print("[FlowKit] Action target node not found: ", act.target_node)
 					continue
-			
 			registry.execute_action(act.action_id, anode, act.inputs)
 
 

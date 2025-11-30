@@ -1,6 +1,0 @@
-[gd_scene format=3 uid="uid://xclo6g0rtoo5"]
-
-[node name="Node2D" type="Node2D"]
-metadata/flowkit_variables = {
-"variable2": "test"
-}
