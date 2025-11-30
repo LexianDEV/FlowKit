@@ -5,6 +5,9 @@ class_name FKGenerator
 const ACTIONS_DIR = "res://addons/flowkit/actions/"
 const CONDITIONS_DIR = "res://addons/flowkit/conditions/"
 const EVENTS_DIR = "res://addons/flowkit/events/"
+const BEHAVIORS_DIR = "res://addons/flowkit/behaviors/"
+const MANIFEST_PATH = "res://addons/flowkit/saved/provider_manifest.tres"
+const PROVIDER_MANIFEST_SCRIPT = "res://addons/flowkit/resources/provider_manifest.gd"
 
 var editor_interface: EditorInterface
 
@@ -488,3 +491,85 @@ func _write_file(path: String, content: String) -> void:
 		print("[FlowKit Generator] Created: ", path)
 	else:
 		push_error("[FlowKit Generator] Failed to write: " + path)
+
+# ============================================================================
+# MANIFEST GENERATION
+# ============================================================================
+
+## Generates the provider manifest resource for exported builds.
+## This scans all provider directories and creates a manifest with
+## preloaded script references that can be used at runtime.
+func generate_manifest() -> Dictionary:
+	var result = {
+		"actions": 0,
+		"conditions": 0,
+		"events": 0,
+		"behaviors": 0,
+		"errors": []
+	}
+	
+	# Ensure saved directory exists
+	_ensure_directory_exists("res://addons/flowkit/saved")
+	
+	# Create manifest resource
+	var manifest: Resource = load(PROVIDER_MANIFEST_SCRIPT).new()
+	
+	# Scan and collect all provider scripts
+	var action_scripts: Array[GDScript] = []
+	var condition_scripts: Array[GDScript] = []
+	var event_scripts: Array[GDScript] = []
+	var behavior_scripts: Array[GDScript] = []
+	
+	_collect_scripts_recursive(ACTIONS_DIR, action_scripts)
+	_collect_scripts_recursive(CONDITIONS_DIR, condition_scripts)
+	_collect_scripts_recursive(EVENTS_DIR, event_scripts)
+	_collect_scripts_recursive(BEHAVIORS_DIR, behavior_scripts)
+	
+	result.actions = action_scripts.size()
+	result.conditions = condition_scripts.size()
+	result.events = event_scripts.size()
+	result.behaviors = behavior_scripts.size()
+	
+	# Set the arrays on the manifest
+	manifest.set("action_scripts", action_scripts)
+	manifest.set("condition_scripts", condition_scripts)
+	manifest.set("event_scripts", event_scripts)
+	manifest.set("behavior_scripts", behavior_scripts)
+	
+	# Save the manifest
+	var error = ResourceSaver.save(manifest, MANIFEST_PATH)
+	if error != OK:
+		result.errors.append("Failed to save manifest: " + str(error))
+		push_error("[FlowKit Generator] Failed to save manifest: " + str(error))
+	else:
+		print("[FlowKit Generator] Manifest saved to: ", MANIFEST_PATH)
+		print("[FlowKit Generator] Total providers: %d actions, %d conditions, %d events, %d behaviors" % [
+			result.actions, result.conditions, result.events, result.behaviors
+		])
+	
+	return result
+
+## Recursively collect all GDScript files from a directory
+func _collect_scripts_recursive(path: String, scripts: Array[GDScript]) -> void:
+	var dir: DirAccess = DirAccess.open(path)
+	if not dir:
+		return
+	
+	dir.list_dir_begin()
+	var file_name: String = dir.get_next()
+	
+	while file_name != "":
+		var file_path: String = path + "/" + file_name
+		
+		if dir.current_is_dir():
+			# Recursively scan subdirectories
+			_collect_scripts_recursive(file_path, scripts)
+		elif file_name.ends_with(".gd") and not file_name.ends_with(".uid"):
+			# Load the script
+			var script: GDScript = load(file_path)
+			if script:
+				scripts.append(script)
+		
+		file_name = dir.get_next()
+	
+	dir.list_dir_end()

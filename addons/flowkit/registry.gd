@@ -4,28 +4,82 @@ class_name FKRegistry
 # Preload the expression evaluator
 const FKExpressionEvaluator = preload("res://addons/flowkit/runtime/expression_evaluator.gd")
 
+# Path to the provider manifest resource
+const MANIFEST_PATH = "res://addons/flowkit/saved/provider_manifest.tres"
+
 var action_providers: Array = []
 var condition_providers: Array = []
 var event_providers: Array = []
 var behavior_providers: Array = []
 
 func load_all() -> void:
-	_load_folder("actions", action_providers)
-	_load_folder("conditions", condition_providers)
-	_load_folder("events", event_providers)
-	_load_folder("behaviors", behavior_providers)
+	# Try to load from manifest first (required for exported builds)
+	if _load_from_manifest():
+		print("[FlowKit Registry] Loaded providers from manifest: %d actions, %d conditions, %d events, %d behaviors" % [
+			action_providers.size(),
+			condition_providers.size(),
+			event_providers.size(),
+			behavior_providers.size()
+		])
+		return
 	
-	print("[FlowKit Registry] Loaded %d actions, %d conditions, %d events, %d behaviors" % [
-		action_providers.size(),
-		condition_providers.size(),
-		event_providers.size(),
-		behavior_providers.size()
-	])
+	# Fallback to directory scanning (editor/development only)
+	# This will not work in exported builds where DirAccess cannot enumerate files
+	if OS.has_feature("editor"):
+		_load_folder("actions", action_providers)
+		_load_folder("conditions", condition_providers)
+		_load_folder("events", event_providers)
+		_load_folder("behaviors", behavior_providers)
+		
+		print("[FlowKit Registry] Loaded providers from directories: %d actions, %d conditions, %d events, %d behaviors" % [
+			action_providers.size(),
+			condition_providers.size(),
+			event_providers.size(),
+			behavior_providers.size()
+		])
+	else:
+		push_error("[FlowKit Registry] No provider manifest found and directory scanning is not available in exported builds. Generate the manifest in the editor.")
 
 func load_providers() -> void:
 	# Alias for load_all() for backward compatibility
 	load_all()
 
+## Load providers from the pre-generated manifest resource.
+## Returns true if successful, false if manifest not found or invalid.
+func _load_from_manifest() -> bool:
+	if not ResourceLoader.exists(MANIFEST_PATH):
+		return false
+	
+	var manifest: Resource = load(MANIFEST_PATH)
+	if not manifest:
+		return false
+	
+	# Instantiate providers from the manifest scripts
+	if manifest.get("action_scripts"):
+		for script: GDScript in manifest.action_scripts:
+			if script:
+				action_providers.append(script.new())
+	
+	if manifest.get("condition_scripts"):
+		for script: GDScript in manifest.condition_scripts:
+			if script:
+				condition_providers.append(script.new())
+	
+	if manifest.get("event_scripts"):
+		for script: GDScript in manifest.event_scripts:
+			if script:
+				event_providers.append(script.new())
+	
+	if manifest.get("behavior_scripts"):
+		for script: GDScript in manifest.behavior_scripts:
+			if script:
+				behavior_providers.append(script.new())
+	
+	var has_providers = action_providers.size() + condition_providers.size() + event_providers.size() + behavior_providers.size() > 0
+	return has_providers
+
+## Directory scanning for editor/development use only.
+## This will NOT work in exported builds.
 func _load_folder(subpath: String, array: Array) -> void:
 	var path: String = "res://addons/flowkit/" + subpath
 	_scan_directory_recursive(path, array)
