@@ -151,3 +151,66 @@ func _get_drag_data(at_position: Vector2):
 		"node": self,
 		"data": condition_data
 	}
+
+func _can_drop_data(at_position: Vector2, data) -> bool:
+	"""Allow dropping condition items within the same container for reordering."""
+	if not data is Dictionary:
+		return false
+	if data.get("type") != "condition_item":
+		return false
+	return true
+
+func _drop_data(at_position: Vector2, data) -> void:
+	"""Handle condition reordering within the container."""
+	if not data is Dictionary or data.get("type") != "condition_item":
+		return
+	
+	var source_item = data.get("node")
+	if not source_item or not is_instance_valid(source_item):
+		return
+	
+	# Get the parent condition container
+	var container = get_parent()
+	if not container or source_item.get_parent() != container:
+		return
+	
+	# Get indices
+	var source_idx = source_item.get_index()
+	var target_idx = get_index()
+	
+	# If dropping on itself, don't do anything
+	if source_idx == target_idx:
+		return
+	
+	# Move the source item in the container
+	container.remove_child(source_item)
+	container.add_child(source_item)
+	
+	# Adjust target index if source was above target
+	if source_idx < target_idx:
+		target_idx -= 1
+	
+	container.move_child(source_item, target_idx)
+	
+	# Update the underlying condition data in the parent event row
+	var parent_row = _find_parent_event_row()
+	if parent_row and parent_row.has_method("get_event_data"):
+		var event_data = parent_row.get_event_data()
+		if event_data and source_item.has_method("get_condition_data"):
+			var condition_data = source_item.get_condition_data()
+			if condition_data:
+				var data_idx = event_data.conditions.find(condition_data)
+				if data_idx >= 0:
+					event_data.conditions.remove_at(data_idx)
+					if source_idx < target_idx:
+						target_idx = target_idx + 1
+					event_data.conditions.insert(target_idx, condition_data)
+
+func _find_parent_event_row():
+	"""Find the event_row that contains this condition item."""
+	var current = get_parent()
+	while current:
+		if current.has_method("get_event_data"):
+			return current
+		current = current.get_parent()
+	return null

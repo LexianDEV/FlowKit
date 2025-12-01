@@ -37,6 +37,11 @@ var undo_stack: Array = []  # Stack of previous states
 var redo_stack: Array = []  # Stack of undone states
 const MAX_UNDO_STATES: int = 50  # Maximum number of undo states to keep
 
+# Clipboard for different item types
+var clipboard_type: String = ""  # "event", "action", "condition"
+var clipboard_actions: Array = []  # Stores copied action data
+var clipboard_conditions: Array = []  # Stores copied condition data
+
 func _ready() -> void:
 	# Initialize undo/redo stacks
 	if undo_stack == null:
@@ -157,7 +162,10 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 	# Handle Ctrl+C (copy)
 	elif event.keycode == KEY_C and event.ctrl_pressed:
-		if selected_row and is_instance_valid(selected_row):
+		if selected_item and is_instance_valid(selected_item):
+			_copy_selected_item()
+			get_viewport().set_input_as_handled()
+		elif selected_row and is_instance_valid(selected_row):
 			_copy_selected_row()
 			get_viewport().set_input_as_handled()
 	# Handle Ctrl+V (paste)
@@ -390,6 +398,7 @@ func _copy_selected_row() -> void:
 		return
 	
 	clipboard_events.clear()
+	clipboard_type = "event"
 	
 	if selected_row.has_method("get_event_data"):
 		var data = selected_row.get_event_data()
@@ -403,6 +412,40 @@ func _copy_selected_row() -> void:
 			})
 	
 	print("Copied %d event(s) to clipboard" % clipboard_events.size())
+
+func _copy_selected_item() -> void:
+	"""Copy selected action or condition to clipboard."""
+	if not selected_item or not is_instance_valid(selected_item):
+		return
+	
+	# Check if it's an action
+	if selected_item.has_method("get_action_data"):
+		var action_data = selected_item.get_action_data()
+		if action_data:
+			clipboard_type = "action"
+			clipboard_actions.clear()
+			clipboard_actions.append({
+				"action_id": action_data.action_id,
+				"target_node": action_data.target_node,
+				"inputs": action_data.inputs.duplicate()
+			})
+			print("Copied 1 action to clipboard")
+			return
+	
+	# Check if it's a condition
+	if selected_item.has_method("get_condition_data"):
+		var condition_data = selected_item.get_condition_data()
+		if condition_data:
+			clipboard_type = "condition"
+			clipboard_conditions.clear()
+			clipboard_conditions.append({
+				"condition_id": condition_data.condition_id,
+				"target_node": condition_data.target_node,
+				"inputs": condition_data.inputs.duplicate(),
+				"negated": condition_data.negated
+			})
+			print("Copied 1 condition to clipboard")
+			return
 
 func _duplicate_conditions(conditions: Array) -> Array:
 	var result = []
@@ -426,6 +469,15 @@ func _duplicate_actions(actions: Array) -> Array:
 	return result
 
 func _paste_from_clipboard() -> void:
+	"""Paste from clipboard - events, actions, or conditions depending on clipboard type."""
+	if clipboard_type == "action":
+		_paste_actions_from_clipboard()
+	elif clipboard_type == "condition":
+		_paste_conditions_from_clipboard()
+	else:
+		_paste_events_from_clipboard()
+
+func _paste_events_from_clipboard() -> void:
 	"""Paste events from clipboard after selected row (or at end)."""
 	if clipboard_events.is_empty():
 		return
@@ -480,6 +532,100 @@ func _paste_from_clipboard() -> void:
 		_on_row_selected(first_new_row)
 	
 	print("Pasted %d event(s) from clipboard" % clipboard_events.size())
+
+func _paste_actions_from_clipboard() -> void:
+	"""Paste actions from clipboard into the selected event row or parent of selected item."""
+	if clipboard_actions.is_empty():
+		return
+	
+	# Determine target event row
+	var target_row = selected_row
+	
+	# If no row selected but an item is selected, find its parent row
+	if (not target_row or not is_instance_valid(target_row)) and selected_item and is_instance_valid(selected_item):
+		target_row = _find_parent_event_row(selected_item)
+	
+	# Still no row? Try hovering
+	if not target_row or not is_instance_valid(target_row):
+		target_row = _find_event_row_at_mouse()
+	
+	if not target_row or not is_instance_valid(target_row):
+		print("Cannot paste actions: no event row found")
+		return
+	
+	# Push undo state before pasting
+	_push_undo_state()
+	
+	var event_data = target_row.get_event_data()
+	if not event_data:
+		return
+	
+	# Paste each action
+	for action_dict in clipboard_actions:
+		var action = FKEventAction.new()
+		action.action_id = action_dict["action_id"]
+		action.target_node = action_dict["target_node"]
+		action.inputs = action_dict["inputs"].duplicate()
+		
+		event_data.actions.append(action)
+	
+	# Update the display
+	target_row.update_display()
+	_save_sheet()
+	
+	print("Pasted %d action(s) from clipboard" % clipboard_actions.size())
+
+func _paste_conditions_from_clipboard() -> void:
+	"""Paste conditions from clipboard into the selected event row or parent of selected item."""
+	if clipboard_conditions.is_empty():
+		return
+	
+	# Determine target event row
+	var target_row = selected_row
+	
+	# If no row selected but an item is selected, find its parent row
+	if (not target_row or not is_instance_valid(target_row)) and selected_item and is_instance_valid(selected_item):
+		target_row = _find_parent_event_row(selected_item)
+	
+	# Still no row? Try hovering
+	if not target_row or not is_instance_valid(target_row):
+		target_row = _find_event_row_at_mouse()
+	
+	if not target_row or not is_instance_valid(target_row):
+		print("Cannot paste conditions: no event row found")
+		return
+	
+	# Push undo state before pasting
+	_push_undo_state()
+	
+	var event_data = target_row.get_event_data()
+	if not event_data:
+		return
+	
+	# Paste each condition
+	for condition_dict in clipboard_conditions:
+		var condition = FKEventCondition.new()
+		condition.condition_id = condition_dict["condition_id"]
+		condition.target_node = condition_dict["target_node"]
+		condition.inputs = condition_dict["inputs"].duplicate()
+		condition.negated = condition_dict["negated"]
+		condition.actions = [] as Array[FKEventAction]
+		
+		event_data.conditions.append(condition)
+	
+	# Update the display
+	target_row.update_display()
+	_save_sheet()
+	
+	print("Pasted %d condition(s) from clipboard" % clipboard_conditions.size())
+
+func _find_event_row_at_mouse() -> Control:
+	"""Find event row at mouse position."""
+	var mouse_pos = get_global_mouse_position()
+	for row in _get_blocks():
+		if row.get_global_rect().has_point(mouse_pos):
+			return row
+	return null
 func _set_expression_interface(interface: EditorInterface) -> void:
 	if expression_modal:
 		expression_modal.set_editor_interface(interface)

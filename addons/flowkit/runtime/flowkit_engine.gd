@@ -160,41 +160,20 @@ func _run_sheet(entry: Dictionary) -> void:
 						continue
 				registry.execute_action(act.action_id, anode, act.inputs)
 
-	# Group events by event_id to poll each event only once per _run_sheet call
-	var event_groups: Dictionary = {}
-	var event_nodes: Dictionary = {}
+	# Process each block individually
 	for block in sheet.events:
-		var event_id = block.event_id
-		if not event_groups.has(event_id):
-			event_groups[event_id] = []
-
-		event_groups[event_id].append(block)
-
-		# Resolve target node for polling (use the first block's node for each event_id)
-		if not event_nodes.has(event_id):
-			var node: Node = null
-			if str(block.target_node) == "System":
-				node = get_node("/root/FlowKitSystem")
-			else:
-				node = current_root.get_node_or_null(block.target_node)
-				if not node:
-					print("[FlowKit] Event polling target node not found: ", block.target_node, " in scene root: ", current_root.name)
-			event_nodes[event_id] = node
-
-	# Poll each event once
-	var event_triggered_status: Dictionary = {}
-	for event_id in event_groups.keys():
-		var node = event_nodes[event_id]
-		if node:
-			var triggered = registry.poll_event(event_id, node, {})  # Use empty inputs for polling
-			event_triggered_status[event_id] = triggered
+		# Resolve target node for polling
+		var node: Node = null
+		if str(block.target_node) == "System":
+			node = get_node("/root/FlowKitSystem")
 		else:
-			print("[FlowKit] Event '", event_id, "' has no node in scene '", entry.get("scene_name", "") , "'")
-			event_triggered_status[event_id] = false
+			node = current_root.get_node_or_null(block.target_node)
+			if not node:
+				print("[FlowKit] Event polling target node not found: ", block.target_node, " in scene root: ", current_root.name)
+				continue
 
-	# Process each block
-	for block in sheet.events:
-		var event_triggered = event_triggered_status.get(block.event_id, false)
+		# Poll the event with the block's inputs
+		var event_triggered = registry.poll_event(block.event_id, node, block.inputs)
 		if not event_triggered:
 			continue
 

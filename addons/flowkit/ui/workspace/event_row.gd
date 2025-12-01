@@ -356,10 +356,6 @@ func _drop_data(at_position: Vector2, data) -> void:
 	if not source_row:
 		return
 	
-	# Don't drop on same row (reordering within same row not implemented yet)
-	if source_row == self:
-		return
-	
 	# Use simple half-width check
 	var half_width = size.x / 2.0
 	var is_left_side = at_position.x < half_width
@@ -369,12 +365,18 @@ func _drop_data(at_position: Vector2, data) -> void:
 			if is_left_side:
 				var cond_data = data.get("data")
 				if cond_data:
-					condition_dropped.emit(source_row, cond_data, self)
+					# Allow same-row drops for reordering (handled by condition_item.gd)
+					# Only handle cross-row drops here
+					if source_row != self:
+						condition_dropped.emit(source_row, cond_data, self)
 		"action_item":
 			if not is_left_side:
 				var act_data = data.get("data")
 				if act_data:
-					action_dropped.emit(source_row, act_data, self)
+					# Allow same-row drops for reordering (handled by action_item.gd)
+					# Only handle cross-row drops here
+					if source_row != self:
+						action_dropped.emit(source_row, act_data, self)
 
 func _find_parent_event_row(node: Node):
 	"""Find the event_row that contains this node."""
