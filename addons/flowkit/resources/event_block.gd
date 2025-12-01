@@ -9,7 +9,7 @@ class_name FKEventBlock
 @export var actions: Array[FKEventAction] = []
 
 func _init(p_block_id: String = "", p_event_id: String = "", p_target_node: NodePath = NodePath()) -> void:
-	if p_block_id == "":
+	if p_block_id.is_empty():
 		block_id = _generate_unique_id()
 	else:
 		block_id = p_block_id
@@ -18,9 +18,10 @@ func _init(p_block_id: String = "", p_event_id: String = "", p_target_node: Node
 
 func _generate_unique_id() -> String:
 	"""Generate a unique ID for this block using timestamp and random component."""
-	return "%s_%d" % [event_id if event_id else "event", randi()]
+	var timestamp = Time.get_unix_time_from_system()
+	return "%s_%d_%d" % [event_id if event_id else "event", int(timestamp), randi()]
 
 func ensure_block_id() -> void:
 	"""Ensure this block has a unique ID (called when loading from old saved sheets)."""
-	if block_id == "" or block_id.is_empty():
+	if block_id.is_empty():
 		block_id = _generate_unique_id()
