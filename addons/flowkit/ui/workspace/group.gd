@@ -240,10 +240,8 @@ func _create_event_row(data: FKEventBlock) -> Control:
 	"""Create an event row from data."""
 	var row = EVENT_ROW_SCENE.instantiate()
 	
-	# Deep copy the data
-	var copy = FKEventBlock.new()
-	copy.event_id = data.event_id
-	copy.target_node = data.target_node
+	# Deep copy the data, preserving block_id
+	var copy = FKEventBlock.new(data.block_id, data.event_id, data.target_node)
 	copy.inputs = data.inputs.duplicate()
 	copy.conditions = [] as Array[FKEventCondition]
 	copy.actions = [] as Array[FKEventAction]

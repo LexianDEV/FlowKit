@@ -222,6 +222,7 @@ func _serialize_event_block(data: FKEventBlock) -> Dictionary:
 	"""Serialize an event block to a dictionary."""
 	var result = {
 		"type": "event",
+		"block_id": data.block_id,
 		"event_id": data.event_id,
 		"target_node": str(data.target_node),
 		"inputs": data.inputs.duplicate(),
@@ -355,9 +356,10 @@ func _deserialize_comment_block(dict: Dictionary) -> FKCommentBlock:
 
 func _deserialize_event_block(dict: Dictionary) -> FKEventBlock:
 	"""Deserialize a dictionary to an event block."""
-	var data = FKEventBlock.new()
-	data.event_id = dict.get("event_id", "")
-	data.target_node = NodePath(dict.get("target_node", ""))
+	var block_id = dict.get("block_id", "")
+	var event_id = dict.get("event_id", "")
+	var target_node = NodePath(dict.get("target_node", ""))
+	var data = FKEventBlock.new(block_id, event_id, target_node)
 	data.inputs = dict.get("inputs", {}).duplicate()
 	data.conditions = [] as Array[FKEventCondition]
 	data.actions = [] as Array[FKEventAction]
@@ -520,9 +522,8 @@ func _paste_from_clipboard() -> void:
 	# Create and insert event rows
 	var first_new_row = null
 	for event_data_dict in clipboard_events:
-		var data = FKEventBlock.new()
-		data.event_id = event_data_dict["event_id"]
-		data.target_node = event_data_dict["target_node"]
+		# Generate new block_id for pasted events (pass empty string to auto-generate)
+		var data = FKEventBlock.new("", event_data_dict["event_id"], event_data_dict["target_node"])
 		data.inputs = event_data_dict["inputs"].duplicate()
 		data.conditions = [] as Array[FKEventCondition]
 		data.actions = [] as Array[FKEventAction]
@@ -731,9 +732,7 @@ func _generate_sheet_from_blocks() -> FKEventSheet:
 
 func _copy_event_block(data: FKEventBlock) -> FKEventBlock:
 	"""Create a clean copy of an event block."""
-	var event_copy = FKEventBlock.new()
-	event_copy.event_id = data.event_id
-	event_copy.target_node = data.target_node
+	var event_copy = FKEventBlock.new(data.block_id, data.event_id, data.target_node)
 	event_copy.inputs = data.inputs.duplicate()
 	event_copy.conditions = [] as Array[FKEventCondition]
 	event_copy.actions = [] as Array[FKEventAction]
@@ -794,30 +793,7 @@ func _create_event_row(data: FKEventBlock) -> Control:
 	"""Create event row node from data (GDevelop-style)."""
 	var row = EVENT_ROW_SCENE.instantiate()
 	
-	var copy = FKEventBlock.new()
-	copy.event_id = data.event_id
-	copy.target_node = data.target_node
-	copy.inputs = data.inputs.duplicate()
-	copy.conditions = [] as Array[FKEventCondition]
-	copy.actions = [] as Array[FKEventAction]
-	
-	# Copy conditions
-	for cond in data.conditions:
-		var cond_copy = FKEventCondition.new()
-		cond_copy.condition_id = cond.condition_id
-		cond_copy.target_node = cond.target_node
-		cond_copy.inputs = cond.inputs.duplicate()
-		cond_copy.negated = cond.negated
-		cond_copy.actions = [] as Array[FKEventAction]
-		copy.conditions.append(cond_copy)
-	
-	# Copy actions
-	for act in data.actions:
-		var act_copy = FKEventAction.new()
-		act_copy.action_id = act.action_id
-		act_copy.target_node = act.target_node
-		act_copy.inputs = act.inputs.duplicate()
-		copy.actions.append(act_copy)
+	var copy = _copy_event_block(data)
 	
 	row.set_event_data(copy)
 	row.set_registry(registry)
@@ -1233,9 +1209,8 @@ func _finalize_event_creation(inputs: Dictionary) -> void:
 	# Push undo state before adding event
 	_push_undo_state()
 	
-	var data = FKEventBlock.new()
-	data.event_id = pending_id
-	data.target_node = pending_node_path
+	# Generate new block_id for new events (pass empty string to auto-generate)
+	var data = FKEventBlock.new("", pending_id, pending_node_path)
 	data.inputs = inputs
 	data.conditions = [] as Array[FKEventCondition]
 	data.actions = [] as Array[FKEventAction]
@@ -1341,10 +1316,9 @@ func _replace_event(expressions: Dictionary) -> void:
 	var old_data = pending_target_row.get_event_data()
 	var old_index = pending_target_row.get_index()
 	
-	# Create new event data
-	var new_data = FKEventBlock.new()
-	new_data.event_id = pending_id
-	new_data.target_node = pending_node_path
+	# Create new event data, preserving block_id if available
+	var old_block_id = old_data.block_id if old_data else ""
+	var new_data = FKEventBlock.new(old_block_id, pending_id, pending_node_path)
 	new_data.inputs = expressions
 	new_data.conditions = old_data.conditions if old_data else ([] as Array[FKEventCondition])
 	new_data.actions = old_data.actions if old_data else ([] as Array[FKEventAction])
