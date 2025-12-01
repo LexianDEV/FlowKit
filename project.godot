@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="FlowKit Developer Project"
-run/main_scene="uid://xclo6g0rtoo5"
+run/main_scene="uid://o03sr7k7rnc5"
 config/features=PackedStringArray("4.5", "Forward Plus")
 config/icon="res://icon.svg"
 
@@ -20,6 +20,15 @@ config/icon="res://icon.svg"
 FlowKitSystem="*res://addons/flowkit/runtime/flowkit_system.gd"
 FlowKit="*res://addons/flowkit/runtime/flowkit_engine.gd"
 
+[display]
+
+window/size/mode=3
+window/size/resizable=false
+
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/flowkit/plugin.cfg")
+
+[rendering]
+
+textures/canvas_textures/default_texture_filter=0

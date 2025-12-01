@@ -4,7 +4,7 @@ extends Control
 var editor_interface: EditorInterface
 var registry: Node
 var generator
-var current_scene_name: String = ""
+var current_scene_uid: int = 0
 
 # Scene preloads - GDevelop-style event rows
 const EVENT_ROW_SCENE = preload("res://addons/flowkit/ui/workspace/event_row.tscn")
@@ -566,28 +566,28 @@ func _set_expression_interface(interface: EditorInterface) -> void:
 func _process(_delta: float) -> void:
 	if not editor_interface:
 		return
-	
+
 	var scene_root = editor_interface.get_edited_scene_root()
 	if not scene_root:
-		if current_scene_name != "":
-			current_scene_name = ""
+		if current_scene_uid != 0:
+			current_scene_uid = 0
 			_clear_all_blocks()
 			_clear_undo_history()
 			_show_empty_state()
 		return
-	
+
 	var scene_path = scene_root.scene_file_path
 	if scene_path == "":
-		if current_scene_name != "":
-			current_scene_name = ""
+		if current_scene_uid != 0:
+			current_scene_uid = 0
 			_clear_all_blocks()
 			_clear_undo_history()
 			_show_empty_state()
 		return
-	
-	var scene_name = scene_path.get_file().get_basename()
-	if scene_name != current_scene_name:
-		current_scene_name = scene_name
+
+	var scene_uid = ResourceLoader.get_resource_uid(scene_path)
+	if scene_uid != current_scene_uid:
+		current_scene_uid = scene_uid
 		_clear_undo_history()
 		_load_scene_sheet()
 
@@ -627,9 +627,9 @@ func _show_content_state() -> void:
 
 func _get_sheet_path() -> String:
 	"""Get the file path for current scene's event sheet."""
-	if current_scene_name == "":
+	if current_scene_uid == 0:
 		return ""
-	return "res://addons/flowkit/saved/event_sheet/%s.tres" % current_scene_name
+	return "res://addons/flowkit/saved/event_sheet/%d.tres" % current_scene_uid
 
 func _load_scene_sheet() -> void:
 	"""Load event sheet for current scene."""
@@ -673,7 +673,7 @@ func _populate_from_sheet(sheet: FKEventSheet) -> void:
 
 func _save_sheet() -> void:
 	"""Generate and save event sheet from current blocks."""
-	if current_scene_name == "":
+	if current_scene_uid == 0:
 		push_warning("No scene open to save event sheet.")
 		return
 	
@@ -781,7 +781,7 @@ func _copy_group_block(data: FKGroupBlock) -> FKGroupBlock:
 
 func _new_sheet() -> void:
 	"""Create new empty sheet."""
-	if current_scene_name == "":
+	if current_scene_uid == 0:
 		push_warning("No scene open to create event sheet.")
 		return
 	

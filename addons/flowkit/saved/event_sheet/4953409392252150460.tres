@@ -1,0 +1,60 @@
+[gd_resource type="Resource" script_class="FKEventSheet" load_steps=11 format=3 uid="uid://b83l5jwe7e8b7"]
+
+[ext_resource type="Script" uid="uid://bxdhylwvr4osy" path="res://addons/flowkit/resources/event_block.gd" id="1_iqjwq"]
+[ext_resource type="Script" uid="uid://bwbi0utcwmxwf" path="res://addons/flowkit/resources/event_action.gd" id="2_e5301"]
+[ext_resource type="Script" uid="uid://bmaxurgrsv4ct" path="res://addons/flowkit/resources/event_condition.gd" id="3_6310v"]
+[ext_resource type="Script" uid="uid://bumsyiqkp46l1" path="res://addons/flowkit/resources/event_sheet.gd" id="4_1iq3u"]
+
+[sub_resource type="Resource" id="Resource_iqjwq"]
+script = ExtResource("2_e5301")
+action_id = "set_flip_h"
+target_node = NodePath("AnimatedSprite2D")
+inputs = {
+"Value": "true"
+}
+
+[sub_resource type="Resource" id="Resource_e5301"]
+script = ExtResource("3_6310v")
+condition_id = "compare_node_variable"
+target_node = NodePath(".")
+inputs = {
+"Comparison": ">",
+"Property": "node.velocity.x",
+"Value": "0"
+}
+
+[sub_resource type="Resource" id="Resource_6310v"]
+script = ExtResource("1_iqjwq")
+event_id = "on_process_physics"
+target_node = NodePath(".")
+conditions = Array[ExtResource("3_6310v")]([SubResource("Resource_e5301")])
+actions = Array[ExtResource("2_e5301")]([SubResource("Resource_iqjwq")])
+
+[sub_resource type="Resource" id="Resource_1iq3u"]
+script = ExtResource("2_e5301")
+action_id = "set_flip_h"
+target_node = NodePath("AnimatedSprite2D")
+inputs = {
+"Value": "false"
+}
+
+[sub_resource type="Resource" id="Resource_cbhwn"]
+script = ExtResource("3_6310v")
+condition_id = "compare_node_variable"
+target_node = NodePath(".")
+inputs = {
+"Comparison": "<",
+"Property": "node.velocity.x",
+"Value": "0"
+}
+
+[sub_resource type="Resource" id="Resource_jqahe"]
+script = ExtResource("1_iqjwq")
+event_id = "on_process_physics"
+target_node = NodePath(".")
+conditions = Array[ExtResource("3_6310v")]([SubResource("Resource_cbhwn")])
+actions = Array[ExtResource("2_e5301")]([SubResource("Resource_1iq3u")])
+
+[resource]
+script = ExtResource("4_1iq3u")
+events = Array[ExtResource("1_iqjwq")]([SubResource("Resource_6310v"), SubResource("Resource_jqahe")])
