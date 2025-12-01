@@ -13,6 +13,8 @@ var param_values: Dictionary = {}
 # UI References
 @onready var param_label := $MarginContainer/VBoxContainer/TopContainer/ParamLabel
 @onready var expression_input := $MarginContainer/VBoxContainer/TopContainer/ExpressionInput
+@onready var description_label := $MarginContainer/VBoxContainer/TopContainer/DescriptionPanel/DescriptionMargin/DescriptionLabel
+@onready var description_panel := $MarginContainer/VBoxContainer/TopContainer/DescriptionPanel
 @onready var node_tree := $MarginContainer/VBoxContainer/MainContainer/LeftPanel/NodeTree
 @onready var item_list := $MarginContainer/VBoxContainer/MainContainer/RightPanel/ItemList
 @onready var prev_button := $MarginContainer/VBoxContainer/ButtonContainer/PrevButton
@@ -98,9 +100,21 @@ func _show_current_parameter() -> void:
 	var param_data: Dictionary = action_inputs[current_param_index]
 	var param_name: String = param_data.get("name", "Unknown")
 	var param_type: String = param_data.get("type", "Variant")
+	var param_description: String = param_data.get("description", "")
 	
 	if param_label:
 		param_label.text = "%s (%s)" % [param_name, param_type]
+	
+	# Update description
+	if description_label:
+		if param_description.is_empty():
+			description_label.text = ""
+			if description_panel:
+				description_panel.visible = false
+		else:
+			description_label.text = param_description
+			if description_panel:
+				description_panel.visible = true
 	
 	if expression_input:
 		expression_input.text = param_values.get(param_name, "")

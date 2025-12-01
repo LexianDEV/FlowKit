@@ -1,6 +1,14 @@
-[gd_scene load_steps=2 format=3 uid="uid://d58fx0alhbxs"]
+[gd_scene load_steps=3 format=3 uid="uid://d58fx0alhbxs"]
 
 [ext_resource type="Script" path="res://addons/flowkit/ui/modals/expression_editor.gd" id="1_expr"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1"]
+bg_color = Color(0.2, 0.2, 0.2, 0.5)
+expand_margin_left = 4.0
+expand_margin_top = 4.0
+expand_margin_right = 4.0
+expand_margin_bottom = 4.0
+corner_radius = 2
 
 [node name="ExpressionEditor" type="PopupPanel"]
 title = "Expression Editor"
@@ -47,6 +55,26 @@ text = "Parameter (type)"
 [node name="ExpressionInput" type="LineEdit" parent="MarginContainer/VBoxContainer/TopContainer"]
 layout_mode = 2
 placeholder_text = "Click items below to build your expression..."
+
+[node name="DescriptionPanel" type="PanelContainer" parent="MarginContainer/VBoxContainer/TopContainer"]
+layout_mode = 2
+size_flags_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_1")
+
+[node name="DescriptionMargin" type="MarginContainer" parent="MarginContainer/VBoxContainer/TopContainer/DescriptionPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 6
+
+[node name="DescriptionLabel" type="Label" parent="MarginContainer/VBoxContainer/TopContainer/DescriptionPanel/DescriptionMargin"]
+layout_mode = 2
+text = ""
+text_overrun_behavior = 3
+word_wrap_mode = 1
+theme_override_font_sizes/font_size = 10
+modulate = Color(0.8, 0.8, 0.8, 1)
 
 [node name="HelpLabel" type="Label" parent="MarginContainer/VBoxContainer/TopContainer"]
 layout_mode = 2
