@@ -101,17 +101,21 @@ func _setup_signals() -> void:
 
 func _on_collapse_btn_input(event: InputEvent) -> void:
 	"""Handle collapse button (triangle) input - collapse on release, drag on press+move."""
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		if event.pressed:
-			# Select the group and start tracking for potential drag
+	if event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			if event.pressed:
+				# Select the group and start tracking for potential drag
+				selected.emit(self)
+				_drag_start_pos = event.position
+				_is_potential_drag = true
+			else:
+				# Release - toggle collapse if we didn't drag
+				if _is_potential_drag:
+					_on_collapse_pressed()
+				_is_potential_drag = false
+		elif event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
 			selected.emit(self)
-			_drag_start_pos = event.position
-			_is_potential_drag = true
-		else:
-			# Release - toggle collapse if we didn't drag
-			if _is_potential_drag:
-				_on_collapse_pressed()
-			_is_potential_drag = false
+			_show_context_menu(event.global_position)
 	elif event is InputEventMouseMotion and _is_potential_drag:
 		# Check if moved enough to start drag
 		var distance = event.position.distance_to(_drag_start_pos)
@@ -395,30 +399,34 @@ func _on_collapse_pressed() -> void:
 
 func _on_title_input(event: InputEvent) -> void:
 	"""Handle title label input - collapse on release, drag on press+move, edit on double-click."""
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		var click_pos = event.position
-		var text_width = title_label.get_theme_font("font").get_string_size(
-			title_label.text,
-			HORIZONTAL_ALIGNMENT_LEFT,
-			-1,
-			title_label.get_theme_font_size("font_size")
-		).x
-		
-		if event.pressed:
-			# Select the group
-			selected.emit(self)
-			if event.double_click and click_pos.x <= text_width + 10:
-				_start_title_edit()
-				_is_potential_drag = false
+	if event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			var click_pos = event.position
+			var text_width = title_label.get_theme_font("font").get_string_size(
+				title_label.text,
+				HORIZONTAL_ALIGNMENT_LEFT,
+				-1,
+				title_label.get_theme_font_size("font_size")
+			).x
+			
+			if event.pressed:
+				# Select the group
+				selected.emit(self)
+				if event.double_click and click_pos.x <= text_width + 10:
+					_start_title_edit()
+					_is_potential_drag = false
+				else:
+					# Start tracking for potential drag
+					_drag_start_pos = event.position
+					_is_potential_drag = true
 			else:
-				# Start tracking for potential drag
-				_drag_start_pos = event.position
-				_is_potential_drag = true
-		else:
-			# Release - toggle collapse if we didn't drag
-			if _is_potential_drag:
-				_on_collapse_pressed()
-			_is_potential_drag = false
+				# Release - toggle collapse if we didn't drag
+				if _is_potential_drag:
+					_on_collapse_pressed()
+				_is_potential_drag = false
+		elif event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
+			selected.emit(self)
+			_show_context_menu(event.global_position)
 	elif event is InputEventMouseMotion and _is_potential_drag:
 		# Check if moved enough to start drag
 		var distance = event.position.distance_to(_drag_start_pos)
