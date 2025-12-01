@@ -28,6 +28,7 @@ var current_drop_index: int = -1  ## Current calculated drop position
 # === Drag State ===
 var _drag_start_pos: Vector2 = Vector2.ZERO  ## Mouse position when drag started
 var _is_potential_drag: bool = false  ## Whether we're tracking a potential drag
+var _is_processing_drop: bool = false  ## Prevent recursive drop processing
 const DRAG_THRESHOLD: float = 8.0  ## Minimum pixels to move before starting drag
 
 # === Styles ===
@@ -584,6 +585,10 @@ func _get_drag_data(_at_position: Vector2):
 
 func _can_drop_data(at_position: Vector2, data) -> bool:
 	"""Check if drop is allowed and show indicator."""
+	# Prevent recursive calls
+	if _is_processing_drop:
+		return false
+	
 	if not data is Dictionary:
 		return false
 	
@@ -593,9 +598,6 @@ func _can_drop_data(at_position: Vector2, data) -> bool:
 	# Prevent dropping on self or ancestors
 	if drag_node == self or _is_ancestor_of_node(drag_node):
 		_hide_drop_indicator()
-		var parent = get_parent()
-		if parent and parent.has_method("_can_drop_data"):
-			return parent._can_drop_data(at_position + position, data)
 		return false
 	
 	# Accept blocks in children area
@@ -606,12 +608,6 @@ func _can_drop_data(at_position: Vector2, data) -> bool:
 			if children_margin.get_rect().has_point(local_pos + children_margin.position):
 				_show_drop_indicator(at_position, drag_node)
 				return true
-		
-		# Forward to parent for header drops
-		_hide_drop_indicator()
-		var parent = get_parent()
-		if parent and parent.has_method("_can_drop_data"):
-			return parent._can_drop_data(at_position + position, data)
 	
 	_hide_drop_indicator()
 	return false
@@ -630,18 +626,16 @@ func _drop_data(at_position: Vector2, data) -> void:
 	if not drag_node or not is_instance_valid(drag_node):
 		return
 	
+	# Prevent dropping on self
+	if drag_node == self:
+		return
+	
 	# Check if drop is in children area
 	var children_margin = get_node_or_null("Panel/VBox/ChildrenMargin")
 	if children_margin and children_margin.visible:
 		var local_pos = children_margin.get_local_mouse_position()
 		if children_margin.get_rect().has_point(local_pos + children_margin.position):
 			_handle_child_drop(drag_node, drag_type)
-			return
-	
-	# Forward to parent
-	var parent = get_parent()
-	if parent and parent.has_method("_drop_data"):
-		parent._drop_data(at_position + position, data)
 
 
 func _handle_child_drop(drag_node: Node, drag_type: String) -> void:
