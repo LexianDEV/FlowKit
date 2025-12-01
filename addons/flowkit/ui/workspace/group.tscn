@@ -1,0 +1,85 @@
+[gd_scene load_steps=4 format=3 uid="uid://dgroup_block_fk"]
+
+[ext_resource type="Script" path="res://addons/flowkit/ui/workspace/group.gd" id="1_group"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_focus"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_group"]
+bg_color = Color(0.25, 0.22, 0.35, 1.0)
+border_width_left = 3
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.45, 0.4, 0.6, 1.0)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_left = 4
+corner_radius_bottom_right = 4
+
+[node name="Group" type="MarginContainer"]
+custom_minimum_size = Vector2(0, 60)
+mouse_filter = 0
+theme_override_constants/margin_bottom = 2
+script = ExtResource("1_group")
+
+[node name="Panel" type="PanelContainer" parent="."]
+layout_mode = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_group")
+
+[node name="VBox" type="VBoxContainer" parent="Panel"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Header" type="HBoxContainer" parent="Panel/VBox"]
+layout_mode = 2
+mouse_filter = 0
+theme_override_constants/separation = 8
+
+[node name="CollapseButton" type="Label" parent="Panel/VBox/Header"]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+mouse_filter = 0
+theme_override_colors/font_color = Color(0.75, 0.8, 0.9, 1.0)
+theme_override_font_sizes/font_size = 24
+text = "▼"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="TitleLabel" type="Label" parent="Panel/VBox/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 0
+theme_override_colors/font_color = Color(0.85, 0.92, 1.0, 1.0)
+theme_override_font_sizes/font_size = 16
+text = "Group"
+
+[node name="TitleEdit" type="LineEdit" parent="Panel/VBox/Header"]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.95, 0.95, 1.0, 1.0)
+theme_override_font_sizes/font_size = 16
+text = "Group"
+
+[node name="ChildrenMargin" type="MarginContainer" parent="Panel/VBox"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 4
+theme_override_constants/margin_bottom = 4
+
+[node name="ChildrenContainer" type="VBoxContainer" parent="Panel/VBox/ChildrenMargin"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 2
+
+[node name="DropHint" type="Label" parent="Panel/VBox/ChildrenMargin/ChildrenContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.5, 0.6, 0.7, 0.6)
+theme_override_font_sizes/font_size = 12
+text = "Drag events here..."
+horizontal_alignment = 1
+
+[node name="ContextMenu" type="PopupMenu" parent="."]

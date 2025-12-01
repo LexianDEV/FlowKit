@@ -3,49 +3,51 @@
 [ext_resource type="Script" uid="uid://dptild6s7dopo" path="res://addons/flowkit/ui/workspace/comment.gd" id="1_uyxcp"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_comment"]
-bg_color = Color(0.25, 0.24, 0.2, 1)
-border_width_left = 3
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.6, 0.6, 0.5, 0.5)
-corner_radius_top_left = 4
-corner_radius_top_right = 4
-corner_radius_bottom_right = 4
-corner_radius_bottom_left = 4
-shadow_color = Color(0, 0, 0, 0.2)
-shadow_size = 3
-shadow_offset = Vector2(0, 1)
+bg_color = Color(0.9, 0.8, 0.4, 1.0)
+border_width_left = 4
+border_width_top = 0
+border_width_right = 0
+border_width_bottom = 0
+border_color = Color(0.72, 0.64, 0.3, 1.0)
 
 [node name="Comment" type="MarginContainer"]
-theme_override_constants/margin_bottom = 2
+custom_minimum_size = Vector2(0, 28)
+mouse_filter = 0
+theme_override_constants/margin_bottom = 1
 script = ExtResource("1_uyxcp")
 
 [node name="Panel" type="PanelContainer" parent="."]
 layout_mode = 2
+mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_comment")
 
 [node name="MarginContainer" type="MarginContainer" parent="Panel"]
 layout_mode = 2
-theme_override_constants/margin_left = 12
-theme_override_constants/margin_top = 5
-theme_override_constants/margin_right = 12
-theme_override_constants/margin_bottom = 5
+mouse_filter = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 4
 
-[node name="HBoxContainer" type="HBoxContainer" parent="Panel/MarginContainer"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="Icon" type="Label" parent="Panel/MarginContainer/HBoxContainer"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.7, 0.6, 1)
-theme_override_font_sizes/font_size = 14
-text = "//"
-
-[node name="Label" type="Label" parent="Panel/MarginContainer/HBoxContainer"]
+[node name="DisplayLabel" type="Label" parent="Panel/MarginContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 1
-theme_override_colors/font_color = Color(0.7, 0.7, 0.6, 1)
-theme_override_font_sizes/font_size = 12
-text = "Comment"
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.1, 0.08, 0.02, 1)
+theme_override_colors/font_outline_color = Color(0.1, 0.08, 0.02, 0.5)
+theme_override_constants/outline_size = 2
+theme_override_font_sizes/font_size = 13
+text = "Add comment..."
+
+[node name="TextEdit" type="TextEdit" parent="Panel/MarginContainer"]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+mouse_filter = 0
+theme_override_colors/font_color = Color(0.95, 0.9, 0.6, 1)
+theme_override_colors/background_color = Color(0, 0, 0, 0)
+theme_override_font_sizes/font_size = 13
+placeholder_text = "Add comment..."
+scroll_fit_content_height = true

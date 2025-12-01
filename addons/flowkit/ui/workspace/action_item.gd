@@ -4,6 +4,7 @@ extends MarginContainer
 signal selected(item)
 signal edit_requested(item)
 signal delete_requested(item)
+signal reorder_requested(source_item, target_item, drop_above: bool)
 
 var action_data: FKEventAction
 var registry: Node
@@ -16,9 +17,15 @@ var context_menu: PopupMenu
 var normal_stylebox: StyleBox
 var selected_stylebox: StyleBox
 
+# Drop indicator
+var drop_indicator: ColorRect
+var is_drop_target: bool = false
+var drop_above: bool = true
+
 func _ready() -> void:
 	_setup_references()
 	_setup_styles()
+	_setup_drop_indicator()
 	gui_input.connect(_on_gui_input)
 	call_deferred("_setup_context_menu")
 
@@ -113,6 +120,31 @@ func set_selected(value: bool) -> void:
 		else:
 			panel.add_theme_stylebox_override("panel", normal_stylebox)
 
+func _setup_drop_indicator() -> void:
+	drop_indicator = ColorRect.new()
+	drop_indicator.color = Color(0.5, 0.7, 1.0, 0.8)
+	drop_indicator.custom_minimum_size = Vector2(0, 2)
+	drop_indicator.visible = false
+	drop_indicator.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(drop_indicator)
+
+func _show_drop_indicator(above: bool) -> void:
+	if not drop_indicator:
+		return
+	drop_above = above
+	is_drop_target = true
+	drop_indicator.visible = true
+	drop_indicator.size = Vector2(size.x, 2)
+	if above:
+		drop_indicator.position = Vector2(0, 0)
+	else:
+		drop_indicator.position = Vector2(0, size.y - 2)
+
+func _hide_drop_indicator() -> void:
+	if drop_indicator:
+		drop_indicator.visible = false
+	is_drop_target = false
+
 func _get_drag_data(at_position: Vector2):
 	if not action_data:
 		return null
@@ -137,64 +169,73 @@ func _get_drag_data(at_position: Vector2):
 	}
 
 func _can_drop_data(at_position: Vector2, data) -> bool:
-	"""Allow dropping action items within the same container for reordering."""
 	if not data is Dictionary:
+		_hide_drop_indicator()
 		return false
-	if data.get("type") != "action_item":
+	
+	var drag_type = data.get("type", "")
+	if drag_type != "action_item":
+		_hide_drop_indicator()
 		return false
+	
+	var source_node = data.get("node")
+	if source_node == self:
+		_hide_drop_indicator()
+		return false
+	
+	# Check if source is adjacent and prevent indicator on the shared edge
+	var above = at_position.y < size.y / 2.0
+	if _is_adjacent_to_source(source_node, above):
+		_hide_drop_indicator()
+		return false
+	
+	_show_drop_indicator(above)
 	return true
 
-func _drop_data(at_position: Vector2, data) -> void:
-	"""Handle action reordering within the container."""
-	if not data is Dictionary or data.get("type") != "action_item":
-		return
+func _is_adjacent_to_source(source_node: Node, drop_above: bool) -> bool:
+	"""Check if dropping would result in no actual movement (adjacent items)."""
+	var parent = get_parent()
+	if not parent:
+		return false
 	
-	var source_item = data.get("node")
-	if not source_item or not is_instance_valid(source_item):
-		return
+	var my_index = get_index()
+	var source_index = -1
 	
-	# Get the parent action container
-	var container = get_parent()
-	if not container or source_item.get_parent() != container:
-		return
+	for i in parent.get_child_count():
+		if parent.get_child(i) == source_node:
+			source_index = i
+			break
 	
-	# Get indices
-	var source_idx = source_item.get_index()
-	var target_idx = get_index()
+	if source_index < 0:
+		return false
 	
-	# If dropping on itself, don't do anything
-	if source_idx == target_idx:
-		return
+	# If dropping above and source is directly above us, no movement needed
+	if drop_above and source_index == my_index - 1:
+		return true
 	
-	# Move the source item in the container
-	container.remove_child(source_item)
-	container.add_child(source_item)
+	# If dropping below and source is directly below us, no movement needed
+	if not drop_above and source_index == my_index + 1:
+		return true
 	
-	# Adjust target index if source was above target
-	if source_idx < target_idx:
-		target_idx -= 1
-	
-	container.move_child(source_item, target_idx)
-	
-	# Update the underlying action data in the parent event row
-	var parent_row = _find_parent_event_row()
-	if parent_row and parent_row.has_method("get_event_data"):
-		var event_data = parent_row.get_event_data()
-		if event_data and source_item.has_method("get_action_data"):
-			var action_data = source_item.get_action_data()
-			if action_data:
-				var data_idx = event_data.actions.find(action_data)
-				if data_idx >= 0:
-					event_data.actions.remove_at(data_idx)
-					if source_idx < target_idx:
-						target_idx = target_idx + 1
-					event_data.actions.insert(target_idx, action_data)
+	return false
 
-func _find_parent_event_row():
-	"""Find the event_row that contains this action item."""
-	var current = get_parent()
-	while current:
-		if current.has_method("get_event_data"):
-			return current
-		current = current.get_parent()
-	return null
+func _drop_data(at_position: Vector2, data) -> void:
+	_hide_drop_indicator()
+	
+	if not data is Dictionary:
+		return
+	
+	var drag_type = data.get("type", "")
+	if drag_type != "action_item":
+		return
+	
+	var source_node = data.get("node")
+	if not source_node or source_node == self:
+		return
+	
+	var above = at_position.y < size.y / 2.0
+	reorder_requested.emit(source_node, self, above)
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_DRAG_END:
+		_hide_drop_indicator()
