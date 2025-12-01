@@ -72,7 +72,7 @@ theme_override_constants/margin_bottom = 4
 
 [node name="ChildrenContainer" type="VBoxContainer" parent="Panel/VBox/ChildrenMargin"]
 layout_mode = 2
-mouse_filter = 2
+mouse_filter = 0
 theme_override_constants/separation = 2
 
 [node name="DropHint" type="Label" parent="Panel/VBox/ChildrenMargin/ChildrenContainer"]

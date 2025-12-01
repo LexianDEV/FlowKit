@@ -10,6 +10,9 @@ signal block_moved  ## Emitted after a block is moved/reordered
 signal empty_area_clicked  ## Emitted when clicking empty space (for deselection)
 signal before_block_moved  ## Emitted before block move for undo state capture
 
+# === Internal State ===
+var _suppress_block_moved := false  ## Suppress block_moved emission during multi-step operations
+
 # === State ===
 var current_drop_index: int = -1  ## Current calculated drop position
 
@@ -125,10 +128,18 @@ func _handle_external_drop(node: Node, visible_blocks: Array, target_idx: int) -
 	var original_parent = node.get_parent()
 	if original_parent:
 		original_parent.remove_child(node)
-		if original_parent.has_method("_sync_children_to_data"):
-			original_parent._sync_children_to_data()
-			if original_parent.has_signal("data_changed"):
-				original_parent.data_changed.emit()
+		
+		# Find the group that owns this container (traverse up the tree)
+		var group_owner = original_parent
+		var max_depth = 5  # Prevent infinite loops
+		var depth = 0
+		while group_owner and not group_owner.has_method("_sync_children_to_data") and depth < max_depth:
+			group_owner = group_owner.get_parent()
+			depth += 1
+		
+		# Sync the group's data to match its remaining UI children
+		if group_owner and group_owner.has_method("_sync_children_to_data"):
+			group_owner._sync_children_to_data()
 	
 	# Add to this container
 	add_child(node)
@@ -141,9 +152,9 @@ func _handle_external_drop(node: Node, visible_blocks: Array, target_idx: int) -
 		target_child_idx = visible_blocks[target_idx].get_index()
 	
 	move_child(node, target_child_idx)
-	block_moved.emit()
-
-
+	
+	# Defer block_moved to ensure all data is synced before save/reload
+	call_deferred("emit_signal", "block_moved")
 func _handle_internal_reorder(node: Node, visible_blocks: Array, target_idx: int) -> void:
 	"""Handle reordering within this container."""
 	var current_visual_idx = visible_blocks.find(node)

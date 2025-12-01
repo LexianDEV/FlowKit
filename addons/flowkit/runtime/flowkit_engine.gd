@@ -99,6 +99,8 @@ func _load_sheets_for_scene(scene_root: Node) -> void:
 				for block in sheet.events:
 					if block:
 						block.ensure_block_id()
+				# Also ensure block IDs for events inside groups
+				_ensure_block_ids_in_groups(sheet.groups)
 				active_sheets.append({"sheet": sheet, "root": node_root, "scene_name": scene_name, "uid": uid})
 				print("[FlowKit] Loaded event sheet for scene: ", scene_name, " (node: ", node_root.name, ") with ", sheet.events.size(), " events")
 			else:
@@ -164,8 +166,13 @@ func _run_sheet(entry: Dictionary) -> void:
 						continue
 				registry.execute_action(act.action_id, anode, act.inputs, current_root)
 
+	# Collect all events from the sheet (both top-level and nested in groups)
+	var all_events: Array = []
+	all_events.append_array(sheet.events)
+	_collect_events_from_groups(sheet.groups, all_events)
+
 	# Process each block individually
-	for block in sheet.events:
+	for block in all_events:
 		# Resolve target node for polling
 		var node: Node = null
 		if str(block.target_node) == "System":
@@ -212,6 +219,33 @@ func _run_sheet(entry: Dictionary) -> void:
 					print("[FlowKit] Action target node not found: ", act.target_node)
 					continue
 			registry.execute_action(act.action_id, anode, act.inputs, current_root)
+func _collect_events_from_groups(groups: Array, out_events: Array) -> void:
+	for group in groups:
+		if group is FKGroupBlock:
+			for child_item in group.children:
+				var child_type: String = child_item.get("type", "")
+				var child_data: Variant = child_item.get("data", null)
+				
+				if child_type == "event" and child_data is FKEventBlock:
+					out_events.append(child_data)
+				elif child_type == "group" and child_data is FKGroupBlock:
+					# Recursively collect from nested groups
+					_collect_events_from_groups([child_data], out_events)
+
+
+func _ensure_block_ids_in_groups(groups: Array) -> void:
+	"""Recursively ensure all event blocks inside groups have unique IDs."""
+	for group in groups:
+		if group is FKGroupBlock:
+			for child_item in group.children:
+				var child_type: String = child_item.get("type", "")
+				var child_data: Variant = child_item.get("data", null)
+				
+				if child_type == "event" and child_data is FKEventBlock:
+					child_data.ensure_block_id()
+				elif child_type == "group" and child_data is FKGroupBlock:
+					_ensure_block_ids_in_groups([child_data])
+
 # --- Behavior processing ---------------------------------------------------
 func _scan_and_activate_behaviors(scene_root: Node) -> void:
 	# Recursively scan all nodes in the scene for behaviors

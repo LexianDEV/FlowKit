@@ -98,6 +98,12 @@ func _on_gui_input(event: InputEvent) -> void:
 		elif event.button_index == MOUSE_BUTTON_RIGHT:
 			selected.emit(self)
 			if context_menu:
+				context_menu.clear()
+				context_menu.add_item("Add Event Below", 0)
+				context_menu.add_item("Replace Event", 1)
+				context_menu.add_item("Edit Event", 2)
+				context_menu.add_separator()
+				context_menu.add_item("Delete Event", 3)
 				context_menu.position = DisplayServer.mouse_get_position()
 				context_menu.popup()
 

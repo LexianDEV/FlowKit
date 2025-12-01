@@ -12,10 +12,16 @@ const COMMENT_SCENE = preload("res://addons/flowkit/ui/workspace/comment.tscn")
 const GROUP_SCENE = preload("res://addons/flowkit/ui/workspace/group.tscn")
 
 # UI References
+@onready var scroll_container := $OuterVBox/ScrollContainer
 @onready var blocks_container := $OuterVBox/ScrollContainer/MarginContainer/BlocksContainer
 @onready var empty_label := $OuterVBox/ScrollContainer/MarginContainer/BlocksContainer/EmptyLabel
 @onready var add_event_btn := $OuterVBox/BottomMargin/ButtonContainer/AddEventButton
 @onready var menu_bar := $"OuterVBox/TopMargin/TopBar/MenuBar"
+
+# Drag spacer state
+var drag_spacer_top: Control = null  # Temporary spacer at top during drag
+var drag_spacer_bottom: Control = null  # Temporary spacer at bottom during drag
+const DRAG_SPACER_HEIGHT := 50  # Height of temporary drop zone
 
 # Modals
 @onready var select_node_modal := $SelectNodeModal
@@ -25,11 +31,12 @@ const GROUP_SCENE = preload("res://addons/flowkit/ui/workspace/group.tscn")
 @onready var expression_modal := $ExpressionModal
 
 # Workflow state
-var pending_block_type: String = ""  # "event", "condition", "action", "event_replace", etc.
+var pending_block_type: String = ""  # "event", "condition", "action", "event_replace", "event_in_group", etc.
 var pending_node_path: String = ""
 var pending_id: String = ""
 var pending_target_row = null  # The event row being modified
 var pending_target_item = null  # The specific condition/action item being edited
+var pending_target_group = null  # The group to add content to (for event_in_group workflow)
 var selected_row = null  # Currently selected event row
 var selected_item = null  # Currently selected condition/action item
 var clipboard_events: Array = []  # Stores copied event data for paste
@@ -54,7 +61,7 @@ func _ready() -> void:
 	_setup_ui()
 	# Connect block_moved signals for autosave and undo state on drag-and-drop reorder
 	blocks_container.before_block_moved.connect(_push_undo_state)
-	blocks_container.block_moved.connect(_save_sheet)
+	blocks_container.block_moved.connect(_save_and_reload_sheet)
 
 func _setup_ui() -> void:
 	"""Initialize UI state."""
@@ -396,7 +403,7 @@ func _deserialize_group_block(dict: Dictionary) -> FKGroupBlock:
 	data.title = dict.get("title", "Group")
 	data.collapsed = dict.get("collapsed", false)
 	data.color = dict.get("color", Color(0.25, 0.22, 0.35, 1.0))
-	data.children = [] as Array[Dictionary]
+	data.children = []
 	
 	for child_dict in dict.get("children", []):
 		var child_type = child_dict.get("type", "event")
@@ -566,6 +573,56 @@ func _paste_events_from_clipboard() -> void:
 	# Push undo state before pasting
 	_push_undo_state()
 	
+	# Check if we're pasting into a group
+	var target_group = null
+	if selected_row and is_instance_valid(selected_row):
+		# Check if selected_row is a group
+		if selected_row.has_method("get_group_data"):
+			target_group = selected_row
+		# Check if selected_row is inside a group
+		elif selected_row.has_method("get_event_data"):
+			var parent = selected_row.get_parent()
+			while parent:
+				if parent.has_method("get_group_data"):
+					target_group = parent
+					break
+				parent = parent.get_parent()
+	
+	# If pasting into a group
+	if target_group:
+		for event_data_dict in clipboard_events:
+			# Generate new block_id for pasted events
+			var data = FKEventBlock.new("", event_data_dict["event_id"], event_data_dict["target_node"])
+			data.inputs = event_data_dict["inputs"].duplicate()
+			data.conditions = [] as Array[FKEventCondition]
+			data.actions = [] as Array[FKEventAction]
+			
+			# Restore conditions
+			for cond_dict in event_data_dict["conditions"]:
+				var cond = FKEventCondition.new()
+				cond.condition_id = cond_dict["condition_id"]
+				cond.target_node = cond_dict["target_node"]
+				cond.inputs = cond_dict["inputs"].duplicate()
+				cond.negated = cond_dict["negated"]
+				data.conditions.append(cond)
+			
+			# Restore actions
+			for act_dict in event_data_dict["actions"]:
+				var act = FKEventAction.new()
+				act.action_id = act_dict["action_id"]
+				act.target_node = act_dict["target_node"]
+				act.inputs = act_dict["inputs"].duplicate()
+				data.actions.append(act)
+			
+			# Add to group via the group's method
+			if target_group.has_method("add_event_to_group"):
+				target_group.add_event_to_group(data)
+		
+		_save_sheet()
+		print("Pasted %d event(s) into group" % clipboard_events.size())
+		return
+	
+	# Otherwise, paste into main blocks_container
 	# Calculate insert position
 	var insert_idx = blocks_container.get_child_count()
 	if selected_row and is_instance_valid(selected_row):
@@ -710,7 +767,54 @@ func _set_expression_interface(interface: EditorInterface) -> void:
 	if expression_modal:
 		expression_modal.set_editor_interface(interface)
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	# Handle drag spacers - add temporary space only when needed
+	if get_viewport().gui_is_dragging():
+		if scroll_container and blocks_container:
+			var mouse_pos = scroll_container.get_local_mouse_position()
+			var scroll_rect = scroll_container.get_rect()
+			var blocks_size = blocks_container.size
+			var scroll_pos = scroll_container.scroll_vertical
+			
+			# Check if we need top spacer (dragging near top)
+			# Always show if near top, regardless of scroll position
+			var need_top_spacer = mouse_pos.y < DRAG_SPACER_HEIGHT
+			
+			# Check if we need bottom spacer (dragging near bottom AND not enough space below)
+			var visible_bottom = scroll_pos + scroll_rect.size.y
+			var content_bottom = blocks_size.y
+			var need_bottom_spacer = mouse_pos.y > scroll_rect.size.y - DRAG_SPACER_HEIGHT and visible_bottom >= content_bottom - DRAG_SPACER_HEIGHT
+			
+			# Create/remove top spacer
+			if need_top_spacer and not drag_spacer_top:
+				drag_spacer_top = Control.new()
+				drag_spacer_top.custom_minimum_size = Vector2(0, DRAG_SPACER_HEIGHT)
+				drag_spacer_top.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				blocks_container.add_child(drag_spacer_top)
+				blocks_container.move_child(drag_spacer_top, 0)
+			elif not need_top_spacer and drag_spacer_top and is_instance_valid(drag_spacer_top):
+				drag_spacer_top.queue_free()
+				drag_spacer_top = null
+			
+			# Create/remove bottom spacer
+			if need_bottom_spacer and not drag_spacer_bottom:
+				drag_spacer_bottom = Control.new()
+				drag_spacer_bottom.custom_minimum_size = Vector2(0, DRAG_SPACER_HEIGHT)
+				drag_spacer_bottom.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				blocks_container.add_child(drag_spacer_bottom)
+				blocks_container.move_child(drag_spacer_bottom, blocks_container.get_child_count() - 1)
+			elif not need_bottom_spacer and drag_spacer_bottom and is_instance_valid(drag_spacer_bottom):
+				drag_spacer_bottom.queue_free()
+				drag_spacer_bottom = null
+	else:
+		if drag_spacer_top and is_instance_valid(drag_spacer_top):
+			drag_spacer_top.queue_free()
+			drag_spacer_top = null
+		if drag_spacer_bottom and is_instance_valid(drag_spacer_bottom):
+			drag_spacer_bottom.queue_free()
+			drag_spacer_bottom = null
+	
+	# Handle scene detection
 	if not editor_interface:
 		return
 
@@ -837,6 +941,11 @@ func _save_sheet() -> void:
 	else:
 		push_error("Failed to save event sheet: ", error)
 
+func _save_and_reload_sheet() -> void:
+	"""Save sheet and reload UI to ensure visual/data sync (for drag-drop operations)."""
+	_save_sheet()
+	_load_scene_sheet()
+
 func _generate_sheet_from_blocks() -> FKEventSheet:
 	"""Build event sheet from event rows, comments, and groups (GDevelop-style)."""
 	var sheet = FKEventSheet.new()
@@ -907,7 +1016,7 @@ func _copy_group_block(data: FKGroupBlock) -> FKGroupBlock:
 	group_copy.title = data.title
 	group_copy.collapsed = data.collapsed
 	group_copy.color = data.color
-	group_copy.children = [] as Array[Dictionary]
+	group_copy.children = []
 	
 	for child_dict in data.children:
 		var child_type = child_dict.get("type", "")
@@ -970,7 +1079,7 @@ func _create_group_block(data: FKGroupBlock) -> Control:
 	copy.title = data.title
 	copy.collapsed = data.collapsed
 	copy.color = data.color
-	copy.children = [] as Array[Dictionary]
+	copy.children = []
 	
 	# Deep copy children
 	for child_dict in data.children:
@@ -996,9 +1105,29 @@ func _connect_group_signals(group) -> void:
 	group.delete_requested.connect(_on_group_delete.bind(group))
 	group.data_changed.connect(_save_sheet)
 	group.before_data_changed.connect(_push_undo_state)
+	group.add_event_requested.connect(_on_group_add_event_requested)
+	group.add_comment_requested.connect(_on_group_add_comment_requested)
+
+func _on_group_add_event_requested(group_node) -> void:
+	"""Handle request to add an event inside a group."""
+	pending_target_group = group_node
+	_start_add_workflow("event_in_group")
+
+func _on_group_add_comment_requested(group_node) -> void:
+	"""Handle request to add a comment inside a group (already handled in group.gd)."""
+	pass
 
 func _on_group_selected(node) -> void:
 	"""Handle selection from group (could be the group itself or a child)."""
+	# Check if it's a condition or action item
+	if node.has_method("get_condition_data"):
+		_on_condition_selected_in_row(node)
+		return
+	
+	if node.has_method("get_action_data"):
+		_on_action_selected_in_row(node)
+		return
+	
 	# Check if it's an event_row inside the group
 	if node.has_method("get_event_data"):
 		_on_row_selected(node)
@@ -1030,6 +1159,8 @@ func _on_group_delete(group) -> void:
 	group.queue_free()
 	_save_sheet()
 
+
+
 func _on_add_group_button_pressed() -> void:
 	"""Add a new group block."""
 	_push_undo_state()
@@ -1038,7 +1169,7 @@ func _on_add_group_button_pressed() -> void:
 	data.title = "New Group"
 	data.collapsed = false
 	data.color = Color(0.25, 0.22, 0.35, 1.0)
-	data.children = [] as Array[Dictionary]
+	data.children = []
 	
 	var group = _create_group_block(data)
 	blocks_container.add_child(group)
@@ -1274,7 +1405,7 @@ func _on_node_selected(node_path: String, node_class: String) -> void:
 	select_node_modal.hide()
 	
 	match pending_block_type:
-		"event", "event_replace":
+		"event", "event_replace", "event_in_group":
 			select_event_modal.populate_events(node_path, node_class)
 			_popup_centered_on_editor(select_event_modal)
 		"condition", "condition_replace":
@@ -1295,6 +1426,8 @@ func _on_event_selected(node_path: String, event_id: String, inputs: Array) -> v
 	else:
 		if pending_block_type == "event_replace":
 			_replace_event({})
+		elif pending_block_type == "event_in_group":
+			_finalize_event_in_group({})
 		else:
 			_finalize_event_creation({})
 
@@ -1333,6 +1466,8 @@ func _on_expressions_confirmed(_node_path: String, _id: String, expressions: Dic
 	match pending_block_type:
 		"event":
 			_finalize_event_creation(expressions)
+		"event_in_group":
+			_finalize_event_in_group(expressions)
 		"condition":
 			_finalize_condition_creation(expressions)
 		"action":
@@ -1369,6 +1504,30 @@ func _finalize_event_creation(inputs: Dictionary) -> void:
 		blocks_container.move_child(row, insert_idx)
 	else:
 		blocks_container.add_child(row)
+	
+	_show_content_state()
+	_reset_workflow()
+	_save_sheet()
+
+
+func _finalize_event_in_group(inputs: Dictionary) -> void:
+	"""Create and add event inside a group."""
+	if not pending_target_group:
+		_reset_workflow()
+		return
+	
+	# Push undo state before adding event
+	_push_undo_state()
+	
+	# Generate new block_id for new events (pass empty string to auto-generate)
+	var data = FKEventBlock.new("", pending_id, pending_node_path)
+	data.inputs = inputs
+	data.conditions = [] as Array[FKEventCondition]
+	data.actions = [] as Array[FKEventAction]
+	
+	# Add the event data to the group
+	if pending_target_group.has_method("add_event_to_group"):
+		pending_target_group.add_event_to_group(data)
 	
 	_show_content_state()
 	_reset_workflow()
@@ -1496,6 +1655,7 @@ func _reset_workflow() -> void:
 	pending_id = ""
 	pending_target_row = null
 	pending_target_item = null
+	pending_target_group = null
 
 # === Event Row Handlers ===
 
@@ -1525,9 +1685,12 @@ func _on_row_delete(signal_row, bound_row) -> void:
 	# Push undo state before deleting row
 	_push_undo_state()
 	
-	blocks_container.remove_child(bound_row)
-	bound_row.queue_free()
-	_save_sheet()
+	# Only delete if this row is a direct child of blocks_container
+	# (event rows inside groups are handled by the group itself)
+	if bound_row.get_parent() == blocks_container:
+		blocks_container.remove_child(bound_row)
+		bound_row.queue_free()
+		_save_sheet()
 
 func _on_row_edit(signal_row, bound_row) -> void:
 	var data = bound_row.get_event_data()
