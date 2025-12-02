@@ -13,6 +13,13 @@ signal data_changed  ## Emitted after any data within group changes
 signal before_data_changed  ## Emitted before data changes (for undo)
 signal add_event_requested(group_node)  ## Emitted when user wants to add event to group
 signal add_comment_requested(group_node)  ## Emitted when user wants to add comment to group
+signal condition_edit_requested(condition_item, row)  ## Emitted when condition needs editing
+signal action_edit_requested(action_item, row)  ## Emitted when action needs editing
+signal insert_event_below_requested(row)  ## Emitted when inserting event below
+signal replace_event_requested(row)  ## Emitted when replacing event
+signal edit_event_requested(row)  ## Emitted when editing event
+signal add_condition_requested(row)  ## Emitted when adding condition to event
+signal add_action_requested(row)  ## Emitted when adding action to event
 
 # === Constants ===
 const EVENT_ROW_SCENE = preload("res://addons/flowkit/ui/workspace/event_row.tscn")
@@ -217,11 +224,18 @@ func _instantiate_event_row(data: FKEventBlock) -> Control:
 	row.call_deferred("set_event_data", data)
 	row.call_deferred("set_registry", registry)
 	
-	# Connect row signals to group handlers
+	# Connect row signals to group handlers - propagate all signals to parent
 	row.delete_event_requested.connect(_on_child_row_delete_requested.bind(data))
 	row.selected.connect(func(n): selected.emit(n))
 	row.condition_selected.connect(func(n): selected.emit(n))
 	row.action_selected.connect(func(n): selected.emit(n))
+	row.condition_edit_requested.connect(func(item): condition_edit_requested.emit(item, row))
+	row.action_edit_requested.connect(func(item): action_edit_requested.emit(item, row))
+	row.insert_event_below_requested.connect(func(r): insert_event_below_requested.emit(r))
+	row.replace_event_requested.connect(func(r): replace_event_requested.emit(r))
+	row.edit_event_requested.connect(func(r): edit_event_requested.emit(r))
+	row.add_condition_requested.connect(func(r): add_condition_requested.emit(r))
+	row.add_action_requested.connect(func(r): add_action_requested.emit(r))
 	row.data_changed.connect(_on_child_modified)
 	row.before_data_changed.connect(func(): before_data_changed.emit())
 	
@@ -248,13 +262,20 @@ func _instantiate_group(data: FKGroupBlock) -> Control:
 	nested.set_group_data(data)
 	nested.set_registry(registry)
 	
-	# Connect nested group signals to parent handlers
+	# Connect nested group signals to parent handlers - propagate everything
 	nested.delete_requested.connect(_on_child_group_delete_requested.bind(data))
 	nested.selected.connect(func(n): selected.emit(n))
 	nested.data_changed.connect(_on_child_modified)
 	nested.before_data_changed.connect(func(): before_data_changed.emit())
 	nested.add_event_requested.connect(func(g): add_event_requested.emit(g))
 	nested.add_comment_requested.connect(func(g): add_comment_requested.emit(g))
+	nested.condition_edit_requested.connect(func(item, row): condition_edit_requested.emit(item, row))
+	nested.action_edit_requested.connect(func(item, row): action_edit_requested.emit(item, row))
+	nested.insert_event_below_requested.connect(func(r): insert_event_below_requested.emit(r))
+	nested.replace_event_requested.connect(func(r): replace_event_requested.emit(r))
+	nested.edit_event_requested.connect(func(r): edit_event_requested.emit(r))
+	nested.add_condition_requested.connect(func(r): add_condition_requested.emit(r))
+	nested.add_action_requested.connect(func(r): add_action_requested.emit(r))
 	
 	return nested
 

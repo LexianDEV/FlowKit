@@ -47,9 +47,10 @@ var redo_stack: Array = []  # Stack of undone states
 const MAX_UNDO_STATES: int = 50  # Maximum number of undo states to keep
 
 # Clipboard for different item types
-var clipboard_type: String = ""  # "event", "action", "condition"
+var clipboard_type: String = ""  # "event", "action", "condition", "group"
 var clipboard_actions: Array = []  # Stores copied action data
 var clipboard_conditions: Array = []  # Stores copied condition data
+var clipboard_group: Dictionary = {}  # Stores copied group data
 
 func _ready() -> void:
 	# Initialize undo/redo stacks
@@ -481,10 +482,20 @@ func _find_parent_event_row(node: Node):
 	return null
 
 func _copy_selected_row() -> void:
-	"""Copy selected event row to clipboard."""
+	"""Copy selected event row or group to clipboard."""
 	if not selected_row or not is_instance_valid(selected_row):
 		return
 	
+	# Check if it's a group
+	if selected_row.has_method("get_group_data"):
+		var group_data = selected_row.get_group_data()
+		if group_data:
+			clipboard_type = "group"
+			clipboard_group = _serialize_group_block(group_data)
+			print("Copied 1 group to clipboard")
+		return
+	
+	# Otherwise it's an event row
 	clipboard_events.clear()
 	clipboard_type = "event"
 	
@@ -557,11 +568,13 @@ func _duplicate_actions(actions: Array) -> Array:
 	return result
 
 func _paste_from_clipboard() -> void:
-	"""Paste from clipboard - events, actions, or conditions depending on clipboard type."""
+	"""Paste from clipboard - events, actions, conditions, or groups depending on clipboard type."""
 	if clipboard_type == "action":
 		_paste_actions_from_clipboard()
 	elif clipboard_type == "condition":
 		_paste_conditions_from_clipboard()
+	elif clipboard_type == "group":
+		_paste_group_from_clipboard()
 	else:
 		_paste_events_from_clipboard()
 
@@ -755,6 +768,56 @@ func _paste_conditions_from_clipboard() -> void:
 	_save_sheet()
 	
 	print("Pasted %d condition(s) from clipboard" % clipboard_conditions.size())
+
+func _paste_group_from_clipboard() -> void:
+	"""Paste group from clipboard as a nested group inside the selected group, or at top level."""
+	if clipboard_group.is_empty():
+		return
+	
+	_push_undo_state()
+	
+	# Check if we're pasting into a group
+	var target_group = null
+	if selected_row and is_instance_valid(selected_row):
+		# Check if selected_row is a group
+		if selected_row.has_method("get_group_data"):
+			target_group = selected_row
+		# Check if selected_row is inside a group (event or child of group)
+		else:
+			var parent = selected_row.get_parent()
+			while parent:
+				if parent.has_method("get_group_data"):
+					target_group = parent
+					break
+				parent = parent.get_parent()
+	
+	# Deserialize the group
+	var group_data = _deserialize_group_block(clipboard_group)
+	
+	# If pasting into a group, add as nested group
+	if target_group:
+		var target_group_data = target_group.get_group_data()
+		if target_group_data:
+			target_group_data.children.append({"type": "group", "data": group_data})
+			# Trigger rebuild
+			if target_group.has_method("_rebuild_child_nodes"):
+				target_group._rebuild_child_nodes()
+			_save_sheet()
+			print("Pasted group as nested group")
+			return
+	
+	# Otherwise paste at top level
+	var group = _create_group_block(group_data)
+	
+	# Calculate insert position
+	var insert_idx = blocks_container.get_child_count()
+	if selected_row and is_instance_valid(selected_row):
+		insert_idx = selected_row.get_index() + 1
+	
+	blocks_container.add_child(group)
+	blocks_container.move_child(group, insert_idx)
+	_save_sheet()
+	print("Pasted group at top level")
 
 func _find_event_row_at_mouse() -> Control:
 	"""Find event row at mouse position."""
@@ -1107,6 +1170,14 @@ func _connect_group_signals(group) -> void:
 	group.before_data_changed.connect(_push_undo_state)
 	group.add_event_requested.connect(_on_group_add_event_requested)
 	group.add_comment_requested.connect(_on_group_add_comment_requested)
+	# Connect edit signals from children inside groups
+	group.condition_edit_requested.connect(_on_condition_edit_requested)
+	group.action_edit_requested.connect(_on_action_edit_requested)
+	group.insert_event_below_requested.connect(func(row): _on_row_insert_below(row, row))
+	group.replace_event_requested.connect(func(row): _on_row_replace(row, row))
+	group.edit_event_requested.connect(func(row): _on_row_edit(row, row))
+	group.add_condition_requested.connect(func(row): _on_row_add_condition(row, row))
+	group.add_action_requested.connect(func(row): _on_row_add_action(row, row))
 
 func _on_group_add_event_requested(group_node) -> void:
 	"""Handle request to add an event inside a group."""
