@@ -1,6 +1,11 @@
 # Normalize text files
 * text=auto eol=lf
 
+# Only include the addons folder when downloading from the Asset Library.
+/**        export-ignore
+/addons    !export-ignore
+/addons/** !export-ignore
+
 # Ignore demo files
 /addons/flowkit/demos/** export-ignore
 /addons/flowkit/saved/event_sheet/** export-ignore
