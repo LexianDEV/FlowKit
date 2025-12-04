@@ -15,9 +15,9 @@ func get_inputs() -> Array[Dictionary]:
 	]
 
 func get_supported_types() -> Array[String]:
-	return ["AudioStreamPlayer", "AudioStreamPlayer2D", "AudioStreamPlayer3D"]
+	return ["AudioStreamPlayer2D"]
 
-func execute(node: Node, inputs: Dictionary) -> void:
-	if node and (node is AudioStreamPlayer or node is AudioStreamPlayer2D or node is AudioStreamPlayer3D):
+func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
+	if node and (node is AudioStreamPlayer2D):
 		var volume_db: float = inputs.get("Volume (dB)", 0.0)
 		node.volume_db = volume_db

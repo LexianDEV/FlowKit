@@ -17,6 +17,6 @@ func get_inputs() -> Array[Dictionary]:
 func get_supported_types() -> Array[String]:
 	return ["System"]
 
-func execute(node: Node, inputs: Dictionary) -> void:
+func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
 	var message: Variant = inputs.get("Message", "")
 	print(message)

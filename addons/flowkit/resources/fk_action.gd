@@ -2,7 +2,7 @@ extends Resource
 class_name FKAction
 
 func get_description() -> String:
-	return ""
+	return "No description provided."
 
 func get_id() -> String:
 	return ""
@@ -16,5 +16,5 @@ func get_inputs() -> Array[Dictionary]:
 func get_supported_types() -> Array[String]:
 	return []
 
-func execute(node: Node, inputs: Dictionary) -> void:
+func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
 	pass

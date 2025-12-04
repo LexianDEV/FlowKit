@@ -1695,6 +1695,7 @@ func _replace_event(expressions: Dictionary) -> void:
 	# Get old row's position and conditions/actions
 	var old_data = pending_target_row.get_event_data()
 	var old_index = pending_target_row.get_index()
+	var old_parent = pending_target_row.get_parent()
 	
 	# Create new event data, preserving block_id if available
 	var old_block_id = old_data.block_id if old_data else ""
@@ -1707,10 +1708,28 @@ func _replace_event(expressions: Dictionary) -> void:
 	var new_row = _create_event_row(new_data)
 	
 	# Remove old row and insert new one at same position
-	blocks_container.remove_child(pending_target_row)
+	if old_parent:
+		old_parent.remove_child(pending_target_row)
 	pending_target_row.queue_free()
-	blocks_container.add_child(new_row)
-	blocks_container.move_child(new_row, old_index)
+	
+	# Add to the same parent (blocks_container or children_container within group)
+	if old_parent:
+		old_parent.add_child(new_row)
+		old_parent.move_child(new_row, old_index)
+	else:
+		# Fallback if no parent found
+		blocks_container.add_child(new_row)
+		blocks_container.move_child(new_row, old_index)
+	
+	# If parent is a container inside a group, find the group and sync its data
+	if old_parent:
+		var parent_to_sync = old_parent
+		# If parent is children_container (inside a group), get the group from metadata
+		if old_parent.has_meta("_parent_group"):
+			parent_to_sync = old_parent.get_meta("_parent_group")
+		
+		if parent_to_sync and parent_to_sync.has_method("_sync_children_to_data"):
+			parent_to_sync._sync_children_to_data()
 	
 	_reset_workflow()
 	_save_sheet()

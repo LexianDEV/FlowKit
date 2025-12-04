@@ -72,7 +72,7 @@ func _generate_actions_for_node(node_type: String, node_instance: Node) -> int:
 					_create_setter_action(node_type, prop)
 					count += 1
 	
-	# Generate actions for void methods with parameters
+	# Generate actions for void/non-bool methods (actions DO something)
 	for method in method_list:
 		if _is_valid_method_for_action(method):
 			_create_method_action(node_type, method)
@@ -83,6 +83,7 @@ func _generate_actions_for_node(node_type: String, node_instance: Node) -> int:
 func _generate_conditions_for_node(node_type: String, node_instance: Node) -> int:
 	var count = 0
 	var property_list = node_instance.get_property_list()
+	var method_list = node_instance.get_method_list()
 	
 	# Generate comparison conditions for readable properties
 	for prop in property_list:
@@ -90,6 +91,12 @@ func _generate_conditions_for_node(node_type: String, node_instance: Node) -> in
 			if _is_valid_property_for_condition(prop):
 				_create_property_comparison_condition(node_type, prop)
 				count += 1
+	
+	# Generate conditions for boolean-returning methods (is_*, has_*, can_*, etc.)
+	for method in method_list:
+		if _is_valid_method_for_condition(method):
+			_create_method_condition(node_type, method)
+			count += 1
 	
 	return count
 
@@ -143,6 +150,11 @@ func _is_valid_method_for_action(method: Dictionary) -> bool:
 	if method.name.begins_with("get_") or method.name.begins_with("set_"):
 		return false
 	
+	# Skip condition-like methods (these should be conditions, not actions)
+	# Methods like is_on_floor(), has_node(), can_process() are state checks
+	if method.name.begins_with("is_") or method.name.begins_with("has_") or method.name.begins_with("can_"):
+		return false
+	
 	# Skip methods with too many parameters (keep it simple)
 	if method.args.size() > 4:
 		return false
@@ -153,27 +165,56 @@ func _is_valid_method_for_action(method: Dictionary) -> bool:
 	
 	return true
 
+func _is_valid_method_for_condition(method: Dictionary) -> bool:
+	# Skip private methods
+	if method.name.begins_with("_"):
+		return false
+	
+	# Skip getters/setters (handled by property conditions)
+	if method.name.begins_with("get_") or method.name.begins_with("set_"):
+		return false
+	
+	# Skip methods with too many parameters
+	if method.args.size() > 4:
+		return false
+	
+	# Skip virtual methods
+	if method.flags & METHOD_FLAG_VIRTUAL:
+		return false
+	
+	# Only include methods named like conditions (is_*, has_*, can_*)
+	# These are state-checking methods, not action methods that happen to return bool
+	# e.g., is_on_floor() = condition, move_and_slide() = action (even though it returns bool)
+	var is_condition_name = method.name.begins_with("is_") or method.name.begins_with("has_") or method.name.begins_with("can_")
+	
+	return is_condition_name
+
 func _create_setter_action(node_type: String, prop: Dictionary) -> void:
 	var prop_name = prop.name
-	var action_id = "set_" + prop_name.replace("/", "_").replace(" ", "_").to_lower()
-	var action_name = "Set " + _humanize_name(prop_name)
+	var base_id = "set_" + prop_name.replace("/", "_").replace(" ", "_").to_lower()
+	var action_id = "gen_" + base_id
+	var action_name = "Set " + _humanize_name(prop_name) + " (Generated)"
 	
 	var dir_path = ACTIONS_DIR + node_type
 	_ensure_directory_exists(dir_path)
 	
-	var file_path = dir_path + "/gen_" + action_id + ".gd"
+	var file_path = dir_path + "/gen_" + base_id + ".gd"
 	
 	# Skip if file already exists
 	if FileAccess.file_exists(file_path):
 		return
 	
 	var type_name = _get_type_name(prop.type)
+	var description = _get_property_description(node_type, prop_name, true)
 	var code = """extends FKAction
 
 func get_id() -> String:
 	return "%s"
 
 func get_name() -> String:
+	return "%s"
+
+func get_description() -> String:
 	return "%s"
 
 func get_inputs() -> Array[Dictionary]:
@@ -184,7 +225,7 @@ func get_inputs() -> Array[Dictionary]:
 func get_supported_types() -> Array[String]:
 	return ["%s"]
 
-func execute(node: Node, inputs: Dictionary) -> void:
+func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
 	if not node is %s:
 		return
 	
@@ -193,6 +234,7 @@ func execute(node: Node, inputs: Dictionary) -> void:
 """ % [
 		action_id,
 		action_name,
+		description,
 		type_name,
 		node_type,
 		node_type,
@@ -204,13 +246,14 @@ func execute(node: Node, inputs: Dictionary) -> void:
 
 func _create_method_action(node_type: String, method: Dictionary) -> void:
 	var method_name = method.name
-	var action_id = method_name.to_lower()
-	var action_name = _humanize_name(method_name)
+	var base_id = method_name.to_lower()
+	var action_id = "gen_" + base_id
+	var action_name = _humanize_name(method_name) + " (Generated)"
 	
 	var dir_path = ACTIONS_DIR + node_type
 	_ensure_directory_exists(dir_path)
 	
-	var file_path = dir_path + "/gen_" + action_id + ".gd"
+	var file_path = dir_path + "/gen_" + base_id + ".gd"
 	
 	# Skip if file already exists
 	if FileAccess.file_exists(file_path):
@@ -227,6 +270,7 @@ func _create_method_action(node_type: String, method: Dictionary) -> void:
 	
 	var inputs_str = "[" + ", ".join(inputs) + "]" if inputs.size() > 0 else "[]"
 	var call_str = "node.%s(%s)" % [method_name, ", ".join(call_args)]
+	var description = _get_method_description(node_type, method)
 	
 	var code = """extends FKAction
 
@@ -236,13 +280,16 @@ func get_id() -> String:
 func get_name() -> String:
 	return "%s"
 
+func get_description() -> String:
+	return "%s"
+
 func get_inputs() -> Array[Dictionary]:
 	return %s
 
 func get_supported_types() -> Array[String]:
 	return ["%s"]
 
-func execute(node: Node, inputs: Dictionary) -> void:
+func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
 	if not node is %s:
 		return
 	
@@ -250,6 +297,7 @@ func execute(node: Node, inputs: Dictionary) -> void:
 """ % [
 		action_id,
 		action_name,
+		description,
 		inputs_str,
 		node_type,
 		node_type,
@@ -280,13 +328,14 @@ func _is_valid_property_for_condition(prop: Dictionary) -> bool:
 
 func _create_property_comparison_condition(node_type: String, prop: Dictionary) -> void:
 	var prop_name = prop.name
-	var condition_id = "compare_" + prop_name.replace("/", "_").replace(" ", "_").to_lower()
-	var condition_name = "Compare " + _humanize_name(prop_name)
+	var base_id = "compare_" + prop_name.replace("/", "_").replace(" ", "_").to_lower()
+	var condition_id = "gen_" + base_id
+	var condition_name = "Compare " + _humanize_name(prop_name) + " (Generated)"
 	
 	var dir_path = CONDITIONS_DIR + node_type
 	_ensure_directory_exists(dir_path)
 	
-	var file_path = dir_path + "/gen_" + condition_id + ".gd"
+	var file_path = dir_path + "/gen_" + base_id + ".gd"
 	
 	# Skip if file already exists
 	if FileAccess.file_exists(file_path):
@@ -320,6 +369,8 @@ func _create_property_comparison_condition(node_type: String, prop: Dictionary) 
 	else:
 		inputs_array = '[{"name": "Comparison", "type": "String"}, {"name": "Value", "type": "%s"}]' % type_name
 	
+	var description = _get_property_description(node_type, prop_name, false)
+	
 	var code = """extends FKCondition
 
 func get_id() -> String:
@@ -328,13 +379,16 @@ func get_id() -> String:
 func get_name() -> String:
 	return "%s"
 
+func get_description() -> String:
+	return "%s"
+
 func get_inputs() -> Array[Dictionary]:
 	return %s
 
 func get_supported_types() -> Array[String]:
 	return ["%s"]
 
-func check(node: Node, inputs: Dictionary) -> bool:
+func check(node: Node, inputs: Dictionary, block_id: String = "") -> bool:
 	if not node is %s:
 		return false
 	
@@ -342,10 +396,74 @@ func check(node: Node, inputs: Dictionary) -> bool:
 """ % [
 		condition_id,
 		condition_name,
+		description,
 		inputs_array,
 		node_type,
 		node_type,
 		comparison_logic
+	]
+	
+	_write_file(file_path, code)
+
+func _create_method_condition(node_type: String, method: Dictionary) -> void:
+	var method_name = method.name
+	var base_id = method_name.to_lower()
+	var condition_id = "gen_" + base_id
+	var condition_name = _humanize_name(method_name) + " (Generated)"
+	
+	var dir_path = CONDITIONS_DIR + node_type
+	_ensure_directory_exists(dir_path)
+	
+	var file_path = dir_path + "/gen_" + base_id + ".gd"
+	
+	# Skip if file already exists
+	if FileAccess.file_exists(file_path):
+		return
+	
+	# Build inputs from method parameters
+	var inputs = []
+	var call_args = []
+	for i in range(method.args.size()):
+		var arg = method.args[i]
+		var arg_name = arg.name if arg.name != "" else "Arg" + str(i)
+		var type_name = _get_type_name(arg.type)
+		inputs.append('{"name": "%s", "type": "%s"}' % [_humanize_name(arg_name), type_name])
+		call_args.append('inputs.get("%s", %s)' % [_humanize_name(arg_name), _get_default_value(arg.type)])
+	
+	var inputs_str = "[" + ", ".join(inputs) + "]" if inputs.size() > 0 else "[]"
+	var call_str = "node.%s(%s)" % [method_name, ", ".join(call_args)]
+	var description = _get_method_description(node_type, method)
+	
+	var code = """extends FKCondition
+
+func get_id() -> String:
+	return "%s"
+
+func get_name() -> String:
+	return "%s"
+
+func get_description() -> String:
+	return "%s"
+
+func get_inputs() -> Array[Dictionary]:
+	return %s
+
+func get_supported_types() -> Array[String]:
+	return ["%s"]
+
+func check(node: Node, inputs: Dictionary, block_id: String = "") -> bool:
+	if not node is %s:
+		return false
+	
+	return %s
+""" % [
+		condition_id,
+		condition_name,
+		description,
+		inputs_str,
+		node_type,
+		node_type,
+		call_str
 	]
 	
 	_write_file(file_path, code)
@@ -356,13 +474,14 @@ func check(node: Node, inputs: Dictionary) -> bool:
 
 func _create_signal_event(node_type: String, sig: Dictionary) -> void:
 	var signal_name = sig.name
-	var event_id = "on_" + signal_name.to_lower()
-	var event_name = "On " + _humanize_name(signal_name)
+	var base_id = "on_" + signal_name.to_lower()
+	var event_id = "gen_" + base_id
+	var event_name = "On " + _humanize_name(signal_name) + " (Generated)"
 	
 	var dir_path = EVENTS_DIR + node_type
 	_ensure_directory_exists(dir_path)
 	
-	var file_path = dir_path + "/gen_" + event_id + ".gd"
+	var file_path = dir_path + "/gen_" + base_id + ".gd"
 	
 	# Skip if file already exists
 	if FileAccess.file_exists(file_path):
@@ -390,6 +509,7 @@ func _create_signal_event(node_type: String, sig: Dictionary) -> void:
 		handler_params.append("bound_node")
 	
 	var handler_params_str = ", ".join(handler_params)
+	var description = _get_signal_description(node_type, sig)
 	
 	var code = """extends FKEvent
 
@@ -397,6 +517,9 @@ func get_id() -> String:
 	return "%s"
 
 func get_name() -> String:
+	return "%s"
+
+func get_description() -> String:
 	return "%s"
 
 func get_supported_types() -> Array[String]:
@@ -437,6 +560,7 @@ func _on_signal_fired(%s) -> void:
 		_connected_nodes[bound_node]["signal_fired"] = true""" % [
 		event_id,
 		event_name,
+		description,
 		node_type,
 		inputs_str,
 		signal_name,
@@ -485,6 +609,53 @@ func _get_default_value(type: int) -> String:
 func _ensure_directory_exists(path: String) -> void:
 	if not DirAccess.dir_exists_absolute(path):
 		DirAccess.make_dir_recursive_absolute(path)
+
+func _get_property_description(node_type: String, prop_name: String, is_setter: bool) -> String:
+	if is_setter:
+		return "Sets the '%s' property on %s." % [prop_name, node_type]
+	else:
+		return "Compares the '%s' property on %s." % [prop_name, node_type]
+
+func _get_method_description(node_type: String, method: Dictionary) -> String:
+	var method_name = method.name
+	
+	# Build parameter list string
+	var params_str = ""
+	if method.args.size() > 0:
+		var param_parts = []
+		for arg in method.args:
+			var arg_name = arg.name if arg.name != "" else "arg"
+			var type_name = _get_type_name(arg.type)
+			param_parts.append("%s: %s" % [arg_name, type_name])
+		params_str = " Parameters: " + ", ".join(param_parts) + "."
+	
+	# Generate a description based on method name patterns
+	if method_name.begins_with("is_"):
+		var state = method_name.substr(3).replace("_", " ")
+		return "Checks if the %s %s.%s" % [node_type, state, params_str]
+	elif method_name.begins_with("has_"):
+		var thing = method_name.substr(4).replace("_", " ")
+		return "Checks if the %s has %s.%s" % [node_type, thing, params_str]
+	elif method_name.begins_with("can_"):
+		var ability = method_name.substr(4).replace("_", " ")
+		return "Checks if the %s can %s.%s" % [node_type, ability, params_str]
+	else:
+		return "Calls %s() on %s.%s" % [method_name, node_type, params_str]
+
+func _get_signal_description(node_type: String, sig: Dictionary) -> String:
+	var signal_name = sig.name
+	
+	# Build parameter list string
+	var params_str = ""
+	if sig.args.size() > 0:
+		var param_parts = []
+		for arg in sig.args:
+			var arg_name = arg.name if arg.name != "" else "arg"
+			var type_name = _get_type_name(arg.type)
+			param_parts.append("%s: %s" % [arg_name, type_name])
+		params_str = " Signal parameters: " + ", ".join(param_parts) + "."
+	
+	return "Triggered when %s emits the '%s' signal.%s" % [node_type, signal_name, params_str]
 
 func _write_file(path: String, content: String) -> void:
 	var file = FileAccess.open(path, FileAccess.WRITE)
@@ -569,7 +740,7 @@ func _collect_scripts_recursive(path: String, scripts: Array[GDScript]) -> void:
 			_collect_scripts_recursive(file_path, scripts)
 		elif file_name.ends_with(".gd") and not file_name.ends_with(".uid"):
 			# Load the script
-			var script: GDScript = load(file_path)
+			var script: Variant = load(file_path)
 			if script:
 				scripts.append(script)
 		

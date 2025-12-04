@@ -50,7 +50,7 @@ func _check_for_scene_change() -> void:
 func _on_scene_changed(scene_root: Node) -> void:
 	last_scene = scene_root
 	active_behavior_nodes.clear()  # Clear behavior tracking on scene change
-    
+	
 	if scene_root == null:
 		# Scene unloaded: clear active sheets (optional)
 		active_sheets.clear()
@@ -152,7 +152,7 @@ func _run_sheet(entry: Dictionary) -> void:
 			if not cnode:
 				continue
 
-		var cond_result: bool = registry.check_condition(standalone_cond.condition_id, cnode, standalone_cond.inputs, standalone_cond.negated, current_root)
+		var cond_result: bool = registry.check_condition(standalone_cond.condition_id, cnode, standalone_cond.inputs, standalone_cond.negated, current_root, "")
 		if cond_result:
 			# Execute actions associated with this standalone condition
 			for act in standalone_cond.actions:
@@ -164,7 +164,7 @@ func _run_sheet(entry: Dictionary) -> void:
 					if not anode:
 						print("[FlowKit] Standalone condition action target node not found: ", act.target_node)
 						continue
-				registry.execute_action(act.action_id, anode, act.inputs, current_root)
+				registry.execute_action(act.action_id, anode, act.inputs, current_root, "")
 
 	# Collect all events from the sheet (both top-level and nested in groups)
 	var all_events: Array = []
@@ -200,7 +200,7 @@ func _run_sheet(entry: Dictionary) -> void:
 					passed = false
 					break
 
-			var cond_result: bool = registry.check_condition(cond.condition_id, cnode, cond.inputs, cond.negated, current_root)
+			var cond_result: bool = registry.check_condition(cond.condition_id, cnode, cond.inputs, cond.negated, current_root, block.block_id)
 			if not cond_result:
 				passed = false
 				break
@@ -218,7 +218,7 @@ func _run_sheet(entry: Dictionary) -> void:
 				if not anode:
 					print("[FlowKit] Action target node not found: ", act.target_node)
 					continue
-			registry.execute_action(act.action_id, anode, act.inputs, current_root)
+			registry.execute_action(act.action_id, anode, act.inputs, current_root, block.block_id)
 func _collect_events_from_groups(groups: Array, out_events: Array) -> void:
 	for group in groups:
 		if group is FKGroupBlock:

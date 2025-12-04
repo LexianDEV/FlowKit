@@ -29,6 +29,7 @@ const COMMENT_SCENE = preload("res://addons/flowkit/ui/workspace/comment.tscn")
 var group_data: FKGroupBlock
 var is_selected: bool = false
 var registry: Node
+var _last_selected_child_data: Variant = null  # Track which child was last selected for insertion positioning
 
 # === Drag State ===
 var _drag_start_pos: Vector2 = Vector2.ZERO
@@ -226,7 +227,7 @@ func _instantiate_event_row(data: FKEventBlock) -> Control:
 	
 	# Connect row signals to group handlers - propagate all signals to parent
 	row.delete_event_requested.connect(_on_child_row_delete_requested.bind(data))
-	row.selected.connect(func(n): selected.emit(n))
+	row.selected.connect(func(n): _on_child_selected(data); selected.emit(n))
 	row.condition_selected.connect(func(n): selected.emit(n))
 	row.action_selected.connect(func(n): selected.emit(n))
 	row.condition_edit_requested.connect(func(item): condition_edit_requested.emit(item, row))
@@ -249,7 +250,7 @@ func _instantiate_comment(data: FKCommentBlock) -> Control:
 	
 	# Connect comment signals to group handlers
 	comment.delete_requested.connect(_on_child_comment_delete_requested.bind(data))
-	comment.selected.connect(func(n): selected.emit(n))
+	comment.selected.connect(func(n): _on_child_selected(data); selected.emit(n))
 	comment.data_changed.connect(_on_child_modified)
 	
 	return comment
@@ -485,8 +486,12 @@ func _on_context_menu_id_pressed(id: int) -> void:
 		11: _add_comment_to_group()
 
 
+func _on_child_selected(child_data: Variant) -> void:
+	"""Track which child was last selected for insertion positioning."""
+	_last_selected_child_data = child_data
+
 func _add_comment_to_group() -> void:
-	"""Add a new comment inside this group."""
+	"""Add a new comment inside this group, positioned after the currently selected item if any."""
 	if not group_data:
 		return
 	
@@ -494,7 +499,18 @@ func _add_comment_to_group() -> void:
 	
 	var comment = FKCommentBlock.new()
 	comment.text = ""
-	group_data.children.append({"type": "comment", "data": comment})
+	
+	# Find the index where to insert the comment
+	var insert_index = group_data.children.size()  # Default to end
+	
+	# If there's a selected child, insert after it
+	if _last_selected_child_data != null:
+		for j in range(group_data.children.size()):
+			if group_data.children[j].get("data") == _last_selected_child_data:
+				insert_index = j + 1
+				break
+	
+	group_data.children.insert(insert_index, {"type": "comment", "data": comment})
 	
 	_rebuild_child_nodes()
 	data_changed.emit()
@@ -707,6 +723,10 @@ func _handle_external_drop(drag_node: Node, drag_type: String, original_parent: 
 	
 	before_data_changed.emit()
 	
+	# Calculate drop position BEFORE removing the drag node from its parent
+	# (so we can properly exclude it from visible children calculation)
+	var drop_idx = _calculate_drop_index(drag_node)
+	
 	# Find and sync the source owner (another group or blocks_container)
 	var source_owner = original_parent
 	var max_depth = 5
@@ -728,9 +748,6 @@ func _handle_external_drop(drag_node: Node, drag_type: String, original_parent: 
 	# Free the old visual node
 	drag_node.queue_free()
 	
-	# Calculate drop position
-	var drop_idx = _calculate_drop_index(drag_node)
-	
 	# Determine the type name for storage
 	var type_name = drag_type
 	if type_name == "event_row":
@@ -745,12 +762,53 @@ func _handle_external_drop(drag_node: Node, drag_type: String, original_parent: 
 
 
 func _calculate_drop_index(dragged_node: Node) -> int:
-	"""Calculate insert position for drop."""
+	"""Calculate insert position for drop based on visual position."""
 	var local_y = children_container.get_local_mouse_position().y
-	var result = DropIndicatorManager.calculate_drop_position(
-		children_container, local_y, [drop_hint, dragged_node]
-	)
-	return result["index"]
+	
+	# Get visible children (excluding drop_hint, indicator, and dragged node)
+	var visible_children = []
+	for child in children_container.get_children():
+		if child == drop_hint or DropIndicatorManager.is_indicator(child):
+			continue
+		if child == dragged_node:
+			continue
+		if child.visible:
+			visible_children.append(child)
+	
+	# Empty container or all excluded - insert at beginning
+	if visible_children.is_empty():
+		return 0
+	
+	# Find which visible child the mouse is above
+	for i in range(visible_children.size()):
+		var child = visible_children[i]
+		var rect = child.get_rect()
+		var mid_y = rect.position.y + rect.size.y * 0.5
+		
+		if local_y < mid_y:
+			# Insert before this child - find its position in group_data
+			# Iterate through data to find the matching visual child
+			for data_idx in range(group_data.children.size()):
+				var child_obj = _get_child_node_at_data_index(data_idx)
+				if child_obj == child:
+					return data_idx
+			# Fallback if not found
+			return i
+	
+	# Insert at end (after all visible children)
+	return group_data.children.size()
+
+
+func _get_child_node_at_data_index(data_idx: int) -> Node:
+	"""Get the visual node corresponding to a data array index."""
+	var skipped = 0
+	for child in children_container.get_children():
+		if child == drop_hint or DropIndicatorManager.is_indicator(child):
+			continue
+		if skipped == data_idx:
+			return child
+		skipped += 1
+	return null
 
 
 func _show_drop_indicator(at_position: Vector2, dragged_node: Node) -> void:

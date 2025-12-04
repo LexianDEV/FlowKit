@@ -2,19 +2,19 @@ extends Resource
 class_name FKCondition
 
 func get_description() -> String:
-    return ""
+	return "No description provided."
 
 func get_id() -> String:
-    return ""
+	return ""
 
 func get_name() -> String:
-    return ""
+	return ""
 
 func get_inputs() -> Array[Dictionary]:
-    return []
+	return []
 
 func get_supported_types() -> Array[String]:
-    return []
+	return []
 
-func check(node: Node, inputs: Dictionary) -> bool:
-    return false
+func check(node: Node, inputs: Dictionary, block_id: String = "") -> bool:
+	return false

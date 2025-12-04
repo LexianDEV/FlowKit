@@ -15,6 +15,6 @@ func get_inputs() -> Array[Dictionary]:
 func get_supported_types() -> Array[String]:
 	return ["Window"]
 
-func execute(node: Node, inputs: Dictionary) -> void:
+func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
 	if node and node is Window:
 		node.mode = Window.MODE_MINIMIZED

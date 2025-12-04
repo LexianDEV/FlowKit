@@ -100,7 +100,7 @@ func _scan_directory_recursive(path: String, array: Array) -> void:
 			_scan_directory_recursive(file_path, array)
 		elif file_name.ends_with(".gd") and not file_name.ends_with(".uid"):
 			# Load the script and instantiate it
-			var script: GDScript = load(file_path)
+			var script: Variant = load(file_path)
 			if script:
 				var instance: Variant = script.new()
 				array.append(instance)
@@ -118,7 +118,7 @@ func poll_event(event_id: String, node: Node, inputs: Dictionary = {}, block_id:
 				return provider.poll(node, evaluated_inputs, block_id)
 	return false
 
-func check_condition(condition_id: String, node: Node, inputs: Dictionary, negated: bool = false, scene_root: Node = null) -> bool:
+func check_condition(condition_id: String, node: Node, inputs: Dictionary, negated: bool = false, scene_root: Node = null, block_id: String = "") -> bool:
 	for provider in condition_providers:
 		if provider.has_method("get_id") and provider.get_id() == condition_id:
 			if provider.has_method("check"):
@@ -126,11 +126,11 @@ func check_condition(condition_id: String, node: Node, inputs: Dictionary, negat
 				# Use scene_root as context if provided, otherwise use the node
 				var context = scene_root if scene_root else node
 				var evaluated_inputs: Dictionary = FKExpressionEvaluator.evaluate_inputs(inputs, context)
-				var result = provider.check(node, evaluated_inputs)
+				var result = provider.check(node, evaluated_inputs, block_id)
 				return not result if negated else result
 	return false
 
-func execute_action(action_id: String, node: Node, inputs: Dictionary, scene_root: Node = null) -> void:
+func execute_action(action_id: String, node: Node, inputs: Dictionary, scene_root: Node = null, block_id: String = "") -> void:
 	for provider in action_providers:
 		if provider.has_method("get_id") and provider.get_id() == action_id:
 			if provider.has_method("execute"):
@@ -138,7 +138,7 @@ func execute_action(action_id: String, node: Node, inputs: Dictionary, scene_roo
 				# Use scene_root as context if provided, otherwise use the node
 				var context = scene_root if scene_root else node
 				var evaluated_inputs: Dictionary = FKExpressionEvaluator.evaluate_inputs(inputs, context)
-				provider.execute(node, evaluated_inputs)
+				provider.execute(node, evaluated_inputs, block_id)
 				return
 
 func get_behavior(behavior_id: String) -> Variant:

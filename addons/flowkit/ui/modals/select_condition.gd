@@ -61,7 +61,7 @@ func _scan_directory_recursive(path: String) -> void:
 			# Recursively scan subdirectory
 			_scan_directory_recursive(full_path)
 		elif file_name.ends_with(".gd") and not file_name.ends_with(".gd.uid"):
-			var condition_script: GDScript = load(full_path)
+			var condition_script: Variant = load(full_path)
 			if condition_script:
 				var condition_instance: Variant = condition_script.new()
 				available_conditions.append(condition_instance)

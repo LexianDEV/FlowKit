@@ -6,7 +6,7 @@ class_name FKBehavior
 ## without requiring the user to write code.
 
 func get_description() -> String:
-	return ""
+	return "No description provided."
 
 func get_id() -> String:
 	return ""

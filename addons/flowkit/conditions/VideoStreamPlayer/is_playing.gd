@@ -15,7 +15,7 @@ func get_inputs() -> Array[Dictionary]:
 func get_supported_types() -> Array[String]:
 	return ["VideoStreamPlayer"]
 
-func check(node: Node, inputs: Dictionary) -> bool:
+func check(node: Node, inputs: Dictionary, block_id: String = "") -> bool:
 	if node and node is VideoStreamPlayer:
 		return node.is_playing()
 	return false

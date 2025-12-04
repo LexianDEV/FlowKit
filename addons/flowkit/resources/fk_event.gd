@@ -2,7 +2,7 @@ extends Resource
 class_name FKEvent
 
 func get_description() -> String:
-	return ""
+	return "No description provided."
 
 func get_id() -> String:
 	return ""

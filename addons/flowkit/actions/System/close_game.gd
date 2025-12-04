@@ -15,7 +15,7 @@ func get_supported_types() -> Array[String]:
 func get_inputs() -> Array[Dictionary]:
 	return []
 
-func execute(node: Node, inputs: Dictionary) -> void:
+func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
 	if not node or not node.is_inside_tree():
 		return
 	node.get_tree().quit()
