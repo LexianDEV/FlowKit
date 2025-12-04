@@ -70,7 +70,8 @@ func _on_scene_changed(scene_root: Node) -> void:
 	# Scan and activate behaviors for all nodes in the scene
 	_scan_and_activate_behaviors(scene_root)
 
-	# Load event sheets for the scene root and any instanced child scenes
+	# Load event sheets for nodes with attached event sheets (object-based)
+	# and also load scene-based sheets for backward compatibility
 	_load_sheets_for_scene(scene_root)
 
 
@@ -79,6 +80,44 @@ func _load_sheets_for_scene(scene_root: Node) -> void:
 	# Clear previous sheets
 	active_sheets.clear()
 
+	# First, scan for object-based event sheets (nodes with flowkit_event_sheet metadata)
+	_scan_and_load_object_sheets(scene_root)
+
+	# Then, load scene-based sheets for backward compatibility
+	_load_scene_based_sheets(scene_root)
+
+
+func _scan_and_load_object_sheets(node: Node) -> void:
+	"""Recursively scan nodes for attached event sheets (object-based)."""
+	# Check if this node has an event sheet assigned
+	if node.has_meta("flowkit_event_sheet"):
+		var sheet_path: String = node.get_meta("flowkit_event_sheet", "")
+		if not sheet_path.is_empty() and ResourceLoader.exists(sheet_path):
+			var sheet: FKEventSheet = load(sheet_path)
+			if sheet:
+				# Ensure all blocks have unique IDs
+				for block in sheet.events:
+					if block:
+						block.ensure_block_id()
+				_ensure_block_ids_in_groups(sheet.groups)
+				
+				# Add entry with this node as the root context
+				active_sheets.append({
+					"sheet": sheet,
+					"root": node,
+					"scene_name": sheet_path.get_file().get_basename(),
+					"uid": -1,  # Object-based sheets use -1 to indicate not scene-based
+					"object_based": true
+				})
+				print("[FlowKit] Loaded object-based event sheet for node: ", node.name, " (", sheet_path.get_file(), ") with ", sheet.events.size(), " events")
+	
+	# Recursively scan children
+	for child in node.get_children():
+		_scan_and_load_object_sheets(child)
+
+
+func _load_scene_based_sheets(scene_root: Node) -> void:
+	"""Load scene-based event sheets (legacy/backward compatibility)."""
 	# Collect unique scene_file_path UIDs and map to their root node instances
 	var uid_to_node: Dictionary = {}
 

@@ -6,6 +6,11 @@ var registry: Node
 var generator
 var current_scene_uid: int = 0
 
+# Object-based event sheet editing
+var editing_object_sheet: bool = false  # True when editing an object-based sheet (not scene-based)
+var current_sheet_path: String = ""  # Path to the currently edited event sheet
+var current_object_node: Node = null  # The node that has this sheet attached (for object-based editing)
+
 # Scene preloads - GDevelop-style event rows
 const EVENT_ROW_SCENE = preload("res://addons/flowkit/ui/workspace/event_row.tscn")
 const COMMENT_SCENE = preload("res://addons/flowkit/ui/workspace/comment.tscn")
@@ -885,6 +890,10 @@ func _process(delta: float) -> void:
 	if not editor_interface:
 		return
 
+	# If editing an object-based sheet, don't auto-switch to scene-based
+	if editing_object_sheet:
+		return
+
 	var scene_root = editor_interface.get_edited_scene_root()
 	if not scene_root:
 		if current_scene_uid != 0:
@@ -944,13 +953,55 @@ func _show_content_state() -> void:
 # === File Operations ===
 
 func _get_sheet_path() -> String:
-	"""Get the file path for current scene's event sheet."""
+	"""Get the file path for current event sheet (object-based or scene-based)."""
+	# Object-based sheet path takes precedence
+	if editing_object_sheet and not current_sheet_path.is_empty():
+		return current_sheet_path
+	
+	# Scene-based path
 	if current_scene_uid == 0:
 		return ""
 	return "res://addons/flowkit/saved/event_sheet/%d.tres" % current_scene_uid
 
+func edit_event_sheet(sheet_path: String) -> void:
+	"""Edit a specific event sheet file (called from inspector for object-based sheets)."""
+	editing_object_sheet = true
+	current_sheet_path = sheet_path
+	current_scene_uid = 0  # Clear scene-based tracking
+	
+	_clear_undo_history()
+	_clear_all_blocks()
+	
+	if not FileAccess.file_exists(sheet_path):
+		# Create a new empty sheet at this path
+		var new_sheet = FKEventSheet.new()
+		var dir_path = sheet_path.get_base_dir()
+		DirAccess.make_dir_recursive_absolute(dir_path)
+		var error = ResourceSaver.save(new_sheet, sheet_path)
+		if error != OK:
+			push_error("[FlowKit] Failed to create event sheet: ", sheet_path)
+			_show_empty_state()
+			return
+		print("[FlowKit] Created new event sheet: ", sheet_path)
+		_show_empty_blocks_state()
+		return
+	
+	var sheet = ResourceLoader.load(sheet_path)
+	if not (sheet is FKEventSheet):
+		push_error("[FlowKit] Invalid event sheet resource: ", sheet_path)
+		_show_empty_blocks_state()
+		return
+	
+	_populate_from_sheet(sheet)
+	_show_content_state()
+	print("[FlowKit] Editing object-based event sheet: ", sheet_path)
+
 func _load_scene_sheet() -> void:
-	"""Load event sheet for current scene."""
+	"""Load event sheet for current scene (scene-based mode)."""
+	# Reset object-based mode when loading scene sheet
+	editing_object_sheet = false
+	current_sheet_path = ""
+	
 	_clear_all_blocks()
 	
 	var sheet_path = _get_sheet_path()
@@ -991,16 +1042,19 @@ func _populate_from_sheet(sheet: FKEventSheet) -> void:
 
 func _save_sheet() -> void:
 	"""Generate and save event sheet from current blocks."""
-	if current_scene_uid == 0:
-		push_warning("No scene open to save event sheet.")
+	var sheet_path = _get_sheet_path()
+	
+	# Check if we have a valid path (either object-based or scene-based)
+	if sheet_path.is_empty():
+		if not editing_object_sheet and current_scene_uid == 0:
+			push_warning("No scene open to save event sheet.")
 		return
 	
 	var sheet = _generate_sheet_from_blocks()
 	
-	var dir_path = "res://addons/flowkit/saved/event_sheet"
+	var dir_path = sheet_path.get_base_dir()
 	DirAccess.make_dir_recursive_absolute(dir_path)
 	
-	var sheet_path = _get_sheet_path()
 	var error = ResourceSaver.save(sheet, sheet_path)
 	
 	if error == OK:
@@ -1011,7 +1065,10 @@ func _save_sheet() -> void:
 func _save_and_reload_sheet() -> void:
 	"""Save sheet and reload UI to ensure visual/data sync (for drag-drop operations)."""
 	_save_sheet()
-	_load_scene_sheet()
+	if editing_object_sheet and not current_sheet_path.is_empty():
+		edit_event_sheet(current_sheet_path)
+	else:
+		_load_scene_sheet()
 
 func _generate_sheet_from_blocks() -> FKEventSheet:
 	"""Build event sheet from event rows, comments, and groups (GDevelop-style)."""
@@ -1102,6 +1159,14 @@ func _copy_group_block(data: FKGroupBlock) -> FKGroupBlock:
 
 func _new_sheet() -> void:
 	"""Create new empty sheet."""
+	# In object-based mode, clear the current sheet
+	if editing_object_sheet and not current_sheet_path.is_empty():
+		_clear_all_blocks()
+		_save_sheet()  # Save the empty sheet
+		_show_content_state()
+		return
+	
+	# In scene-based mode, require a scene
 	if current_scene_uid == 0:
 		push_warning("No scene open to create event sheet.")
 		return

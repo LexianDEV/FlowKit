@@ -2,7 +2,7 @@
 extends VBoxContainer
 
 ## FlowKit Inspector Section
-## Displays node variables and behaviors in the inspector with Godot-style UI
+## Displays node variables, behaviors, and event sheets in the inspector with Godot-style UI
 
 var node: Node = null
 var registry: FKRegistry = null
@@ -21,6 +21,15 @@ var behavior_section: VBoxContainer = null
 var behavior_dropdown: OptionButton = null
 var behavior_params_container: VBoxContainer = null
 var available_behaviors: Array = []
+
+# Event Sheet UI Components
+var event_sheet_section: VBoxContainer = null
+var event_sheet_hbox: HBoxContainer = null
+var event_sheet_path_label: Label = null
+var event_sheet_new_button: Button = null
+var event_sheet_assign_button: Button = null
+var event_sheet_clear_button: Button = null
+var event_sheet_edit_button: Button = null
 
 func _ready() -> void:
 	_build_ui()
@@ -67,6 +76,9 @@ func _build_ui() -> void:
 	inner_vbox.add_theme_constant_override("separation", 8)
 	margin.add_child(inner_vbox)
 	
+	# === Event Sheet Section ===
+	_build_event_sheet_section(inner_vbox)
+	
 	# === Behavior Section ===
 	_build_behavior_section(inner_vbox)
 	
@@ -89,6 +101,226 @@ func _build_ui() -> void:
 	
 	# Set icon after adding to tree (when theme is available)
 	call_deferred("_set_header_icon")
+
+func _build_event_sheet_section(parent: VBoxContainer) -> void:
+	event_sheet_section = VBoxContainer.new()
+	event_sheet_section.add_theme_constant_override("separation", 4)
+	parent.add_child(event_sheet_section)
+	
+	# Event Sheet label
+	var event_sheet_label: Label = Label.new()
+	event_sheet_label.text = "Event Sheet"
+	event_sheet_label.add_theme_font_size_override("font_size", 13)
+	event_sheet_section.add_child(event_sheet_label)
+	
+	# Event sheet path display and buttons
+	event_sheet_hbox = HBoxContainer.new()
+	event_sheet_hbox.add_theme_constant_override("separation", 4)
+	event_sheet_section.add_child(event_sheet_hbox)
+	
+	# Path label (shows the assigned event sheet path)
+	event_sheet_path_label = Label.new()
+	event_sheet_path_label.text = "None"
+	event_sheet_path_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	event_sheet_path_label.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6, 1.0))
+	event_sheet_hbox.add_child(event_sheet_path_label)
+	
+	# New button (create a new event sheet for this node)
+	event_sheet_new_button = Button.new()
+	event_sheet_new_button.text = "New"
+	event_sheet_new_button.tooltip_text = "Create a new event sheet for this node"
+	event_sheet_new_button.pressed.connect(_on_event_sheet_new)
+	event_sheet_hbox.add_child(event_sheet_new_button)
+	
+	# Assign button
+	event_sheet_assign_button = Button.new()
+	event_sheet_assign_button.text = "Assign..."
+	event_sheet_assign_button.tooltip_text = "Assign an existing event sheet to this node"
+	event_sheet_assign_button.pressed.connect(_on_event_sheet_assign)
+	event_sheet_hbox.add_child(event_sheet_assign_button)
+	
+	# Edit button (only visible when sheet assigned)
+	event_sheet_edit_button = Button.new()
+	event_sheet_edit_button.text = "Edit"
+	event_sheet_edit_button.tooltip_text = "Edit this event sheet in FlowKit"
+	event_sheet_edit_button.pressed.connect(_on_event_sheet_edit)
+	event_sheet_edit_button.visible = false
+	event_sheet_hbox.add_child(event_sheet_edit_button)
+	
+	# Clear button (only visible when sheet assigned)
+	event_sheet_clear_button = Button.new()
+	event_sheet_clear_button.text = "×"
+	event_sheet_clear_button.custom_minimum_size = Vector2(24, 0)
+	event_sheet_clear_button.tooltip_text = "Remove event sheet"
+	event_sheet_clear_button.pressed.connect(_on_event_sheet_clear)
+	event_sheet_clear_button.visible = false
+	event_sheet_hbox.add_child(event_sheet_clear_button)
+	
+	# Load current event sheet assignment
+	call_deferred("_load_current_event_sheet")
+
+func _load_current_event_sheet() -> void:
+	if not node:
+		return
+	
+	if not node.has_meta("flowkit_event_sheet"):
+		_update_event_sheet_display("")
+		return
+	
+	var sheet_path: String = node.get_meta("flowkit_event_sheet", "")
+	_update_event_sheet_display(sheet_path)
+
+func _update_event_sheet_display(sheet_path: String) -> void:
+	if sheet_path.is_empty():
+		event_sheet_path_label.text = "None"
+		event_sheet_path_label.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6, 1.0))
+		event_sheet_new_button.visible = true
+		event_sheet_assign_button.visible = true
+		event_sheet_edit_button.visible = false
+		event_sheet_clear_button.visible = false
+	else:
+		# Show just the filename for readability
+		var filename: String = sheet_path.get_file()
+		event_sheet_path_label.text = filename
+		event_sheet_path_label.add_theme_color_override("font_color", Color(0.9, 0.9, 0.9, 1.0))
+		event_sheet_new_button.visible = false
+		event_sheet_assign_button.visible = false
+		event_sheet_edit_button.visible = true
+		event_sheet_clear_button.visible = true
+
+func _on_event_sheet_new() -> void:
+	"""Create a new event sheet for this node."""
+	if not node:
+		return
+	
+	# Show file dialog to save a new event sheet
+	var file_dialog: FileDialog = FileDialog.new()
+	file_dialog.title = "Create New Event Sheet"
+	file_dialog.file_mode = FileDialog.FILE_MODE_SAVE_FILE
+	file_dialog.access = FileDialog.ACCESS_RESOURCES
+	file_dialog.add_filter("*.tres", "Event Sheet Resources")
+	file_dialog.current_dir = "res://addons/flowkit/saved/event_sheet/"
+	file_dialog.current_file = node.name.to_lower() + "_flow.tres"
+	file_dialog.size = Vector2i(600, 400)
+	
+	file_dialog.file_selected.connect(func(path: String):
+		_create_and_assign_event_sheet(path)
+		file_dialog.queue_free()
+	)
+	
+	file_dialog.canceled.connect(func():
+		file_dialog.queue_free()
+	)
+	
+	add_child(file_dialog)
+	file_dialog.popup_centered()
+
+func _create_and_assign_event_sheet(sheet_path: String) -> void:
+	"""Create a new event sheet at the given path and assign it to the node."""
+	if not node:
+		return
+	
+	# Create new empty event sheet
+	var new_sheet = FKEventSheet.new()
+	
+	# Ensure the directory exists
+	var dir_path = sheet_path.get_base_dir()
+	DirAccess.make_dir_recursive_absolute(dir_path)
+	
+	# Save the sheet
+	var error = ResourceSaver.save(new_sheet, sheet_path)
+	if error != OK:
+		push_error("[FlowKit] Failed to create event sheet: " + sheet_path)
+		return
+	
+	print("[FlowKit] Created new event sheet: ", sheet_path)
+	
+	# Assign to node and update display
+	_assign_event_sheet(sheet_path)
+	
+	# Open the FlowKit editor and edit this sheet
+	_on_event_sheet_edit()
+
+func _on_event_sheet_assign() -> void:
+	if not node:
+		return
+	
+	# Show file dialog to select an event sheet resource
+	var file_dialog: FileDialog = FileDialog.new()
+	file_dialog.title = "Select Event Sheet"
+	file_dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILE
+	file_dialog.access = FileDialog.ACCESS_RESOURCES
+	file_dialog.add_filter("*.tres", "Event Sheet Resources")
+	file_dialog.current_dir = "res://addons/flowkit/saved/event_sheet/"
+	file_dialog.size = Vector2i(600, 400)
+	
+	file_dialog.file_selected.connect(func(path: String):
+		_assign_event_sheet(path)
+		file_dialog.queue_free()
+	)
+	
+	file_dialog.canceled.connect(func():
+		file_dialog.queue_free()
+	)
+	
+	add_child(file_dialog)
+	file_dialog.popup_centered()
+
+func _assign_event_sheet(sheet_path: String) -> void:
+	if not node:
+		return
+	
+	# Verify the resource exists and is an FKEventSheet
+	if not ResourceLoader.exists(sheet_path):
+		push_error("[FlowKit] Event sheet not found: " + sheet_path)
+		return
+	
+	var sheet: Resource = load(sheet_path)
+	if not sheet is FKEventSheet:
+		push_error("[FlowKit] Selected resource is not an event sheet: " + sheet_path)
+		return
+	
+	# Store the path in node metadata
+	node.set_meta("flowkit_event_sheet", sheet_path)
+	_update_event_sheet_display(sheet_path)
+	_notify_property_changed()
+
+func _on_event_sheet_edit() -> void:
+	if not node or not editor_interface:
+		return
+	
+	if not node.has_meta("flowkit_event_sheet"):
+		return
+	
+	var sheet_path: String = node.get_meta("flowkit_event_sheet", "")
+	if sheet_path.is_empty():
+		return
+	
+	# Switch to FlowKit main screen and load this sheet
+	editor_interface.set_main_screen_editor("FlowKit")
+	
+	# Find the FlowKit editor and tell it to edit this specific sheet
+	var flowkit_editor = _find_flowkit_editor()
+	if flowkit_editor and flowkit_editor.has_method("edit_event_sheet"):
+		flowkit_editor.edit_event_sheet(sheet_path)
+
+func _find_flowkit_editor():
+	"""Find the FlowKit editor in the main screen."""
+	if not editor_interface:
+		return null
+	var main_screen = editor_interface.get_editor_main_screen()
+	for child in main_screen.get_children():
+		if child.has_method("edit_event_sheet"):
+			return child
+	return null
+
+func _on_event_sheet_clear() -> void:
+	if not node:
+		return
+	
+	node.remove_meta("flowkit_event_sheet")
+	_update_event_sheet_display("")
+	_notify_property_changed()
 
 func _build_behavior_section(parent: VBoxContainer) -> void:
 	behavior_section = VBoxContainer.new()
