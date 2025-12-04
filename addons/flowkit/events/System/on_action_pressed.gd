@@ -1,7 +1,7 @@
 extends FKEvent
 
 func get_description() -> String:
-	return "Triggers when the specified key or input action was just pressed."
+	return "Triggers when the specified input action is pressed."
 
 func get_id() -> String:
 	return "on_action_pressed"
@@ -14,16 +14,13 @@ func get_supported_types() -> Array[String]:
 
 func get_inputs() -> Array:
 	return [
-		{"name": "key", "type": "string", "description": "The name of the key (defined in InputMap)"}
+		{"name": "action",	"type": "string", "description": "The name of the input action (defined in InputMap)."}
 	]
 
 func poll(node: Node, inputs: Dictionary = {}, block_id: String = "") -> bool:
-	if not node or not node.is_inside_tree():
+	var action_name: String = inputs.get("action", "")
+	if action_name == "":
 		return false
-	
-	# Check if any action in the InputMap is currently pressed
-	for action in InputMap.get_actions():
-		if Input.is_action_just_pressed(action):
-			return true
-	
-	return false
+
+	# Check for action pressed
+	return Input.is_action_pressed(action_name)
