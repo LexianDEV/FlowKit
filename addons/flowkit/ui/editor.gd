@@ -16,6 +16,10 @@ const EVENT_ROW_SCENE = preload("res://addons/flowkit/ui/workspace/event_row.tsc
 const COMMENT_SCENE = preload("res://addons/flowkit/ui/workspace/comment.tscn")
 const GROUP_SCENE = preload("res://addons/flowkit/ui/workspace/group.tscn")
 
+# UI Messages
+const MSG_EMPTY_STATE := "No actions available (Is this a new scene? Please make a new event sheet)"
+const MSG_NO_EVENT_SHEET := "No event sheet assigned to this node.\nUse the inspector to create or assign one."
+
 # UI References
 @onready var scroll_container := $OuterVBox/ScrollContainer
 @onready var blocks_container := $OuterVBox/ScrollContainer/MarginContainer/BlocksContainer
@@ -937,11 +941,13 @@ func _clear_all_blocks() -> void:
 
 func _show_empty_state() -> void:
 	"""Show empty state UI (no scene loaded)."""
+	empty_label.text = MSG_EMPTY_STATE
 	empty_label.visible = true
 	add_event_btn.visible = false
 
 func _show_empty_blocks_state() -> void:
 	"""Show state when scene is loaded but has no blocks."""
+	empty_label.text = MSG_EMPTY_STATE
 	empty_label.visible = false
 	add_event_btn.visible = true
 
@@ -965,6 +971,11 @@ func _get_sheet_path() -> String:
 
 func edit_event_sheet(sheet_path: String) -> void:
 	"""Edit a specific event sheet file (called from inspector for object-based sheets)."""
+	# If path is empty, show a message that no event sheet is assigned
+	if sheet_path.is_empty():
+		_show_no_event_sheet_state()
+		return
+	
 	editing_object_sheet = true
 	current_sheet_path = sheet_path
 	current_scene_uid = 0  # Clear scene-based tracking
@@ -995,6 +1006,31 @@ func edit_event_sheet(sheet_path: String) -> void:
 	_populate_from_sheet(sheet)
 	_show_content_state()
 	print("[FlowKit] Editing object-based event sheet: ", sheet_path)
+
+func edit_node_event_sheet(target_node: Node) -> void:
+	"""Edit the event sheet for a specific node. Shows message if no sheet assigned."""
+	if not target_node:
+		_show_no_event_sheet_state()
+		return
+	
+	current_object_node = target_node
+	
+	if not target_node.has_meta("flowkit_event_sheet"):
+		_show_no_event_sheet_state()
+		return
+	
+	var sheet_path: String = target_node.get_meta("flowkit_event_sheet", "")
+	edit_event_sheet(sheet_path)
+
+func _show_no_event_sheet_state() -> void:
+	"""Show state when no event sheet is assigned to the selected node."""
+	editing_object_sheet = true
+	current_sheet_path = ""
+	_clear_all_blocks()
+	_clear_undo_history()
+	empty_label.text = MSG_NO_EVENT_SHEET
+	empty_label.visible = true
+	add_event_btn.visible = false
 
 func _load_scene_sheet() -> void:
 	"""Load event sheet for current scene (scene-based mode)."""

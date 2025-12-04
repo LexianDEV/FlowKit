@@ -289,20 +289,19 @@ func _on_event_sheet_edit() -> void:
 	if not node or not editor_interface:
 		return
 	
-	if not node.has_meta("flowkit_event_sheet"):
-		return
-	
-	var sheet_path: String = node.get_meta("flowkit_event_sheet", "")
-	if sheet_path.is_empty():
-		return
-	
-	# Switch to FlowKit main screen and load this sheet
+	# Switch to FlowKit main screen
 	editor_interface.set_main_screen_editor("FlowKit")
 	
-	# Find the FlowKit editor and tell it to edit this specific sheet
+	# Find the FlowKit editor and tell it to edit this node's event sheet
 	var flowkit_editor = _find_flowkit_editor()
-	if flowkit_editor and flowkit_editor.has_method("edit_event_sheet"):
-		flowkit_editor.edit_event_sheet(sheet_path)
+	if flowkit_editor:
+		if flowkit_editor.has_method("edit_node_event_sheet"):
+			flowkit_editor.edit_node_event_sheet(node)
+		elif flowkit_editor.has_method("edit_event_sheet"):
+			# Fallback to path-based method
+			if node.has_meta("flowkit_event_sheet"):
+				var sheet_path: String = node.get_meta("flowkit_event_sheet", "")
+				flowkit_editor.edit_event_sheet(sheet_path)
 
 func _find_flowkit_editor():
 	"""Find the FlowKit editor in the main screen."""

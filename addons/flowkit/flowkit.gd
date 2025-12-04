@@ -54,9 +54,35 @@ func _enter_tree() -> void:
 	inspector_plugin.set_editor_interface(get_editor_interface())
 	add_inspector_plugin(inspector_plugin)
 	
+	# Connect to editor selection changed signal
+	var selection = get_editor_interface().get_selection()
+	selection.selection_changed.connect(_on_editor_selection_changed)
+	
 	print("[FlowKit] Plugin loaded")
 
+func _on_editor_selection_changed() -> void:
+	"""Handle editor selection change to update FlowKit editor when node changes."""
+	if not editor or not editor.visible:
+		return
+	
+	# Only update if we're in object-based editing mode
+	if not editor.editing_object_sheet:
+		return
+	
+	var selection = get_editor_interface().get_selection()
+	var selected_nodes = selection.get_selected_nodes()
+	
+	if selected_nodes.size() == 1:
+		var selected_node = selected_nodes[0]
+		# Update the editor to show this node's event sheet (or "no sheet" message)
+		editor.edit_node_event_sheet(selected_node)
+
 func _exit_tree() -> void:
+	# Disconnect from editor selection signal
+	var selection = get_editor_interface().get_selection()
+	if selection and selection.selection_changed.is_connected(_on_editor_selection_changed):
+		selection.selection_changed.disconnect(_on_editor_selection_changed)
+	
 	action_registry.free()
 
 	remove_autoload_singleton("FlowKitSystem")
