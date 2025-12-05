@@ -19,4 +19,5 @@ func get_inputs() -> Array[Dictionary]:
 
 func check(node: Node, inputs: Dictionary, block_id: String = "") -> bool:
 	var seconds: float = float(inputs.get("Seconds", 0.0))
-	return Time.get_ticks_msec() / 1000.0 > seconds
+	var threshold_ms: float = seconds * 1000.0
+	return Time.get_ticks_msec() > threshold_ms

@@ -20,7 +20,7 @@ func get_inputs() -> Array[Dictionary]:
 
 func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
 	var action_name: String = str(inputs.get("Action", ""))
-	var strength: float = float(inputs.get("Strength", 1.0))
+	var strength: float = clampf(float(inputs.get("Strength", 1.0)), 0.0, 1.0)
 	
 	if not action_name.is_empty():
 		Input.action_press(action_name, strength)

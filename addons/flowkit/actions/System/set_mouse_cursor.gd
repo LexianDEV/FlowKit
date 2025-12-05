@@ -27,7 +27,10 @@ func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
 	if cursor_path.is_empty():
 		Input.set_custom_mouse_cursor(null)
 	else:
-		var texture: Texture2D = load(cursor_path) as Texture2D
+		if not ResourceLoader.exists(cursor_path):
+			push_error("[FlowKit] set_mouse_cursor: Cursor texture not found at '%s'" % cursor_path)
+			return
+		var texture: Texture2D = ResourceLoader.load(cursor_path, "Texture2D", ResourceLoader.CACHE_MODE_REUSE) as Texture2D
 		if texture:
 			Input.set_custom_mouse_cursor(texture, Input.CURSOR_ARROW, Vector2(hotspot_x, hotspot_y))
 		else:
