@@ -23,6 +23,8 @@ signal replace_event_requested(row)  ## Emitted when replacing event
 signal edit_event_requested(row)  ## Emitted when editing event
 signal add_condition_requested(row)  ## Emitted when adding condition to event
 signal add_action_requested(row)  ## Emitted when adding action to event
+signal condition_dropped(source_row, condition_data, target_row)  ## Emitted when condition is dropped on an event
+signal action_dropped(source_row, action_data, target_row)  ## Emitted when action is dropped on an event
 
 # === Constants ===
 const EVENT_ROW_SCENE = preload("res://addons/flowkit/ui/workspace/event_row.tscn")
@@ -241,6 +243,8 @@ func _instantiate_event_row(data: FKEventBlock) -> Control:
 	row.edit_event_requested.connect(func(r): edit_event_requested.emit(r))
 	row.add_condition_requested.connect(func(r): add_condition_requested.emit(r))
 	row.add_action_requested.connect(func(r): add_action_requested.emit(r))
+	row.condition_dropped.connect(func(src, cond, tgt): condition_dropped.emit(src, cond, tgt))
+	row.action_dropped.connect(func(src, act, tgt): action_dropped.emit(src, act, tgt))
 	row.data_changed.connect(_on_child_modified)
 	row.before_data_changed.connect(func(): before_data_changed.emit())
 	
@@ -288,6 +292,8 @@ func _instantiate_group(data: FKGroupBlock) -> Control:
 	nested.edit_event_requested.connect(func(r): edit_event_requested.emit(r))
 	nested.add_condition_requested.connect(func(r): add_condition_requested.emit(r))
 	nested.add_action_requested.connect(func(r): add_action_requested.emit(r))
+	nested.condition_dropped.connect(func(src, cond, tgt): condition_dropped.emit(src, cond, tgt))
+	nested.action_dropped.connect(func(src, act, tgt): action_dropped.emit(src, act, tgt))
 	
 	return nested
 
@@ -833,17 +839,11 @@ func _calculate_drop_index(dragged_node: Node) -> int:
 		var mid_y = rect.position.y + rect.size.y * 0.5
 		
 		if local_y < mid_y:
-			# Insert before this child - find its position in group_data
-			# Iterate through data to find the matching visual child
-			for data_idx in range(group_data.children.size()):
-				var child_obj = _get_child_node_at_data_index(data_idx)
-				if child_obj == child:
-					return data_idx
-			# Fallback if not found
+			# Insert at this position (i is the visual index which maps to data index)
 			return i
 	
 	# Insert at end (after all visible children)
-	return group_data.children.size()
+	return visible_children.size()
 
 
 func _get_child_node_at_data_index(data_idx: int) -> Node:

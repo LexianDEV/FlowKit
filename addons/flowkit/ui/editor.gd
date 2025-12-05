@@ -1189,6 +1189,8 @@ func _connect_group_signals(group) -> void:
 	group.edit_event_requested.connect(func(row): _on_row_edit(row, row))
 	group.add_condition_requested.connect(func(row): _on_row_add_condition(row, row))
 	group.add_action_requested.connect(func(row): _on_row_add_action(row, row))
+	group.condition_dropped.connect(_on_condition_dropped)
+	group.action_dropped.connect(_on_action_dropped)
 
 func _on_group_add_event_requested(group_node) -> void:
 	"""Handle request to add an event inside a group."""
