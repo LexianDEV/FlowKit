@@ -2,6 +2,7 @@
 extends MarginContainer
 
 signal insert_event_below_requested(event_row)
+signal insert_comment_below_requested(event_row)
 signal replace_event_requested(event_row)
 signal delete_event_requested(event_row)
 signal edit_event_requested(event_row)
@@ -100,6 +101,8 @@ func _on_gui_input(event: InputEvent) -> void:
 			if context_menu:
 				context_menu.clear()
 				context_menu.add_item("Add Event Below", 0)
+				context_menu.add_item("Add Comment Below", 4)
+				context_menu.add_separator()
 				context_menu.add_item("Replace Event", 1)
 				context_menu.add_item("Edit Event", 2)
 				context_menu.add_separator()
@@ -156,6 +159,8 @@ func _on_context_menu_id_pressed(id: int) -> void:
 			edit_event_requested.emit(self)
 		3: # Delete Event
 			delete_event_requested.emit(self)
+		4: # Add Comment Below
+			insert_comment_below_requested.emit(self)
 
 func set_event_data(data: FKEventBlock) -> void:
 	event_data = data

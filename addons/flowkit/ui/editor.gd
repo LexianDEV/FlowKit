@@ -1137,6 +1137,10 @@ func _connect_comment_signals(comment) -> void:
 	comment.selected.connect(_on_comment_selected)
 	comment.delete_requested.connect(_on_comment_delete.bind(comment))
 	comment.data_changed.connect(_save_sheet)
+	comment.insert_comment_above_requested.connect(_on_comment_insert_above.bind(comment))
+	comment.insert_comment_below_requested.connect(_on_comment_insert_below.bind(comment))
+	comment.insert_event_above_requested.connect(_on_comment_insert_event_above.bind(comment))
+	comment.insert_event_below_requested.connect(_on_comment_insert_event_below.bind(comment))
 
 func _create_group_block(data: FKGroupBlock) -> Control:
 	"""Create group block node from data."""
@@ -1178,6 +1182,9 @@ func _connect_group_signals(group) -> void:
 	group.condition_edit_requested.connect(_on_condition_edit_requested)
 	group.action_edit_requested.connect(_on_action_edit_requested)
 	group.insert_event_below_requested.connect(func(row): _on_row_insert_below(row, row))
+	group.insert_event_above_requested.connect(func(target): _on_comment_insert_event_above(target, target))
+	group.insert_comment_below_requested.connect(func(row): _on_row_insert_comment_below(row, row))
+	group.insert_comment_above_requested.connect(func(target): _on_comment_insert_above(target, target))
 	group.replace_event_requested.connect(func(row): _on_row_replace(row, row))
 	group.edit_event_requested.connect(func(row): _on_row_edit(row, row))
 	group.add_condition_requested.connect(func(row): _on_row_add_condition(row, row))
@@ -1256,6 +1263,7 @@ func _on_add_group_button_pressed() -> void:
 
 func _connect_event_row_signals(row) -> void:
 	row.insert_event_below_requested.connect(_on_row_insert_below.bind(row))
+	row.insert_comment_below_requested.connect(_on_row_insert_comment_below.bind(row))
 	row.replace_event_requested.connect(_on_row_replace.bind(row))
 	row.delete_event_requested.connect(_on_row_delete.bind(row))
 	row.edit_event_requested.connect(_on_row_edit.bind(row))
@@ -1416,6 +1424,45 @@ func _on_comment_delete(comment) -> void:
 	comment.queue_free()
 	_save_sheet()
 
+func _on_comment_insert_above(signal_node, bound_comment) -> void:
+	"""Insert a new comment above the specified comment."""
+	_insert_comment_relative_to(bound_comment, 0)
+
+func _on_comment_insert_below(signal_node, bound_comment) -> void:
+	"""Insert a new comment below the specified comment."""
+	_insert_comment_relative_to(bound_comment, 1)
+
+func _on_comment_insert_event_above(signal_node, bound_comment) -> void:
+	"""Insert a new event above the specified comment."""
+	pending_target_row = bound_comment
+	_start_add_workflow("event_above_target", bound_comment)
+
+func _on_comment_insert_event_below(signal_node, bound_comment) -> void:
+	"""Insert a new event below the specified comment."""
+	pending_target_row = bound_comment
+	_start_add_workflow("event", bound_comment)
+
+func _on_row_insert_comment_below(signal_row, bound_row) -> void:
+	"""Insert a new comment below the specified event row."""
+	_insert_comment_relative_to(bound_row, 1)
+
+func _insert_comment_relative_to(target_block, offset: int) -> void:
+	"""Insert a new comment relative to a target block (0 = above, 1 = below)."""
+	_push_undo_state()
+	
+	var data = FKCommentBlock.new()
+	data.text = ""
+	
+	var comment = _create_comment_block(data)
+	blocks_container.add_child(comment)
+	
+	# Calculate insert position
+	var insert_idx = target_block.get_index() + offset
+	blocks_container.move_child(comment, insert_idx)
+	
+	_show_content_state()
+	_save_sheet()
+
 func _on_condition_selected_in_row(condition_node) -> void:
 	"""Handle condition item selection."""
 	# Deselect previous row
@@ -1503,6 +1550,8 @@ func _on_event_selected(node_path: String, event_id: String, inputs: Array) -> v
 			_replace_event({})
 		elif pending_block_type == "event_in_group":
 			_finalize_event_in_group({})
+		elif pending_block_type == "event_above_target":
+			_finalize_event_above_target({})
 		else:
 			_finalize_event_creation({})
 
@@ -1543,6 +1592,8 @@ func _on_expressions_confirmed(_node_path: String, _id: String, expressions: Dic
 			_finalize_event_creation(expressions)
 		"event_in_group":
 			_finalize_event_in_group(expressions)
+		"event_above_target":
+			_finalize_event_above_target(expressions)
 		"condition":
 			_finalize_condition_creation(expressions)
 		"action":
@@ -1575,6 +1626,31 @@ func _finalize_event_creation(inputs: Dictionary) -> void:
 	
 	if pending_target_row:
 		var insert_idx = pending_target_row.get_index() + 1
+		blocks_container.add_child(row)
+		blocks_container.move_child(row, insert_idx)
+	else:
+		blocks_container.add_child(row)
+	
+	_show_content_state()
+	_reset_workflow()
+	_save_sheet()
+
+
+func _finalize_event_above_target(inputs: Dictionary) -> void:
+	"""Create and add event row above the target (GDevelop-style)."""
+	# Push undo state before adding event
+	_push_undo_state()
+	
+	# Generate new block_id for new events (pass empty string to auto-generate)
+	var data = FKEventBlock.new("", pending_id, pending_node_path)
+	data.inputs = inputs
+	data.conditions = [] as Array[FKEventCondition]
+	data.actions = [] as Array[FKEventAction]
+	
+	var row = _create_event_row(data)
+	
+	if pending_target_row:
+		var insert_idx = pending_target_row.get_index()  # Insert at same position (above)
 		blocks_container.add_child(row)
 		blocks_container.move_child(row, insert_idx)
 	else:

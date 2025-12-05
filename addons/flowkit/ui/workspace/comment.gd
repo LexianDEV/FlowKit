@@ -4,6 +4,10 @@ extends MarginContainer
 signal selected(comment_node)
 signal delete_requested
 signal data_changed
+signal insert_comment_above_requested(comment_node)
+signal insert_comment_below_requested(comment_node)
+signal insert_event_above_requested(comment_node)
+signal insert_event_below_requested(comment_node)
 
 var comment_data: FKCommentBlock
 var is_selected: bool = false
@@ -170,15 +174,31 @@ func _gui_input(event: InputEvent) -> void:
 
 func _show_context_menu(pos: Vector2) -> void:
 	var menu = PopupMenu.new()
+	menu.add_item("Insert Event Above", 10)
+	menu.add_item("Insert Event Below", 11)
+	menu.add_separator()
+	menu.add_item("Insert Comment Above", 12)
+	menu.add_item("Insert Comment Below", 13)
+	menu.add_separator()
 	menu.add_item("Edit Comment", 1)
+	menu.add_separator()
 	menu.add_item("Delete Comment", 0)
 	add_child(menu)
 	menu.position = Vector2i(pos)
 	menu.popup()
 	menu.id_pressed.connect(func(id):
-		if id == 0:
-			delete_requested.emit()
-		elif id == 1:
-			_set_edit_mode()
+		match id:
+			0:
+				delete_requested.emit()
+			1:
+				_set_edit_mode()
+			10:
+				insert_event_above_requested.emit(self)
+			11:
+				insert_event_below_requested.emit(self)
+			12:
+				insert_comment_above_requested.emit(self)
+			13:
+				insert_comment_below_requested.emit(self)
 		menu.queue_free()
 	)

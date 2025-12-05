@@ -16,6 +16,9 @@ signal add_comment_requested(group_node)  ## Emitted when user wants to add comm
 signal condition_edit_requested(condition_item, row)  ## Emitted when condition needs editing
 signal action_edit_requested(action_item, row)  ## Emitted when action needs editing
 signal insert_event_below_requested(row)  ## Emitted when inserting event below
+signal insert_event_above_requested(target)  ## Emitted when inserting event above
+signal insert_comment_below_requested(row)  ## Emitted when inserting comment below event
+signal insert_comment_above_requested(target)  ## Emitted when inserting comment above
 signal replace_event_requested(row)  ## Emitted when replacing event
 signal edit_event_requested(row)  ## Emitted when editing event
 signal add_condition_requested(row)  ## Emitted when adding condition to event
@@ -233,6 +236,7 @@ func _instantiate_event_row(data: FKEventBlock) -> Control:
 	row.condition_edit_requested.connect(func(item): condition_edit_requested.emit(item, row))
 	row.action_edit_requested.connect(func(item): action_edit_requested.emit(item, row))
 	row.insert_event_below_requested.connect(func(r): insert_event_below_requested.emit(r))
+	row.insert_comment_below_requested.connect(func(r): insert_comment_below_requested.emit(r))
 	row.replace_event_requested.connect(func(r): replace_event_requested.emit(r))
 	row.edit_event_requested.connect(func(r): edit_event_requested.emit(r))
 	row.add_condition_requested.connect(func(r): add_condition_requested.emit(r))
@@ -252,6 +256,10 @@ func _instantiate_comment(data: FKCommentBlock) -> Control:
 	comment.delete_requested.connect(_on_child_comment_delete_requested.bind(data))
 	comment.selected.connect(func(n): _on_child_selected(data); selected.emit(n))
 	comment.data_changed.connect(_on_child_modified)
+	comment.insert_comment_above_requested.connect(func(c): insert_comment_above_requested.emit(c))
+	comment.insert_comment_below_requested.connect(func(c): insert_comment_below_requested.emit(c))
+	comment.insert_event_above_requested.connect(func(c): insert_event_above_requested.emit(c))
+	comment.insert_event_below_requested.connect(func(c): insert_event_below_requested.emit(c))
 	
 	return comment
 
@@ -273,6 +281,9 @@ func _instantiate_group(data: FKGroupBlock) -> Control:
 	nested.condition_edit_requested.connect(func(item, row): condition_edit_requested.emit(item, row))
 	nested.action_edit_requested.connect(func(item, row): action_edit_requested.emit(item, row))
 	nested.insert_event_below_requested.connect(func(r): insert_event_below_requested.emit(r))
+	nested.insert_event_above_requested.connect(func(r): insert_event_above_requested.emit(r))
+	nested.insert_comment_below_requested.connect(func(r): insert_comment_below_requested.emit(r))
+	nested.insert_comment_above_requested.connect(func(r): insert_comment_above_requested.emit(r))
 	nested.replace_event_requested.connect(func(r): replace_event_requested.emit(r))
 	nested.edit_event_requested.connect(func(r): edit_event_requested.emit(r))
 	nested.add_condition_requested.connect(func(r): add_condition_requested.emit(r))
@@ -692,11 +703,47 @@ func _handle_drop(drag_node: Node, drag_type: String) -> void:
 
 func _handle_internal_reorder(drag_node: Node) -> void:
 	"""Handle reordering within this group."""
-	before_data_changed.emit()
+	# Get visible children (excluding drop_hint, indicator)
+	var visible_children = []
+	for child in children_container.get_children():
+		if child == drop_hint or DropIndicatorManager.is_indicator(child):
+			continue
+		if child.visible:
+			visible_children.append(child)
 	
-	# Just move the visual node - data will be synced from UI
-	var drop_idx = _calculate_drop_index(drag_node)
-	children_container.move_child(drag_node, drop_idx)
+	# Calculate visual drop index using same logic as blocks_container
+	var local_y = children_container.get_local_mouse_position().y
+	var target_visual_idx = visible_children.size()  # Default to end
+	
+	for i in range(visible_children.size()):
+		var child = visible_children[i]
+		var rect = child.get_rect()
+		var mid_y = rect.position.y + rect.size.y * 0.5
+		if local_y < mid_y:
+			target_visual_idx = i
+			break
+	
+	var current_visual_idx = visible_children.find(drag_node)
+	
+	# No-op if same position
+	if target_visual_idx == current_visual_idx or target_visual_idx == current_visual_idx + 1:
+		return
+	
+	# Calculate actual child index from visual index
+	var target_child_idx: int
+	if target_visual_idx >= visible_children.size():
+		target_child_idx = children_container.get_child_count()
+	else:
+		target_child_idx = visible_children[target_visual_idx].get_index()
+	
+	var current_child_idx = drag_node.get_index()
+	
+	# Adjust for moving down (same as blocks_container)
+	if target_child_idx > current_child_idx:
+		target_child_idx -= 1
+	
+	before_data_changed.emit()
+	children_container.move_child(drag_node, target_child_idx)
 	
 	# Sync data from new visual order
 	_sync_children_to_data()
