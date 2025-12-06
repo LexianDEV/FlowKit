@@ -648,6 +648,8 @@ func _paste_events_from_clipboard() -> void:
 				target_group.add_event_to_group(data)
 		
 		_save_sheet()
+		# Keep group selected after paste so subsequent pastes work correctly
+		_on_row_selected(target_group)
 		print("Pasted %d event(s) into group" % clipboard_events.size())
 		return
 	
