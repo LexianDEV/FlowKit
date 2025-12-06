@@ -34,6 +34,9 @@ func _get_visible_blocks() -> Array:
 	for child in get_children():
 		if DropIndicatorManager.is_indicator(child):
 			continue
+		# Skip invalid or deleted children
+		if not is_instance_valid(child) or child.is_queued_for_deletion():
+			continue
 		if child.visible and child.name != "EmptyLabel":
 			blocks.append(child)
 	return blocks
@@ -190,6 +193,9 @@ func _gui_input(event: InputEvent) -> void:
 		
 		for child in get_children():
 			if DropIndicatorManager.is_indicator(child):
+				continue
+			# Skip invalid or deleted children
+			if not is_instance_valid(child) or child.is_queued_for_deletion():
 				continue
 			if child.visible and child.name != "EmptyLabel":
 				if child.get_rect().has_point(mouse_pos):

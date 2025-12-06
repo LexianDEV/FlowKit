@@ -217,6 +217,10 @@ func _capture_sheet_state() -> Array:
 	"""Capture current sheet state as serialized data."""
 	var state: Array = []
 	for block in _get_blocks():
+		# Double-check the block is still valid and not queued for deletion
+		if not is_instance_valid(block) or block.is_queued_for_deletion():
+			continue
+		
 		if block.has_method("get_event_data"):
 			var data = block.get_event_data()
 			if data:
@@ -426,6 +430,9 @@ func _deserialize_group_block(dict: Dictionary) -> FKGroupBlock:
 
 func _delete_selected_row() -> void:
 	"""Delete the currently selected event row."""
+	if not selected_row or not is_instance_valid(selected_row):
+		return
+	
 	# Push undo state before deleting
 	_push_undo_state()
 	
@@ -436,10 +443,15 @@ func _delete_selected_row() -> void:
 		row_to_delete.set_selected(false)
 	selected_row = null
 	
-	# Delete the row
-	blocks_container.remove_child(row_to_delete)
-	row_to_delete.queue_free()
-	_save_sheet()
+	# Check if row is a direct child of blocks_container or inside a group
+	if row_to_delete.get_parent() == blocks_container:
+		# Direct child of blocks_container - delete it
+		blocks_container.remove_child(row_to_delete)
+		row_to_delete.queue_free()
+		_save_sheet()
+	else:
+		# Row is inside a group - emit the delete signal to let the group handle it
+		row_to_delete.delete_event_requested.emit(row_to_delete)
 
 func _delete_selected_item() -> void:
 	"""Delete the currently selected condition or action item."""
@@ -636,6 +648,8 @@ func _paste_events_from_clipboard() -> void:
 				target_group.add_event_to_group(data)
 		
 		_save_sheet()
+		# Keep group selected after paste so subsequent pastes work correctly
+		_on_row_selected(target_group)
 		print("Pasted %d event(s) into group" % clipboard_events.size())
 		return
 	
@@ -912,10 +926,10 @@ func _process(delta: float) -> void:
 # === Block Management ===
 
 func _get_blocks() -> Array:
-	"""Get all block nodes (excluding empty label)."""
+	"""Get all block nodes (excluding empty label and nodes queued for deletion)."""
 	var blocks = []
 	for child in blocks_container.get_children():
-		if child != empty_label:
+		if child != empty_label and is_instance_valid(child) and not child.is_queued_for_deletion():
 			blocks.append(child)
 	return blocks
 
@@ -1023,6 +1037,10 @@ func _generate_sheet_from_blocks() -> FKEventSheet:
 	var standalone_conditions: Array[FKEventCondition] = []
 	
 	for block in _get_blocks():
+		# Skip invalid or deleted blocks
+		if not is_instance_valid(block) or block.is_queued_for_deletion():
+			continue
+		
 		if block.has_method("get_event_data"):
 			var data = block.get_event_data()
 			if data:
