@@ -430,6 +430,9 @@ func _deserialize_group_block(dict: Dictionary) -> FKGroupBlock:
 
 func _delete_selected_row() -> void:
 	"""Delete the currently selected event row."""
+	if not selected_row or not is_instance_valid(selected_row):
+		return
+	
 	# Push undo state before deleting
 	_push_undo_state()
 	
@@ -440,10 +443,15 @@ func _delete_selected_row() -> void:
 		row_to_delete.set_selected(false)
 	selected_row = null
 	
-	# Delete the row
-	blocks_container.remove_child(row_to_delete)
-	row_to_delete.queue_free()
-	_save_sheet()
+	# Check if row is a direct child of blocks_container or inside a group
+	if row_to_delete.get_parent() == blocks_container:
+		# Direct child of blocks_container - delete it
+		blocks_container.remove_child(row_to_delete)
+		row_to_delete.queue_free()
+		_save_sheet()
+	else:
+		# Row is inside a group - emit the delete signal to let the group handle it
+		row_to_delete.delete_event_requested.emit(row_to_delete)
 
 func _delete_selected_item() -> void:
 	"""Delete the currently selected condition or action item."""

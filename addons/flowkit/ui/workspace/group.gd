@@ -99,6 +99,8 @@ func _setup_signal_connections() -> void:
 	"""Connect UI signals."""
 	if collapse_btn:
 		collapse_btn.gui_input.connect(_on_collapse_btn_input)
+		collapse_btn.mouse_entered.connect(_on_collapse_btn_mouse_entered)
+		collapse_btn.mouse_exited.connect(_on_collapse_btn_mouse_exited)
 	if title_label:
 		title_label.gui_input.connect(_on_title_input)
 	if title_edit:
@@ -381,25 +383,26 @@ func add_event_to_group(event_data: FKEventBlock) -> void:
 # === Collapse/Expand ===
 
 func _on_collapse_btn_input(event: InputEvent) -> void:
-	"""Handle collapse button input."""
+	"""Handle collapse button input - only toggle on direct click."""
 	if event is InputEventMouseButton:
-		if event.button_index == MOUSE_BUTTON_LEFT:
-			if event.pressed:
-				selected.emit(self)
-				_drag_start_pos = event.position
-				_is_potential_drag = true
-			else:
-				if _is_potential_drag:
-					_toggle_collapse()
-				_is_potential_drag = false
+		if event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+			selected.emit(self)
+			_toggle_collapse()
 		elif event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
 			selected.emit(self)
 			_show_context_menu(event.global_position)
-	elif event is InputEventMouseMotion and _is_potential_drag:
-		var distance = event.position.distance_to(_drag_start_pos)
-		if distance >= DRAG_THRESHOLD and not get_viewport().gui_is_dragging():
-			_is_potential_drag = false
-			_start_group_drag()
+
+
+func _on_collapse_btn_mouse_entered() -> void:
+	"""Highlight the collapse button on hover."""
+	if collapse_btn:
+		collapse_btn.add_theme_color_override("font_color", Color.WHITE)
+
+
+func _on_collapse_btn_mouse_exited() -> void:
+	"""Restore the collapse button on hover exit."""
+	if collapse_btn:
+		collapse_btn.remove_theme_color_override("font_color")
 
 
 func _toggle_collapse() -> void:
@@ -434,7 +437,8 @@ func _on_title_input(event: InputEvent) -> void:
 					_is_potential_drag = true
 			else:
 				if _is_potential_drag:
-					_toggle_collapse()
+					# Only drag, don't collapse from title click
+					pass
 				_is_potential_drag = false
 		elif event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
 			selected.emit(self)
