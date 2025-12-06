@@ -217,6 +217,10 @@ func _capture_sheet_state() -> Array:
 	"""Capture current sheet state as serialized data."""
 	var state: Array = []
 	for block in _get_blocks():
+		# Double-check the block is still valid and not queued for deletion
+		if not is_instance_valid(block) or block.is_queued_for_deletion():
+			continue
+		
 		if block.has_method("get_event_data"):
 			var data = block.get_event_data()
 			if data:
@@ -912,10 +916,10 @@ func _process(delta: float) -> void:
 # === Block Management ===
 
 func _get_blocks() -> Array:
-	"""Get all block nodes (excluding empty label)."""
+	"""Get all block nodes (excluding empty label and nodes queued for deletion)."""
 	var blocks = []
 	for child in blocks_container.get_children():
-		if child != empty_label:
+		if child != empty_label and is_instance_valid(child) and not child.is_queued_for_deletion():
 			blocks.append(child)
 	return blocks
 
@@ -1023,6 +1027,10 @@ func _generate_sheet_from_blocks() -> FKEventSheet:
 	var standalone_conditions: Array[FKEventCondition] = []
 	
 	for block in _get_blocks():
+		# Skip invalid or deleted blocks
+		if not is_instance_valid(block) or block.is_queued_for_deletion():
+			continue
+		
 		if block.has_method("get_event_data"):
 			var data = block.get_event_data()
 			if data:
