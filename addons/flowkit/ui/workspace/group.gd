@@ -349,6 +349,10 @@ func _sync_children_to_data() -> void:
 		if child == drop_hint or DropIndicatorManager.is_indicator(child):
 			continue
 		
+		# Skip invalid or deleted children
+		if not is_instance_valid(child) or child.is_queued_for_deletion():
+			continue
+		
 		if child.has_method("get_event_data"):
 			var data = child.get_event_data()
 			if data:
@@ -714,6 +718,9 @@ func _handle_internal_reorder(drag_node: Node) -> void:
 	for child in children_container.get_children():
 		if child == drop_hint or DropIndicatorManager.is_indicator(child):
 			continue
+		# Skip invalid or deleted children
+		if not is_instance_valid(child) or child.is_queued_for_deletion():
+			continue
 		if child.visible:
 			visible_children.append(child)
 	
@@ -825,6 +832,9 @@ func _calculate_drop_index(dragged_node: Node) -> int:
 			continue
 		if child == dragged_node:
 			continue
+		# Skip invalid or deleted children
+		if not is_instance_valid(child) or child.is_queued_for_deletion():
+			continue
 		if child.visible:
 			visible_children.append(child)
 	
@@ -851,6 +861,9 @@ func _get_child_node_at_data_index(data_idx: int) -> Node:
 	var skipped = 0
 	for child in children_container.get_children():
 		if child == drop_hint or DropIndicatorManager.is_indicator(child):
+			continue
+		# Skip invalid or deleted children
+		if not is_instance_valid(child) or child.is_queued_for_deletion():
 			continue
 		if skipped == data_idx:
 			return child
