@@ -15,7 +15,7 @@ class_name FKExpressionEvaluator
 ##   velocity.x > 0
 ##   position * 2
 
-## Evaluates a string expression and returns the result
+## Evaluate a string expression and returns the result
 ## Tries to parse as literal first, then as GDScript expression
 static func evaluate(expr_str: String, context_node: Node = null) -> Variant:
 	if expr_str.is_empty():
@@ -23,6 +23,16 @@ static func evaluate(expr_str: String, context_node: Node = null) -> Variant:
 	
 	# Trim whitespace
 	expr_str = expr_str.strip_edges()
+	
+	# Check if this is a node variable reference (n_variable_name)
+	if expr_str.begins_with("n_") and context_node:
+		var var_name = expr_str.substr(2)
+		var system = context_node.get_tree().root.get_node_or_null("/root/FlowKitSystem")
+		if system and system.has_method("get_node_var"):
+			var value = system.get_node_var(context_node, var_name, null)
+			# Always return the value (even if null) for n_ prefixed variables
+			# This prevents them from being treated as string literals
+			return value
 	
 	# Try to parse as a literal value first
 	var literal_result = _try_parse_literal(expr_str)
