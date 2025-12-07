@@ -123,8 +123,8 @@ func check_condition(condition_id: String, node: Node, inputs: Dictionary, negat
 		if provider.has_method("get_id") and provider.get_id() == condition_id:
 			if provider.has_method("check"):
 				# Evaluate expressions in inputs before checking
-				# Use scene_root as context if provided, otherwise use the node
-				var context = scene_root if scene_root else node
+				# Use node as context for variable resolution (not scene_root)
+				var context = node
 				var evaluated_inputs: Dictionary = FKExpressionEvaluator.evaluate_inputs(inputs, context)
 				var result = provider.check(node, evaluated_inputs, block_id)
 				return not result if negated else result
@@ -135,9 +135,8 @@ func execute_action(action_id: String, node: Node, inputs: Dictionary, scene_roo
 		if provider.has_method("get_id") and provider.get_id() == action_id:
 			if provider.has_method("execute"):
 				# Evaluate expressions in inputs before executing
-				# Use scene_root as context if provided, otherwise use the node
-				var context = scene_root if scene_root else node
-				var evaluated_inputs: Dictionary = FKExpressionEvaluator.evaluate_inputs(inputs, context)
+				# Always use the node as context for variable lookup (node variables are stored on the target node)
+				var evaluated_inputs: Dictionary = FKExpressionEvaluator.evaluate_inputs(inputs, node)
 				provider.execute(node, evaluated_inputs, block_id)
 				return
 
