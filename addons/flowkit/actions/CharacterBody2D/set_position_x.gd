@@ -22,6 +22,4 @@ func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
 		return
 	
 	var body: CharacterBody2D = node as CharacterBody2D
-	var x: float = float(inputs.get("X", 0))
-	
-	body.position.x = x
+	body.position.x = inputs.get("X", 0.0)
