@@ -210,6 +210,16 @@ tile_set = SubResource("TileSet_1foey")
 
 [node name="CharacterBody2D" parent="." instance=ExtResource("1_c8u85")]
 position = Vector2(299, 173)
+metadata/flowkit_variables = {
+"initial_x": "299.0",
+"initial_y": "173.0",
+"lowest_y": "2000.0"
+}
+metadata/flowkit_variable_types = {
+"initial_x": "float",
+"initial_y": "float",
+"lowest_y": "float"
+}
 
 [node name="Camera2D" type="Camera2D" parent="CharacterBody2D"]
 scale = Vector2(0.19999999, 0.19999999)

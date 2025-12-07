@@ -1,0 +1,73 @@
+[gd_resource type="Resource" script_class="FKEventSheet" load_steps=14 format=3 uid="uid://dyirwydnynnl8"]
+
+[ext_resource type="Script" uid="uid://b1y3c8rnt2rcg" path="res://addons/flowkit/resources/fk_comment.gd" id="1_opms0"]
+[ext_resource type="Script" uid="uid://bxdhylwvr4osy" path="res://addons/flowkit/resources/event_block.gd" id="2_at6cs"]
+[ext_resource type="Script" path="res://addons/flowkit/resources/fk_group.gd" id="3_ehuoq"]
+[ext_resource type="Script" uid="uid://bwbi0utcwmxwf" path="res://addons/flowkit/resources/event_action.gd" id="4_at6cs"]
+[ext_resource type="Script" uid="uid://bumsyiqkp46l1" path="res://addons/flowkit/resources/event_sheet.gd" id="4_ehuxe"]
+[ext_resource type="Script" uid="uid://bmaxurgrsv4ct" path="res://addons/flowkit/resources/event_condition.gd" id="5_1wrk8"]
+
+[sub_resource type="Resource" id="Resource_at6cs"]
+script = ExtResource("1_opms0")
+text = "If player falls below the ground, they will teleport back to the spawn."
+
+[sub_resource type="Resource" id="Resource_ehuoq"]
+script = ExtResource("4_at6cs")
+action_id = "set_velocity_y"
+target_node = NodePath("CharacterBody2D")
+inputs = {
+"Y": "0"
+}
+
+[sub_resource type="Resource" id="Resource_ehuxe"]
+script = ExtResource("4_at6cs")
+action_id = "set_position_x"
+target_node = NodePath("CharacterBody2D")
+inputs = {
+"X": "n_initial_x"
+}
+
+[sub_resource type="Resource" id="Resource_1wrk8"]
+script = ExtResource("4_at6cs")
+action_id = "set_position_y"
+target_node = NodePath("CharacterBody2D")
+inputs = {
+"Y": "n_initial_y"
+}
+
+[sub_resource type="Resource" id="Resource_iu3q8"]
+script = ExtResource("5_1wrk8")
+condition_id = "compare_node_variable"
+target_node = NodePath("CharacterBody2D")
+inputs = {
+"Comparison": ">",
+"Property": "node.position.y",
+"Value": "n_lowest_y"
+}
+
+[sub_resource type="Resource" id="Resource_n0pkj"]
+script = ExtResource("2_at6cs")
+block_id = "event_1765072118_562150315"
+event_id = "on_process"
+target_node = NodePath("CharacterBody2D")
+conditions = Array[ExtResource("5_1wrk8")]([SubResource("Resource_iu3q8")])
+actions = Array[ExtResource("4_at6cs")]([SubResource("Resource_ehuoq"), SubResource("Resource_ehuxe"), SubResource("Resource_1wrk8")])
+
+[sub_resource type="Resource" id="Resource_hkb6h"]
+script = ExtResource("3_ehuoq")
+title = "Prevent falling off map"
+children = [{
+"data": SubResource("Resource_at6cs"),
+"type": "comment"
+}, {
+"data": SubResource("Resource_n0pkj"),
+"type": "event"
+}]
+
+[resource]
+script = ExtResource("4_ehuxe")
+groups = Array[ExtResource("3_ehuoq")]([SubResource("Resource_hkb6h")])
+item_order = Array[Dictionary]([{
+"index": 0,
+"type": "group"
+}])

@@ -35,6 +35,7 @@ actions = Array[ExtResource("2_e5301")]([SubResource("Resource_1iq3u")])
 [sub_resource type="Resource" id="Resource_qhwv1"]
 script = ExtResource("5_1iq3u")
 title = "Handle player sounds"
+collapsed = true
 color = Color(0.14203694, 0.088112794, 0.3015625, 1)
 children = [{
 "data": SubResource("Resource_jqahe"),
@@ -96,6 +97,7 @@ actions = Array[ExtResource("2_e5301")]([SubResource("Resource_rqf3r")])
 [sub_resource type="Resource" id="Resource_rd6mx"]
 script = ExtResource("5_1iq3u")
 title = "Sets the direction of the player sprite to flip the sprite horizontally based on if the player is moving left or right."
+collapsed = true
 color = Color(0.16839236, 0.07305908, 0.4453125, 1)
 children = [{
 "data": SubResource("Resource_4pupr"),
@@ -182,6 +184,7 @@ actions = Array[ExtResource("2_e5301")]([SubResource("Resource_01p3u")])
 [sub_resource type="Resource" id="Resource_fwgt7"]
 script = ExtResource("5_1iq3u")
 title = "Control animations"
+collapsed = true
 color = Color(0.38236463, 0.2642212, 0.7515625, 1)
 children = [{
 "data": SubResource("Resource_ercbp"),
