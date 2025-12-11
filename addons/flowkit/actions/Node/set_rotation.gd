@@ -1,7 +1,7 @@
 extends FKAction
 
 func get_description() -> String:
-	return "Sets the rotation of the character in radians."
+	return "Sets the rotation of the node in radians."
 
 func get_id() -> String:
 	return "set_rotation"
@@ -11,17 +11,17 @@ func get_name() -> String:
 
 func get_inputs() -> Array[Dictionary]:
 	return [
-		{"name": "Rotation", "type": "Float", "description": "The rotation in radians to set the character to."},
+		{"name": "Rotation", "type": "Float", "description": "The rotation in radians to set the node to."},
 	]
 
 func get_supported_types() -> Array[String]:
-	return ["CharacterBody2D"]
+	return ["Node2D"]
 
 func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
-	if not node is CharacterBody2D:
+	if not node is Node2D:
 		return
 	
-	var body: CharacterBody2D = node as CharacterBody2D
+	var node2d: Node2D = node as Node2D
 	var rotation_value: float = float(inputs.get("Rotation", 0))
 	
-	body.rotation = rotation_value
+	node2d.rotation = rotation_value
