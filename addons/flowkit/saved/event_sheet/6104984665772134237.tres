@@ -1,0 +1,76 @@
+[gd_resource type="Resource" script_class="FKEventSheet" load_steps=14 format=3 uid="uid://dv106octff6l4"]
+
+[ext_resource type="Script" uid="uid://b1y3c8rnt2rcg" path="res://addons/flowkit/resources/fk_comment.gd" id="1_1axor"]
+[ext_resource type="Script" uid="uid://bxdhylwvr4osy" path="res://addons/flowkit/resources/event_block.gd" id="2_ju1rn"]
+[ext_resource type="Script" uid="uid://bwbi0utcwmxwf" path="res://addons/flowkit/resources/event_action.gd" id="3_5poua"]
+[ext_resource type="Script" uid="uid://bmaxurgrsv4ct" path="res://addons/flowkit/resources/event_condition.gd" id="4_ayedq"]
+[ext_resource type="Script" path="res://addons/flowkit/resources/fk_group.gd" id="5_np8on"]
+[ext_resource type="Script" uid="uid://bumsyiqkp46l1" path="res://addons/flowkit/resources/event_sheet.gd" id="6_v1ajb"]
+
+[sub_resource type="Resource" id="Resource_1axor"]
+script = ExtResource("3_5poua")
+action_id = "Print Message"
+target_node = NodePath(".")
+inputs = {
+"color": "",
+"message": "This is a message printed with the default color."
+}
+
+[sub_resource type="Resource" id="Resource_ju1rn"]
+script = ExtResource("3_5poua")
+action_id = "set_window_mode"
+target_node = NodePath("System")
+inputs = {
+"Mode": "windowed"
+}
+
+[sub_resource type="Resource" id="Resource_5poua"]
+script = ExtResource("3_5poua")
+action_id = "Print Message"
+target_node = NodePath(".")
+inputs = {
+"color": "red",
+"message": "This is a message printed in red text."
+}
+
+[sub_resource type="Resource" id="Resource_ayedq"]
+script = ExtResource("3_5poua")
+action_id = "Print Message"
+target_node = NodePath(".")
+inputs = {
+"color": "green",
+"message": "[i]This is a message printed in green italicized text.[/i]"
+}
+
+[sub_resource type="Resource" id="Resource_np8on"]
+script = ExtResource("3_5poua")
+action_id = "Print Message"
+target_node = NodePath(".")
+inputs = {
+"color": "yellow",
+"message": "[b]Yellow bold text.[/b]"
+}
+
+[sub_resource type="Resource" id="Resource_v1ajb"]
+script = ExtResource("3_5poua")
+action_id = "Print Message"
+target_node = NodePath(".")
+inputs = {
+"color": "",
+"message": "[wave][color=#FF0000]W[/color][color=#FF5500]a[/color][color=#FFAA00]v[/color][color=#FFFF00]y[/color] [color=#54FF00]r[/color][color=#00FF00]a[/color][color=#00FF55]i[/color][color=#00FFAA]n[/color][color=#00FEFF]b[/color][color=#00A9FF]o[/color][color=#0054FF]w[/color] [color=#5500FF]t[/color][color=#AA00FF]e[/color][color=#FF00FE]x[/color][color=#FF00AA]t[/color][color=#FF0054]![/color][/wave]"
+}
+
+[sub_resource type="Resource" id="Resource_e46t1"]
+script = ExtResource("2_ju1rn")
+block_id = "event_1770489317_3093254674"
+event_id = "on_ready"
+target_node = NodePath(".")
+actions = Array[ExtResource("3_5poua")]([SubResource("Resource_1axor"), SubResource("Resource_ju1rn"), SubResource("Resource_5poua"), SubResource("Resource_ayedq"), SubResource("Resource_np8on"), SubResource("Resource_v1ajb")])
+
+[resource]
+script = ExtResource("6_v1ajb")
+events = Array[ExtResource("2_ju1rn")]([SubResource("Resource_e46t1")])
+item_order = Array[Dictionary]([{
+"index": 0,
+"type": "event"
+}])
