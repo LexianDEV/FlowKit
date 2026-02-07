@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="FKEventSheet" load_steps=10 format=3 uid="uid://uo45usge3b6k"]
+
+[ext_resource type="Script" uid="uid://b1y3c8rnt2rcg" path="res://addons/flowkit/resources/fk_comment.gd" id="1_t5adf"]
+[ext_resource type="Script" uid="uid://bxdhylwvr4osy" path="res://addons/flowkit/resources/event_block.gd" id="2_s7o4u"]
+[ext_resource type="Script" uid="uid://bwbi0utcwmxwf" path="res://addons/flowkit/resources/event_action.gd" id="3_ytm5k"]
+[ext_resource type="Script" uid="uid://bmaxurgrsv4ct" path="res://addons/flowkit/resources/event_condition.gd" id="4_rm0fh"]
+[ext_resource type="Script" path="res://addons/flowkit/resources/fk_group.gd" id="5_iynvq"]
+[ext_resource type="Script" uid="uid://bumsyiqkp46l1" path="res://addons/flowkit/resources/event_sheet.gd" id="6_1sc5p"]
+
+[sub_resource type="Resource" id="Resource_t5adf"]
+script = ExtResource("3_ytm5k")
+action_id = "Fade Color"
+target_node = NodePath("CanvasLayer/CoversScreen")
+inputs = {
+"Alpha": "100",
+"Alpha Only": "false",
+"Duration": "1.5",
+"Target Color": "255, 255, 255"
+}
+
+[sub_resource type="Resource" id="Resource_s7o4u"]
+script = ExtResource("3_ytm5k")
+action_id = "start"
+target_node = NodePath("FirstTimer")
+
+[sub_resource type="Resource" id="Resource_ytm5k"]
+script = ExtResource("2_s7o4u")
+block_id = "event_1770495651_3656512735"
+event_id = "on_ready"
+target_node = NodePath("Logic")
+actions = Array[ExtResource("3_ytm5k")]([SubResource("Resource_t5adf"), SubResource("Resource_s7o4u")])
+
+[resource]
+script = ExtResource("6_1sc5p")
+events = Array[ExtResource("2_s7o4u")]([SubResource("Resource_ytm5k")])
+item_order = Array[Dictionary]([{
+"index": 0,
+"type": "event"
+}])
