@@ -8,17 +8,21 @@
 
 config_version=5
 
+[animation]
+
+compatibility/default_parent_skeleton_in_mesh_instance_3d=true
+
 [application]
 
 config/name="FlowKit Developer Project"
 run/main_scene="uid://o03sr7k7rnc5"
-config/features=PackedStringArray("4.5", "Forward Plus")
+config/features=PackedStringArray("4.6", "Forward Plus")
 config/icon="res://icon.svg"
 
 [autoload]
 
-FlowKitSystem="*res://addons/flowkit/runtime/flowkit_system.gd"
-FlowKit="*res://addons/flowkit/runtime/flowkit_engine.gd"
+FlowKitSystem="*uid://drwauu3hdl7k3"
+FlowKit="*uid://b6cetiyknul1b"
 
 [display]
 

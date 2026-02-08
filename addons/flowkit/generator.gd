@@ -495,21 +495,17 @@ func _create_signal_event(node_type: String, sig: Dictionary) -> void:
 		inputs.append('{"name": "%s", "type": "%s"}' % [_humanize_name(arg_name), type_name])
 	
 	var inputs_str = "[" + ", ".join(inputs) + "]" if inputs.size() > 0 else "[]"
-	
-	# Build signal handler parameters
-	var handler_params = []
-	for i in range(sig.args.size()):
-		var arg = sig.args[i]
-		var arg_name = arg.name if arg.name != "" else "arg" + str(i)
-		handler_params.append(arg_name)
-	
-	if handler_params.size() > 0:
-		handler_params.append("bound_node")
-	else:
-		handler_params.append("bound_node")
-	
-	var handler_params_str = ", ".join(handler_params)
 	var description = _get_signal_description(node_type, sig)
+	
+	# Build lambda parameters to match the signal's argument count.
+	# Signals like body_entered(body) pass arguments; the lambda must accept them
+	# even though we don't use them — otherwise Godot errors at emit time.
+	var lambda_params = ""
+	if sig.args.size() > 0:
+		var parts: Array = []
+		for i in range(sig.args.size()):
+			parts.append("_arg%d" % i)
+		lambda_params = ", ".join(parts)
 	
 	var code = """extends FKEvent
 
@@ -528,44 +524,44 @@ func get_supported_types() -> Array[String]:
 func get_inputs() -> Array:
 	return %s
 
-# Signal-based events require connection management
-var _connected_nodes: Dictionary = {}  # node -> {block_ids: {block_id -> bool}}
+func is_signal_event() -> bool:
+	return true
 
-func poll(node: Node, inputs: Dictionary = {}, block_id: String = "") -> bool:
-	if not node:
-		return false
-	
-	# Ensure node is connected
-	if not _connected_nodes.has(node):
-		if node.has_signal("%s"):
-			node.%s.connect(_on_signal_fired.bind(node))
-			_connected_nodes[node] = {"block_ids": {}}
-		else:
-			return false
-	
-	# Check if signal fired for this specific block_id
-	var data = _connected_nodes[node]
-	if block_id and data.block_ids.has(block_id) and data.block_ids[block_id]:
-		data.block_ids[block_id] = false
-		return true
-	
-	return false
+# Store connections so we can disconnect in teardown.
+# Key: block_id -> Callable
+var _connections: Dictionary = {}
 
-func _on_signal_fired(%s) -> void:
-	if _connected_nodes.has(bound_node):
-		# Mark all block_ids as having fired
-		for bid in _connected_nodes[bound_node].block_ids.keys():
-			_connected_nodes[bound_node].block_ids[bid] = true
-		# Also track that signal fired for new block_ids
-		_connected_nodes[bound_node]["signal_fired"] = true""" % [
+func setup(node: Node, trigger_callback: Callable, block_id: String = "") -> void:
+	if not node or not node.is_inside_tree():
+		return
+	if not node.has_signal("%s"):
+		return
+
+	var cb: Callable = func(%s): trigger_callback.call()
+	_connections[block_id] = cb
+	node.%s.connect(cb)
+
+func teardown(node: Node, block_id: String = "") -> void:
+	if not node or not is_instance_valid(node):
+		_connections.erase(block_id)
+		return
+	if _connections.has(block_id):
+		var cb: Callable = _connections[block_id]
+		if node.has_signal("%s") and node.%s.is_connected(cb):
+			node.%s.disconnect(cb)
+		_connections.erase(block_id)
+""" % [
 		event_id,
 		event_name,
 		description,
 		node_type,
 		inputs_str,
 		signal_name,
+		lambda_params,
 		signal_name,
-		handler_params_str
+		signal_name,
+		signal_name,
+		signal_name
 	]
 	
 	_write_file(file_path, code)

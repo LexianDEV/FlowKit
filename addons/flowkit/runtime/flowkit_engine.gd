@@ -51,6 +51,9 @@ func _on_scene_changed(scene_root: Node) -> void:
 	last_scene = scene_root
 	active_behavior_nodes.clear()  # Clear behavior tracking on scene change
 	
+	# Teardown signal events on previous sheets before clearing
+	_teardown_all_signal_events()
+	
 	if scene_root == null:
 		# Scene unloaded: clear active sheets (optional)
 		active_sheets.clear()
@@ -101,7 +104,10 @@ func _load_sheets_for_scene(scene_root: Node) -> void:
 						block.ensure_block_id()
 				# Also ensure block IDs for events inside groups
 				_ensure_block_ids_in_groups(sheet.groups)
-				active_sheets.append({"sheet": sheet, "root": node_root, "scene_name": scene_name, "uid": uid})
+				var entry := {"sheet": sheet, "root": node_root, "scene_name": scene_name, "uid": uid}
+				active_sheets.append(entry)
+				# Setup signal-based events so they can connect to node signals
+				_setup_signal_events(entry)
 				print("[FlowKit] Loaded event sheet for scene: ", scene_name, " (node: ", node_root.name, ") with ", sheet.events.size(), " events")
 			else:
 				print("[FlowKit] Failed to load sheet resource at: ", sheet_path)
@@ -183,42 +189,110 @@ func _run_sheet(entry: Dictionary) -> void:
 				print("[FlowKit] Event polling target node not found: ", block.target_node, " in scene root: ", current_root.name)
 				continue
 
+		# Signal events fire via callback — skip them in the poll loop
+		if registry.is_signal_event(block.event_id):
+			continue
+
 		# Poll the event with the block's inputs
 		var event_triggered = registry.poll_event(block.event_id, node, block.inputs, block.block_id)
 		if not event_triggered:
 			continue
 
-		# Conditions
-		var passed: bool = true
-		for cond in block.conditions:
-			var cnode: Node = null
-			if str(cond.target_node) == "System":
-				cnode = get_node("/root/FlowKitSystem")
-			else:
-				cnode = current_root.get_node_or_null(cond.target_node)
-				if not cnode:
-					passed = false
-					break
+		# Execute the block's conditions and actions
+		_execute_block(block, current_root)
+# --- Signal event lifecycle -------------------------------------------------
 
-			var cond_result: bool = registry.check_condition(cond.condition_id, cnode, cond.inputs, cond.negated, current_root, block.block_id)
-			if not cond_result:
+## Set up signal-based events for a loaded sheet entry.
+## For each event block, calls registry.setup_event() with a trigger callback
+## so signal events can connect to Godot signals and fire immediately.
+func _setup_signal_events(entry: Dictionary) -> void:
+	var sheet: FKEventSheet = entry.get("sheet", null)
+	var root_node: Node = entry.get("root", null)
+	if not sheet or not root_node or not is_instance_valid(root_node):
+		return
+
+	var all_events: Array = []
+	all_events.append_array(sheet.events)
+	_collect_events_from_groups(sheet.groups, all_events)
+
+	for block in all_events:
+		var node: Node = null
+		if str(block.target_node) == "System":
+			node = get_node("/root/FlowKitSystem")
+		else:
+			node = root_node.get_node_or_null(block.target_node)
+			if not node:
+				continue
+
+		# Build a trigger callback that runs this block's conditions & actions
+		var trigger_cb: Callable = _make_trigger_callback(block, root_node)
+		registry.setup_event(block.event_id, node, trigger_cb, block.block_id)
+
+## Teardown all signal events across every active sheet.
+func _teardown_all_signal_events() -> void:
+	for entry in active_sheets:
+		var sheet: FKEventSheet = entry.get("sheet", null)
+		var root_node: Node = entry.get("root", null)
+		if not sheet or not root_node or not is_instance_valid(root_node):
+			continue
+
+		var all_events: Array = []
+		all_events.append_array(sheet.events)
+		_collect_events_from_groups(sheet.groups, all_events)
+
+		for block in all_events:
+			var node: Node = null
+			if str(block.target_node) == "System":
+				node = get_node_or_null("/root/FlowKitSystem")
+			else:
+				node = root_node.get_node_or_null(block.target_node)
+				if not node:
+					continue
+			registry.teardown_event(block.event_id, node, block.block_id)
+
+## Create a Callable that evaluates a block's conditions and runs its actions.
+## This is what signal events call when their signal fires.
+func _make_trigger_callback(block: FKEventBlock, current_root: Node) -> Callable:
+	return func() -> void:
+		if not is_instance_valid(current_root):
+			return
+		_execute_block(block, current_root)
+
+## Execute a single event block: check all conditions, then run all actions.
+## Shared by both the poll loop and signal-based trigger callbacks.
+func _execute_block(block: FKEventBlock, current_root: Node) -> void:
+	# Conditions
+	var passed: bool = true
+	for cond in block.conditions:
+		var cnode: Node = null
+		if str(cond.target_node) == "System":
+			cnode = get_node("/root/FlowKitSystem")
+		else:
+			cnode = current_root.get_node_or_null(cond.target_node)
+			if not cnode:
 				passed = false
 				break
 
-		if not passed:
-			continue
+		var cond_result: bool = registry.check_condition(cond.condition_id, cnode, cond.inputs, cond.negated, current_root, block.block_id)
+		if not cond_result:
+			passed = false
+			break
 
-		# Actions
-		for act in block.actions:
-			var anode: Node = null
-			if str(act.target_node) == "System":
-				anode = get_node("/root/FlowKitSystem")
-			else:
-				anode = current_root.get_node_or_null(act.target_node)
-				if not anode:
-					print("[FlowKit] Action target node not found: ", act.target_node)
-					continue
-			registry.execute_action(act.action_id, anode, act.inputs, current_root, block.block_id)
+	if not passed:
+		return
+
+	# Actions
+	for act in block.actions:
+		var anode: Node = null
+		if str(act.target_node) == "System":
+			anode = get_node("/root/FlowKitSystem")
+		else:
+			anode = current_root.get_node_or_null(act.target_node)
+			if not anode:
+				print("[FlowKit] Action target node not found: ", act.target_node)
+				continue
+		registry.execute_action(act.action_id, anode, act.inputs, current_root, block.block_id)
+
 func _collect_events_from_groups(groups: Array, out_events: Array) -> void:
 	for group in groups:
 		if group is FKGroupBlock:

@@ -118,6 +118,33 @@ func poll_event(event_id: String, node: Node, inputs: Dictionary = {}, block_id:
 				return provider.poll(node, evaluated_inputs, block_id)
 	return false
 
+## Returns the event provider instance for the given event_id, or null.
+func get_event_provider(event_id: String) -> Variant:
+	for provider in event_providers:
+		if provider.has_method("get_id") and provider.get_id() == event_id:
+			return provider
+	return null
+
+## Call setup() on an event provider so it can connect to signals on the target node.
+## trigger_callback is a Callable the provider can call to fire the block immediately.
+func setup_event(event_id: String, node: Node, trigger_callback: Callable, block_id: String = "") -> void:
+	var provider: Variant = get_event_provider(event_id)
+	if provider and provider.has_method("setup"):
+		provider.setup(node, trigger_callback, block_id)
+
+## Call teardown() on an event provider so it can disconnect signals / clean up.
+func teardown_event(event_id: String, node: Node, block_id: String = "") -> void:
+	var provider: Variant = get_event_provider(event_id)
+	if provider and provider.has_method("teardown"):
+		provider.teardown(node, block_id)
+
+## Returns true if the event provider with the given id is a signal-based event.
+func is_signal_event(event_id: String) -> bool:
+	var provider: Variant = get_event_provider(event_id)
+	if provider and provider.has_method("is_signal_event"):
+		return provider.is_signal_event()
+	return false
+
 func check_condition(condition_id: String, node: Node, inputs: Dictionary, negated: bool = false, scene_root: Node = null, block_id: String = "") -> bool:
 	for provider in condition_providers:
 		if provider.has_method("get_id") and provider.get_id() == condition_id:

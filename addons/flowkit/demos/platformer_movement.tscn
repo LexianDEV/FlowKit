@@ -1,4 +1,4 @@
-[gd_scene load_steps=25 format=3 uid="uid://cctp6t57n3goy"]
+[gd_scene format=3 uid="uid://cctp6t57n3goy"]
 
 [ext_resource type="Texture2D" uid="uid://cc1yi2e52w81w" path="res://addons/flowkit/demos/assets/brackeys_platformer_assets/sprites/knight.png" id="1_4xkeg"]
 [ext_resource type="AudioStream" uid="uid://bnlonyigquoup" path="res://addons/flowkit/demos/assets/brackeys_platformer_assets/sounds/jump.wav" id="2_wile8"]
@@ -159,7 +159,7 @@ animations = [{
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_4xkeg"]
 size = Vector2(12.000002, 19.000004)
 
-[node name="CharacterBody2D" type="CharacterBody2D"]
+[node name="CharacterBody2D" type="CharacterBody2D" unique_id=2098043645]
 metadata/flowkit_behavior = {
 "id": "platformer_movement",
 "inputs": {
@@ -172,13 +172,13 @@ metadata/flowkit_behavior = {
 }
 }
 
-[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="." unique_id=629746702]
 sprite_frames = SubResource("SpriteFrames_dcvue")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=910532262]
 position = Vector2(2.3841852e-07, 2.4999998)
 scale = Vector2(0.99999976, 0.99999976)
 shape = SubResource("RectangleShape2D_4xkeg")
 
-[node name="Jump" type="AudioStreamPlayer2D" parent="."]
+[node name="Jump" type="AudioStreamPlayer2D" parent="." unique_id=1711309728]
 stream = ExtResource("2_wile8")

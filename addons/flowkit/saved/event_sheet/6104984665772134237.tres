@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="FKEventSheet" load_steps=14 format=3 uid="uid://dv106octff6l4"]
+[gd_resource type="Resource" script_class="FKEventSheet" format=3 uid="uid://dv106octff6l4"]
 
 [ext_resource type="Script" uid="uid://b1y3c8rnt2rcg" path="res://addons/flowkit/resources/fk_comment.gd" id="1_1axor"]
 [ext_resource type="Script" uid="uid://bxdhylwvr4osy" path="res://addons/flowkit/resources/event_block.gd" id="2_ju1rn"]
