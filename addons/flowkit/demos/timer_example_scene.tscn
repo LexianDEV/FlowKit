@@ -1,0 +1,17 @@
+[gd_scene format=3 uid="uid://btbm70nmj1t2s"]
+
+[node name="TimerExampleScene" type="Node" unique_id=1534973412]
+
+[node name="Logic" type="Node" parent="." unique_id=130975303]
+
+[node name="FirstTimer" type="Timer" parent="Logic" unique_id=2084448217]
+one_shot = true
+autostart = true
+
+[node name="SecondTimer" type="Timer" parent="Logic" unique_id=1732466934]
+wait_time = 2.0
+one_shot = true
+
+[node name="ThirdTimer" type="Timer" parent="Logic" unique_id=194507665]
+wait_time = 3.0
+one_shot = true

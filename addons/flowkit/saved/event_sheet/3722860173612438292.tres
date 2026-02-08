@@ -1,0 +1,123 @@
+[gd_resource type="Resource" script_class="FKEventSheet" format=3 uid="uid://d38xk0ttdal4k"]
+
+[ext_resource type="Script" uid="uid://b1y3c8rnt2rcg" path="res://addons/flowkit/resources/fk_comment.gd" id="1_ljsp5"]
+[ext_resource type="Script" uid="uid://bxdhylwvr4osy" path="res://addons/flowkit/resources/event_block.gd" id="2_cth2l"]
+[ext_resource type="Script" uid="uid://bwbi0utcwmxwf" path="res://addons/flowkit/resources/event_action.gd" id="3_uraip"]
+[ext_resource type="Script" uid="uid://bmaxurgrsv4ct" path="res://addons/flowkit/resources/event_condition.gd" id="4_y1g1l"]
+[ext_resource type="Script" path="res://addons/flowkit/resources/fk_group.gd" id="5_jarre"]
+[ext_resource type="Script" uid="uid://bumsyiqkp46l1" path="res://addons/flowkit/resources/event_sheet.gd" id="6_rcit6"]
+
+[sub_resource type="Resource" id="Resource_ljsp5"]
+script = ExtResource("3_uraip")
+action_id = "set_window_size"
+target_node = NodePath("System")
+inputs = {
+"Height": "720",
+"Width": "1280"
+}
+
+[sub_resource type="Resource" id="Resource_cth2l"]
+script = ExtResource("3_uraip")
+action_id = "set_window_mode"
+target_node = NodePath("System")
+inputs = {
+"Mode": "windowed"
+}
+
+[sub_resource type="Resource" id="Resource_uraip"]
+script = ExtResource("3_uraip")
+action_id = "set_wait_time"
+target_node = NodePath("Logic/SecondTimer")
+inputs = {
+"Wait Time": "2.0"
+}
+
+[sub_resource type="Resource" id="Resource_y1g1l"]
+script = ExtResource("3_uraip")
+action_id = "set_wait_time"
+target_node = NodePath("Logic/ThirdTimer")
+inputs = {
+"Wait Time": "3.0"
+}
+
+[sub_resource type="Resource" id="Resource_jarre"]
+script = ExtResource("2_cth2l")
+block_id = "event_1770577484_3675788766"
+event_id = "on_ready"
+target_node = NodePath("Logic")
+actions = Array[ExtResource("3_uraip")]([SubResource("Resource_ljsp5"), SubResource("Resource_cth2l"), SubResource("Resource_uraip"), SubResource("Resource_y1g1l")])
+
+[sub_resource type="Resource" id="Resource_rcit6"]
+script = ExtResource("3_uraip")
+action_id = "Print Message"
+target_node = NodePath("Logic")
+inputs = {
+"color": "",
+"message": "First timer hit timeout. Starting the second one."
+}
+
+[sub_resource type="Resource" id="Resource_h11u5"]
+script = ExtResource("3_uraip")
+action_id = "start"
+target_node = NodePath("Logic/SecondTimer")
+
+[sub_resource type="Resource" id="Resource_kn4dn"]
+script = ExtResource("2_cth2l")
+block_id = "event_1770577460_1945654280"
+event_id = "Timer on Timeout"
+target_node = NodePath("Logic/FirstTimer")
+actions = Array[ExtResource("3_uraip")]([SubResource("Resource_rcit6"), SubResource("Resource_h11u5")])
+
+[sub_resource type="Resource" id="Resource_h727k"]
+script = ExtResource("3_uraip")
+action_id = "Print Message"
+target_node = NodePath("Logic")
+inputs = {
+"color": "",
+"message": "Second timer hit timeout. Starting the third one."
+}
+
+[sub_resource type="Resource" id="Resource_2hg74"]
+script = ExtResource("3_uraip")
+action_id = "start"
+target_node = NodePath("Logic/ThirdTimer")
+
+[sub_resource type="Resource" id="Resource_3m0o0"]
+script = ExtResource("2_cth2l")
+block_id = "event_1770575621_1822084960"
+event_id = "Timer on Timeout"
+target_node = NodePath("Logic/SecondTimer")
+actions = Array[ExtResource("3_uraip")]([SubResource("Resource_h727k"), SubResource("Resource_2hg74")])
+
+[sub_resource type="Resource" id="Resource_dgt5r"]
+script = ExtResource("3_uraip")
+action_id = "Print Message"
+target_node = NodePath("Logic")
+inputs = {
+"color": "",
+"message": "Third timer hit timeout. That's all for this demo scene."
+}
+
+[sub_resource type="Resource" id="Resource_vag8j"]
+script = ExtResource("2_cth2l")
+block_id = "event_1770575667_4187488692"
+event_id = "Timer on Timeout"
+target_node = NodePath("Logic/ThirdTimer")
+actions = Array[ExtResource("3_uraip")]([SubResource("Resource_dgt5r")])
+
+[resource]
+script = ExtResource("6_rcit6")
+events = Array[ExtResource("2_cth2l")]([SubResource("Resource_jarre"), SubResource("Resource_kn4dn"), SubResource("Resource_3m0o0"), SubResource("Resource_vag8j")])
+item_order = Array[Dictionary]([{
+"index": 0,
+"type": "event"
+}, {
+"index": 1,
+"type": "event"
+}, {
+"index": 2,
+"type": "event"
+}, {
+"index": 3,
+"type": "event"
+}])
