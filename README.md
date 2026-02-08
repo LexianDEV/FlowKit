@@ -11,6 +11,8 @@ Come hang out, ask questions, get help, and share your FlowKit creations!
 
 👉 https://discord.gg/qN6eK8gApe
 
+> **Note**: FlowKit utilizes generative AI for code generation, assistance, and rapid development. All features are thoroughly tested before release, and any bugs or issues are actively addressed as they arise. If you encounter a problem, please report it on GitHub or ask for help in the Discord server.
+
 ---
 
 A **Clickteam Fusion 2.5/Construct** inspired visual scripting addon for **Godot 4**, enabling event-driven programming through an intuitive event sheet interface.
@@ -32,13 +34,14 @@ FlowKit brings the power of visual event-based programming to Godot, allowing yo
 - **💾 Resource-Based Storage**: Event sheets saved as `.tres` resources for version control friendliness
 
 ### Want to Learn More?
+
 Head on over to [the wiki!](https://github.com/LexianDEV/FlowKit/wiki) It explains things such as getting started with (and extending) FlowKit.
 
 ## 🛠️ Development Expectations
 
-* Godot 4.5+
-* Knowledge of GDScript
-* Understanding of Godot plugins
+- Godot 4.5+
+- Knowledge of GDScript
+- Understanding of Godot plugins
 
 ## 📄 License
 
@@ -46,10 +49,10 @@ MIT License.
 
 ## 🙏 Acknowledgments
 
-* Clickteam Fusion 2.5
-* Construct
-* Scratch
-* Godot Engine
+- Clickteam Fusion 2.5
+- Construct
+- Scratch
+- Godot Engine
 
 ## 📞 Support
 
