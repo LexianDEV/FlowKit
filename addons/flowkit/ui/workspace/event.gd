@@ -108,7 +108,7 @@ func _update_label() -> void:
 			params_text = " (" + ", ".join(param_pairs) + ")"
 		
 		var node_name = String(event_data.target_node).get_file()
-		label.text = "%s on %s%s" % [display_name, node_name, params_text]
+		label.text = "%s (%s)%s" % [display_name, node_name, params_text]
 
 func update_display() -> void:
 	"""Refresh the label display."""

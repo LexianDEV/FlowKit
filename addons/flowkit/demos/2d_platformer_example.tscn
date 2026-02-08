@@ -202,9 +202,6 @@ physics_layer_0/collision_layer = 1
 sources/0 = SubResource("TileSetAtlasSource_52uau")
 sources/1 = SubResource("TileSetAtlasSource_0knjy")
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_we1as"]
-size = Vector2(16, 16)
-
 [node name="Node2D" type="Node2D" unique_id=459896161]
 metadata/flowkit_variables = {}
 metadata/flowkit_variable_types = {}
@@ -235,10 +232,3 @@ metadata/flowkit_variable_types = {
 [node name="Camera2D" type="Camera2D" parent="CharacterBody2D" unique_id=522865269]
 scale = Vector2(0.19999999, 0.19999999)
 zoom = Vector2(4, 4)
-
-[node name="Area2D" type="Area2D" parent="." unique_id=1095541742]
-position = Vector2(410, 326)
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D" unique_id=1832982427]
-position = Vector2(-2, 2)
-shape = SubResource("RectangleShape2D_we1as")
