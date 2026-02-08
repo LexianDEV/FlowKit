@@ -199,7 +199,8 @@ func _update_event_header() -> void:
 				param_pairs.append("%s" % [event_data.inputs[key]])
 			params_text = " (" + ", ".join(param_pairs) + ")"
 		
-		event_header_label.text = "⚡ %s%s" % [display_name, params_text]
+		var node_name = String(event_data.target_node).get_file()
+		event_header_label.text = "⚡ %s (%s)%s" % [display_name, node_name, params_text]
 
 func _update_conditions() -> void:
 	if not conditions_container:
