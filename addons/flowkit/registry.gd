@@ -109,12 +109,12 @@ func _scan_directory_recursive(path: String, array: Array) -> void:
 	
 	dir.list_dir_end()
 
-func poll_event(event_id: String, node: Node, inputs: Dictionary = {}, block_id: String = "") -> bool:
+func poll_event(event_id: String, node: Node, inputs: Dictionary = {}, block_id: String = "", scene_root: Node = null) -> bool:
 	for provider in event_providers:
 		if provider.has_method("get_id") and provider.get_id() == event_id:
 			if provider.has_method("poll"):
 				# Evaluate expressions in inputs before polling
-				var evaluated_inputs: Dictionary = FKExpressionEvaluator.evaluate_inputs(inputs, node)
+				var evaluated_inputs: Dictionary = FKExpressionEvaluator.evaluate_inputs(inputs, node, scene_root)
 				return provider.poll(node, evaluated_inputs, block_id)
 	return false
 
@@ -152,7 +152,7 @@ func check_condition(condition_id: String, node: Node, inputs: Dictionary, negat
 				# Evaluate expressions in inputs before checking
 				# Use node as context for variable resolution (not scene_root)
 				var context = node
-				var evaluated_inputs: Dictionary = FKExpressionEvaluator.evaluate_inputs(inputs, context)
+				var evaluated_inputs: Dictionary = FKExpressionEvaluator.evaluate_inputs(inputs, context, scene_root)
 				var result = provider.check(node, evaluated_inputs, block_id)
 				return not result if negated else result
 	return false
@@ -162,8 +162,9 @@ func execute_action(action_id: String, node: Node, inputs: Dictionary, scene_roo
 		if provider.has_method("get_id") and provider.get_id() == action_id:
 			if provider.has_method("execute"):
 				# Evaluate expressions in inputs before executing
-				# Always use the node as context for variable lookup (node variables are stored on the target node)
-				var evaluated_inputs: Dictionary = FKExpressionEvaluator.evaluate_inputs(inputs, node)
+				# Use node as context for variable lookup (node variables are stored on the target node)
+				# Pass scene_root so expressions can reference scene_root.get_node() for scene-relative lookups
+				var evaluated_inputs: Dictionary = FKExpressionEvaluator.evaluate_inputs(inputs, node, scene_root)
 				provider.execute(node, evaluated_inputs, block_id)
 				return
 
@@ -178,7 +179,7 @@ func apply_behavior(behavior_id: String, node: Node, inputs: Dictionary = {}, sc
 	if behavior and behavior.has_method("apply"):
 		# Use scene_root as context if provided, otherwise use the node
 		var context = scene_root if scene_root else node
-		var evaluated_inputs: Dictionary = FKExpressionEvaluator.evaluate_inputs(inputs, context)
+		var evaluated_inputs: Dictionary = FKExpressionEvaluator.evaluate_inputs(inputs, context, scene_root)
 		behavior.apply(node, evaluated_inputs)
 
 func remove_behavior(behavior_id: String, node: Node) -> void:

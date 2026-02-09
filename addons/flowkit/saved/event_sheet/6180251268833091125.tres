@@ -170,7 +170,7 @@ inputs = {
 [sub_resource type="Resource" id="Resource_l1gn4"]
 script = ExtResource("3_ytm5k")
 action_id = "start"
-target_node = NodePath("SecondTimer")
+target_node = NodePath("Timers/SecondTimer")
 
 [sub_resource type="Resource" id="Resource_iyn0x"]
 script = ExtResource("2_s7o4u")
@@ -216,7 +216,7 @@ inputs = {
 [sub_resource type="Resource" id="Resource_mjn35"]
 script = ExtResource("3_ytm5k")
 action_id = "start"
-target_node = NodePath("FourthTimer")
+target_node = NodePath("Timers/FourthTimer")
 
 [sub_resource type="Resource" id="Resource_8wkdm"]
 script = ExtResource("2_s7o4u")
@@ -239,7 +239,7 @@ inputs = {
 [sub_resource type="Resource" id="Resource_n2cp5"]
 script = ExtResource("3_ytm5k")
 action_id = "start"
-target_node = NodePath("FifthTimer")
+target_node = NodePath("Timers/FifthTimer")
 
 [sub_resource type="Resource" id="Resource_75mps"]
 script = ExtResource("2_s7o4u")
@@ -262,7 +262,7 @@ inputs = {
 [sub_resource type="Resource" id="Resource_jyvdk"]
 script = ExtResource("3_ytm5k")
 action_id = "start"
-target_node = NodePath("SixthTimer")
+target_node = NodePath("Timers/SixthTimer")
 
 [sub_resource type="Resource" id="Resource_ryhon"]
 script = ExtResource("2_s7o4u")

@@ -194,7 +194,7 @@ func _run_sheet(entry: Dictionary) -> void:
 			continue
 
 		# Poll the event with the block's inputs
-		var event_triggered = registry.poll_event(block.event_id, node, block.inputs, block.block_id)
+		var event_triggered = registry.poll_event(block.event_id, node, block.inputs, block.block_id, current_root)
 		if not event_triggered:
 			continue
 

@@ -17,7 +17,8 @@ class_name FKExpressionEvaluator
 
 ## Evaluate a string expression and returns the result
 ## Tries to parse as literal first, then as GDScript expression
-static func evaluate(expr_str: String, context_node: Node = null) -> Variant:
+## scene_root: optional scene root node, exposed as 'scene_root' variable in expressions
+static func evaluate(expr_str: String, context_node: Node = null, scene_root: Node = null) -> Variant:
 	if expr_str.is_empty():
 		return ""
 	
@@ -40,7 +41,7 @@ static func evaluate(expr_str: String, context_node: Node = null) -> Variant:
 		return literal_result
 	
 	# If not a literal, try to evaluate as a GDScript expression
-	var expr_result = _evaluate_expression(expr_str, context_node)
+	var expr_result = _evaluate_expression(expr_str, context_node, scene_root)
 	if expr_result != null:
 		return expr_result
 	
@@ -162,7 +163,8 @@ static func _is_constructor_literal(expr: String) -> bool:
 
 
 ## Evaluate a GDScript expression using Godot's Expression class
-static func _evaluate_expression(expr_str: String, context_node: Node) -> Variant:
+## scene_root: optional scene root node, exposed as 'scene_root' in expressions
+static func _evaluate_expression(expr_str: String, context_node: Node, scene_root: Node = null) -> Variant:
 	var expression = Expression.new()
 	
 	# Build input variables for the expression
@@ -173,6 +175,11 @@ static func _evaluate_expression(expr_str: String, context_node: Node) -> Varian
 	if context_node:
 		input_names.append("node")
 		input_values.append(context_node)
+	
+	# Provide 'scene_root' for scene-root-relative node lookups
+	if scene_root:
+		input_names.append("scene_root")
+		input_values.append(scene_root)
 	
 	# Try to get FlowKitSystem for accessing global variables
 	if context_node:
@@ -191,7 +198,6 @@ static func _evaluate_expression(expr_str: String, context_node: Node) -> Varian
 	var parse_error = expression.parse(expr_str, input_names)
 	if parse_error != OK:
 		# Silently fail - not an expression
-		print("Silently failing on " + expr_str)
 		return null
 	
 	# Execute it
@@ -206,7 +212,8 @@ static func _evaluate_expression(expr_str: String, context_node: Node) -> Varian
 
 ## Convenience method to evaluate all inputs in a dictionary
 ## Returns a new dictionary with evaluated values
-static func evaluate_inputs(inputs: Dictionary, context_node: Node = null) -> Dictionary:
+## scene_root: optional scene root node, forwarded to evaluate() for scene-root-relative lookups
+static func evaluate_inputs(inputs: Dictionary, context_node: Node = null, scene_root: Node = null) -> Dictionary:
 	var evaluated: Dictionary = {}
 	
 	for key in inputs.keys():
@@ -214,7 +221,7 @@ static func evaluate_inputs(inputs: Dictionary, context_node: Node = null) -> Di
 		
 		# Only evaluate if the value is a string
 		if value is String:
-			evaluated[key] = evaluate(value, context_node)
+			evaluated[key] = evaluate(value, context_node, scene_root)
 		else:
 			evaluated[key] = value
 	
