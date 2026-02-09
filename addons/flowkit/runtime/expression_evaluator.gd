@@ -191,6 +191,7 @@ static func _evaluate_expression(expr_str: String, context_node: Node) -> Varian
 	var parse_error = expression.parse(expr_str, input_names)
 	if parse_error != OK:
 		# Silently fail - not an expression
+		print("Silently failing on " + expr_str)
 		return null
 	
 	# Execute it
