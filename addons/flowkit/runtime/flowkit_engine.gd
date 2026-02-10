@@ -170,7 +170,9 @@ func _run_sheet(entry: Dictionary) -> void:
 					if not anode:
 						print("[FlowKit] Standalone condition action target node not found: ", act.target_node)
 						continue
-				registry.execute_action(act.action_id, anode, act.inputs, current_root, "")
+				var provider: Variant = registry.execute_action(act.action_id, anode, act.inputs, current_root, "")
+				if provider and provider.has_method("is_async") and provider.is_async():
+					await provider.exec_completed
 
 	# Collect all events from the sheet (both top-level and nested in groups)
 	var all_events: Array = []
@@ -291,7 +293,9 @@ func _execute_block(block: FKEventBlock, current_root: Node) -> void:
 			if not anode:
 				print("[FlowKit] Action target node not found: ", act.target_node)
 				continue
-		registry.execute_action(act.action_id, anode, act.inputs, current_root, block.block_id)
+		var provider: Variant = registry.execute_action(act.action_id, anode, act.inputs, current_root, block.block_id)
+		if provider and provider.has_method("is_async") and provider.is_async():
+			await provider.exec_completed
 
 func _collect_events_from_groups(groups: Array, out_events: Array) -> void:
 	for group in groups:

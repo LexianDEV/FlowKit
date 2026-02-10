@@ -157,7 +157,7 @@ func check_condition(condition_id: String, node: Node, inputs: Dictionary, negat
 				return not result if negated else result
 	return false
 
-func execute_action(action_id: String, node: Node, inputs: Dictionary, scene_root: Node = null, block_id: String = "") -> void:
+func execute_action(action_id: String, node: Node, inputs: Dictionary, scene_root: Node = null, block_id: String = "") -> Variant:
 	for provider in action_providers:
 		if provider.has_method("get_id") and provider.get_id() == action_id:
 			if provider.has_method("execute"):
@@ -166,7 +166,8 @@ func execute_action(action_id: String, node: Node, inputs: Dictionary, scene_roo
 				var context = scene_root if scene_root else node
 				var evaluated_inputs: Dictionary = FKExpressionEvaluator.evaluate_inputs(inputs, context, scene_root, node)
 				provider.execute(node, evaluated_inputs, block_id)
-				return
+				return provider
+	return null
 
 func get_behavior(behavior_id: String) -> Variant:
 	for provider in behavior_providers:
