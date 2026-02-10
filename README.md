@@ -11,7 +11,7 @@ Come hang out, ask questions, get help, and share your FlowKit creations!
 
 👉 https://discord.gg/qN6eK8gApe
 
-> **Note**: FlowKit utilizes generative AI for code generation, assistance, and rapid development. All features are thoroughly tested before release, and any bugs or issues are actively addressed as they arise. If you encounter a problem, please report it on GitHub or ask for help in the Discord server.
+> **Note**: FlowKit was made with the help of generative AI. But all features are thoroughly tested before release, and any bugs or issues are actively addressed as they arise. If you encounter a problem, please report it on GitHub or ask for help in the Discord server.
 
 ---
 
