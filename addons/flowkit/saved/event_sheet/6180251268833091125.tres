@@ -93,7 +93,7 @@ inputs = {
 "Alpha": "0",
 "Alpha Only": "false",
 "Duration": "get_node(\"Timers/FirstTimer\").wait_time",
-"Target Color": "255, 255, 255"
+"Target Color": "\"(255, 215, 122)\""
 }
 
 [sub_resource type="Resource" id="Resource_li7lq"]
@@ -116,7 +116,7 @@ inputs = {
 "Alpha": "100",
 "Alpha Only": "false",
 "Duration": "get_node(\"Timers/SecondTimer\").wait_time",
-"Target Color": "255, 255, 255"
+"Target Color": "\"255, 255, 255\""
 }
 
 [sub_resource type="Resource" id="Resource_cdt56"]
