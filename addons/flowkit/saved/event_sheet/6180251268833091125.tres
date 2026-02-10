@@ -289,9 +289,25 @@ event_id = "Timer on Timeout"
 target_node = NodePath("Timers/SixthTimer")
 actions = Array[ExtResource("3_ytm5k")]([SubResource("Resource_78acu")])
 
+[sub_resource type="Resource" id="Resource_tn363"]
+script = ExtResource("3_ytm5k")
+action_id = "Print Message"
+target_node = NodePath("System")
+inputs = {
+"color": "red",
+"message": "get_node(\"Timers/FirstTimer\").wait_time"
+}
+
+[sub_resource type="Resource" id="Resource_igfol"]
+script = ExtResource("2_s7o4u")
+block_id = "event_1770658748_3106199796"
+event_id = "on_process"
+target_node = NodePath("System")
+actions = Array[ExtResource("3_ytm5k")]([SubResource("Resource_tn363")])
+
 [resource]
 script = ExtResource("6_1sc5p")
-events = Array[ExtResource("2_s7o4u")]([SubResource("Resource_ryos8"), SubResource("Resource_iyn0x"), SubResource("Resource_ar7m7"), SubResource("Resource_8wkdm"), SubResource("Resource_75mps"), SubResource("Resource_ryhon"), SubResource("Resource_nnhn3")])
+events = Array[ExtResource("2_s7o4u")]([SubResource("Resource_ryos8"), SubResource("Resource_iyn0x"), SubResource("Resource_ar7m7"), SubResource("Resource_8wkdm"), SubResource("Resource_75mps"), SubResource("Resource_ryhon"), SubResource("Resource_nnhn3"), SubResource("Resource_igfol")])
 comments = Array[ExtResource("1_t5adf")]([SubResource("Resource_t5adf"), SubResource("Resource_s7o4u"), SubResource("Resource_ytm5k"), SubResource("Resource_rm0fh"), SubResource("Resource_iynvq"), SubResource("Resource_1sc5p"), SubResource("Resource_ejtba")])
 item_order = Array[Dictionary]([{
 "index": 0,
@@ -334,5 +350,8 @@ item_order = Array[Dictionary]([{
 "type": "comment"
 }, {
 "index": 6,
+"type": "event"
+}, {
+"index": 7,
 "type": "event"
 }])

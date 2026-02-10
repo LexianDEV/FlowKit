@@ -161,10 +161,10 @@ func execute_action(action_id: String, node: Node, inputs: Dictionary, scene_roo
 	for provider in action_providers:
 		if provider.has_method("get_id") and provider.get_id() == action_id:
 			if provider.has_method("execute"):
-				# Evaluate expressions in inputs before executing
-				# Use node as context for variable lookup (node variables are stored on the target node)
-				# Pass scene_root so expressions can reference scene_root.get_node() for scene-relative lookups
-				var evaluated_inputs: Dictionary = FKExpressionEvaluator.evaluate_inputs(inputs, node, scene_root)
+				# Use scene_root as the base instance so get_node() resolves from the scene root
+				# Pass original node as target_node so n_ variable lookups resolve on the correct node
+				var context = scene_root if scene_root else node
+				var evaluated_inputs: Dictionary = FKExpressionEvaluator.evaluate_inputs(inputs, context, scene_root, node)
 				provider.execute(node, evaluated_inputs, block_id)
 				return
 
