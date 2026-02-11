@@ -157,7 +157,7 @@ func check_condition(condition_id: String, node: Node, inputs: Dictionary, negat
 				return not result if negated else result
 	return false
 
-func execute_action(action_id: String, node: Node, inputs: Dictionary, scene_root: Node = null, block_id: String = "") -> void:
+func execute_action(action_id: String, node: Node, inputs: Dictionary, scene_root: Node = null, block_id: String = "") -> Variant:
 	for provider in action_providers:
 		if provider.has_method("get_id") and provider.get_id() == action_id:
 			if provider.has_method("execute"):
@@ -165,8 +165,30 @@ func execute_action(action_id: String, node: Node, inputs: Dictionary, scene_roo
 				# Pass original node as target_node so n_ variable lookups resolve on the correct node
 				var context = scene_root if scene_root else node
 				var evaluated_inputs: Dictionary = FKExpressionEvaluator.evaluate_inputs(inputs, context, scene_root, node)
+				
+				var is_multi_frame_action: bool = provider.has_method("requires_multi_frames") and provider.requires_multi_frames()
+				if is_multi_frame_action:
+					_waiting_on_action = true
+					provider.exec_completed.connect(_on_exec_completed)
+					# ^Need to listen for the completion signal BEFORE we execute the action.
+					# Otherwise, under circumstances where the action only needs one frame to work,
+					# we'll miss the timing and end up freezing the game.
+					
 				provider.execute(node, evaluated_inputs, block_id)
-				return
+				while _waiting_on_action:
+					await node.get_tree().process_frame
+				
+				if is_multi_frame_action:
+					provider.exec_completed.disconnect(_on_exec_completed) 
+					# ^Signal-hygiene
+					
+				return provider
+	return null
+
+func _on_exec_completed():
+	_waiting_on_action = false
+
+var _waiting_on_action: bool = false
 
 func get_behavior(behavior_id: String) -> Variant:
 	for provider in behavior_providers:
