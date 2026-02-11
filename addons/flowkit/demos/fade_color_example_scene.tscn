@@ -56,7 +56,8 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-text = "Insert studio Logo here or something lol"
+text = "Insert studio Logo here 
+or something lol"
 label_settings = SubResource("LabelSettings_bmscr")
 horizontal_alignment = 1
 vertical_alignment = 1

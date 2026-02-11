@@ -1,6 +1,9 @@
 extends FKAction
 class_name FadeColorBase
 
+func requires_multi_frames() -> bool:
+	return true
+	
 func get_inputs() -> Array:
 	return [
 		{
@@ -16,18 +19,25 @@ func get_inputs() -> Array:
 		{
 			"name": "Alpha Only",
 			"type": "bool",
-			"description": "If true, only the transparency will be changed. Default: false."
+			"description": "If true, only the transparency will be changed. Default: " + str(default_alpha_only)
 		},
 		{
 			"name": "Duration",
 			"type": "float",
 			"description": "How long (in seconds) the fade should take. Defaults to " + str(default_duration) + "."
 		},
+		{
+			"name": "Wait For Finish",
+			"type": "bool",
+			"description": "Whether or not this pauses the Action list until the fade's done running. Default: " + str(default_wait_for_finish)
+		}
 	]
 
 var default_color_raw := "\"(255, 255, 255)\""
 var default_alpha := 100
+var default_alpha_only := false
 var default_duration := 1.0
+var default_wait_for_finish := true
 
 var tween: Tween = null
 
@@ -47,11 +57,29 @@ func execute(targetNode: Node, inputs: Dictionary, _str := "") -> void:
 	else:
 		tween = targetNode.create_tween()
 		tween.tween_property(targetNode, prop, target_color, duration)
+		if wait_for_finish:
+			await tween.finished
+	
+	exec_completed.emit()
 
 func parse_inputs(targetNode: Node, inputs: Dictionary) -> void:
 	duration = float(inputs.get("Duration", default_duration))
-	alpha_only = inputs.get("Alpha Only", false)
+	
+	var base_alpha_only = inputs.get("Alpha Only", default_alpha_only)
+	var use_default := base_alpha_only is String
+	if use_default:
+		alpha_only = default_alpha_only
+	else:
+		alpha_only = base_alpha_only
+		
 	alpha = inputs.get("Alpha", default_alpha) / 100.0
+	
+	var base_wait := inputs.get("Wait For Finish", default_wait_for_finish)
+	use_default = base_wait is String
+	if use_default:
+		wait_for_finish = default_wait_for_finish
+	else:
+		wait_for_finish = base_wait
 
 	var prop := decide_color_prop_name_for(targetNode)
 
@@ -68,6 +96,7 @@ var duration := 0.0
 var alpha_only := false
 var alpha := 0.0
 var target_color := Color(1, 1, 1)
+var wait_for_finish := true
 
 # Subclasses override this
 func decide_color_prop_name_for(_targetNode: Node) -> String:
@@ -96,4 +125,3 @@ func to_rgb_coords(color: Color) -> String:
 	return result
 
 var rgb_format := "(%d, %d, %d, %d)"
-var comma_space := ", "
