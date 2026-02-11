@@ -18,7 +18,7 @@ func get_inputs() -> Array[Dictionary]:
 func get_supported_types() -> Array[String]:
 	return []
 
-func is_async() -> bool:
+func requires_multi_frames() -> bool:
 	return false
 
 func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:

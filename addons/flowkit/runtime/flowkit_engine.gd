@@ -293,12 +293,12 @@ func _execute_block(block: FKEventBlock, current_root: Node) -> void:
 				print("[FlowKit] Action target node not found: ", act.target_node)
 				continue
 		var provider: Variant = await registry.execute_action(act.action_id, anode, act.inputs, current_root, block.block_id)
-		#if _is_async_provider(provider):
+		#if _is_multi_frame_provider(provider):
 		#	print("Awaiting async provider in _execute_block")
 		#	await provider.exec_completed
 
-func _is_async_provider(provider: Variant) -> bool:
-	return provider and provider.has_method("is_async") and provider.is_async()
+func _is_multi_frame_provider(provider: Variant) -> bool:
+	return provider and provider.has_method("requires_multi_frames") and provider.requires_multi_frames()
 
 func _collect_events_from_groups(groups: Array, out_events: Array) -> void:
 	for group in groups:

@@ -166,7 +166,7 @@ func execute_action(action_id: String, node: Node, inputs: Dictionary, scene_roo
 				var context = scene_root if scene_root else node
 				var evaluated_inputs: Dictionary = FKExpressionEvaluator.evaluate_inputs(inputs, context, scene_root, node)
 				
-				var is_multi_frame_action: bool = provider.has_method("is_async") and provider.is_async()
+				var is_multi_frame_action: bool = provider.has_method("requires_multi_frames") and provider.requires_multi_frames()
 				if is_multi_frame_action:
 					_waiting_on_action = true
 					provider.exec_completed.connect(_on_exec_completed)
