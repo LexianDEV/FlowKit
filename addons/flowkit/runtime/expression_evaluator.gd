@@ -55,7 +55,7 @@ static func evaluate(expr_str: String, context_node: Node = null, scene_root: No
 
 
 ## Resolve an n_ variable from a node. Checks FlowKitSystem node variables first,
-## then falls back to the node's own script properties.
+## then node metadata (inspector-defined), then script properties.
 ## Returns a 2-element array [found: bool, value: Variant] to distinguish
 ## 'not found' from 'found with value null'.
 static func _resolve_n_variable(node: Node, var_name: String) -> Array:
@@ -64,6 +64,28 @@ static func _resolve_n_variable(node: Node, var_name: String) -> Array:
 		# Check if the variable exists before getting it
 		if system.has_method("has_node_var") and system.has_node_var(node, var_name):
 			return [true, system.get_node_var(node, var_name, null)]
+	
+	# Fallback: check node metadata directly (inspector-defined FlowKit variables)
+	if node.has_meta("flowkit_variables"):
+		var meta_vars = node.get_meta("flowkit_variables")
+		if meta_vars is Dictionary and meta_vars.has(var_name):
+			var value = meta_vars[var_name]
+			# Apply type conversion if type metadata exists
+			if node.has_meta("flowkit_variable_types"):
+				var meta_types = node.get_meta("flowkit_variable_types")
+				if meta_types is Dictionary and meta_types.has(var_name):
+					var var_type: String = meta_types[var_name]
+					match var_type:
+						"int":
+							if value is String:
+								value = int(value) if value.is_valid_int() else 0
+						"float":
+							if value is String:
+								value = float(value) if value.is_valid_float() else 0.0
+						"bool":
+							if value is String:
+								value = value.to_lower() == "true"
+			return [true, value]
 	
 	# Fallback: check if the node itself has this property (script-exported variables)
 	if var_name in node:
@@ -246,6 +268,37 @@ static func _evaluate_expression(expr_str: String, context_node: Node, scene_roo
 						if usage & PROPERTY_USAGE_SCRIPT_VARIABLE:
 							input_names.append(input_key)
 							input_values.append(n_node.get(pname))
+		
+		# Also inject from node metadata directly (works even without FlowKitSystem)
+		var n_node: Node = target_node if target_node else context_node
+		if n_node and n_node.has_meta("flowkit_variables"):
+			var meta_vars = n_node.get_meta("flowkit_variables")
+			if meta_vars is Dictionary:
+				var meta_types: Dictionary = {}
+				if n_node.has_meta("flowkit_variable_types"):
+					var types_raw = n_node.get_meta("flowkit_variable_types")
+					if types_raw is Dictionary:
+						meta_types = types_raw
+				
+				for vname in meta_vars.keys():
+					var input_key = "n_" + vname
+					if not input_names.has(input_key):
+						var value = meta_vars[vname]
+						# Apply type conversion
+						if meta_types.has(vname):
+							var var_type: String = meta_types[vname]
+							match var_type:
+								"int":
+									if value is String:
+										value = int(value) if value.is_valid_int() else 0
+								"float":
+									if value is String:
+										value = float(value) if value.is_valid_float() else 0.0
+								"bool":
+									if value is String:
+										value = value.to_lower() == "true"
+						input_names.append(input_key)
+						input_values.append(value)
 			
 			# Also expose all system variables directly
 			if "variables" in system and system.variables is Dictionary:
