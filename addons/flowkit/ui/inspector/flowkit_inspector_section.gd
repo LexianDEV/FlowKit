@@ -2,7 +2,7 @@
 extends VBoxContainer
 
 ## FlowKit Inspector Section
-## Displays node variables and behaviors in the inspector with Godot-style UI
+## Displays node behaviors in the inspector with Godot-style UI
 
 var node: Node = null
 var registry: FKRegistry = null
@@ -13,8 +13,6 @@ var header_container: HBoxContainer = null
 var icon: TextureRect = null
 var title_label: Label = null
 var content_container: VBoxContainer = null
-var variable_list: VBoxContainer = null
-var add_variable_button: Button = null
 
 # Behavior UI Components
 var behavior_section: VBoxContainer = null
@@ -24,7 +22,6 @@ var available_behaviors: Array = []
 
 func _ready() -> void:
 	_build_ui()
-	_load_node_data()
 
 func set_node(p_node: Node) -> void:
 	node = p_node
@@ -69,23 +66,6 @@ func _build_ui() -> void:
 	
 	# === Behavior Section ===
 	_build_behavior_section(inner_vbox)
-	
-	# === Variables Section ===
-	var variables_label: Label = Label.new()
-	variables_label.text = "Variables"
-	variables_label.add_theme_font_size_override("font_size", 13)
-	inner_vbox.add_child(variables_label)
-	
-	# Variable list
-	variable_list = VBoxContainer.new()
-	variable_list.add_theme_constant_override("separation", 2)
-	inner_vbox.add_child(variable_list)
-	
-	# Add Variable button
-	add_variable_button = Button.new()
-	add_variable_button.text = "Add Variable"
-	add_variable_button.pressed.connect(_on_add_variable)
-	inner_vbox.add_child(add_variable_button)
 	
 	# Set icon after adding to tree (when theme is available)
 	call_deferred("_set_header_icon")
@@ -311,226 +291,6 @@ func _set_header_icon() -> void:
 		var theme_icon: Texture2D = get_theme_icon("Script", "EditorIcons")
 		if theme_icon:
 			icon.texture = theme_icon
-
-func _load_node_data() -> void:
-	if not node:
-		return
-	
-	_refresh_variables()
-
-func _refresh_variables() -> void:
-	if not node or not variable_list:
-		return
-	
-	# Clear existing variable widgets
-	for child in variable_list.get_children():
-		child.queue_free()
-	
-	# Get node variables from metadata
-	var vars: Dictionary = {}
-	if node.has_meta("flowkit_variables"):
-		vars = node.get_meta("flowkit_variables", {})
-	
-	# Get node variable types from metadata
-	var var_types: Dictionary = {}
-	if node.has_meta("flowkit_variable_types"):
-		var_types = node.get_meta("flowkit_variable_types", {})
-	
-	# Display existing variables
-	for var_name in vars.keys():
-		var var_type: String = var_types.get(var_name, "String")
-		_add_variable_row(var_name, vars[var_name], var_type)
-
-func _add_variable_row(var_name: String, value: Variant, var_type: String = "String") -> void:
-	var hbox: HBoxContainer = HBoxContainer.new()
-	hbox.add_theme_constant_override("separation", 4)
-	variable_list.add_child(hbox)
-	
-	# Store the current var_name and type as metadata on the hbox for reference
-	hbox.set_meta("var_name", var_name)
-	hbox.set_meta("var_type", var_type)
-	
-	# Name field
-	var name_edit: LineEdit = LineEdit.new()
-	name_edit.text = var_name
-	name_edit.custom_minimum_size = Vector2(120, 0)
-	name_edit.placeholder_text = "name"
-	name_edit.text_changed.connect(func(new_text: String): _on_variable_name_changed(hbox, new_text))
-	hbox.add_child(name_edit)
-	
-	# Type dropdown
-	var type_dropdown: OptionButton = OptionButton.new()
-	type_dropdown.custom_minimum_size = Vector2(100, 0)
-	type_dropdown.add_item("String", 0)
-	type_dropdown.add_item("int", 1)
-	type_dropdown.add_item("float", 2)
-	type_dropdown.add_item("bool", 3)
-	
-	# Set current type
-	match var_type:
-		"int":
-			type_dropdown.select(1)
-		"float":
-			type_dropdown.select(2)
-		"bool":
-			type_dropdown.select(3)
-		_:
-			type_dropdown.select(0)
-	
-	type_dropdown.item_selected.connect(func(index: int): _on_variable_type_changed(hbox, type_dropdown.get_item_text(index)))
-	hbox.add_child(type_dropdown)
-	
-	# Value field
-	var value_edit: LineEdit = LineEdit.new()
-	value_edit.text = str(value)
-	value_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	value_edit.placeholder_text = "value"
-	value_edit.text_changed.connect(func(new_text: String): _on_variable_value_changed(hbox, new_text))
-	hbox.add_child(value_edit)
-	
-	# Delete button
-	var delete_btn: Button = Button.new()
-	delete_btn.text = "×"
-	delete_btn.custom_minimum_size = Vector2(24, 0)
-	delete_btn.tooltip_text = "Remove variable"
-	delete_btn.pressed.connect(func(): _on_delete_variable(hbox))
-	hbox.add_child(delete_btn)
-
-func _on_add_variable() -> void:
-	if not node:
-		return
-	
-	# Get existing variables
-	var vars: Dictionary = {}
-	if node.has_meta("flowkit_variables"):
-		vars = node.get_meta("flowkit_variables", {})
-	
-	# Get existing variable types
-	var var_types: Dictionary = {}
-	if node.has_meta("flowkit_variable_types"):
-		var_types = node.get_meta("flowkit_variable_types", {})
-	
-	# Find unique name
-	var var_name: String = "variable"
-	var counter: int = 1
-	while vars.has(var_name):
-		var_name = "variable" + str(counter)
-		counter += 1
-	
-	# Add new variable with String type as default
-	vars[var_name] = ""
-	var_types[var_name] = "String"
-	node.set_meta("flowkit_variables", vars)
-	node.set_meta("flowkit_variable_types", var_types)
-	
-	# Add the row at the bottom
-	_add_variable_row(var_name, "", "String")
-
-func _on_variable_name_changed(hbox: HBoxContainer, new_name: String) -> void:
-	if not node or not hbox:
-		return
-	
-	var old_name: String = hbox.get_meta("var_name", "")
-	var var_type: String = hbox.get_meta("var_type", "String")
-	
-	new_name = new_name.strip_edges()
-	
-	# If empty, just return - don't refresh yet
-	if new_name.is_empty():
-		return
-	
-	if old_name == new_name:
-		return
-	
-	var vars: Dictionary = {}
-	if node.has_meta("flowkit_variables"):
-		vars = node.get_meta("flowkit_variables", {}).duplicate()
-	
-	var var_types: Dictionary = {}
-	if node.has_meta("flowkit_variable_types"):
-		var_types = node.get_meta("flowkit_variable_types", {}).duplicate()
-	
-	# Check if new name already exists - if so, just return without refreshing
-	if vars.has(new_name):
-		return
-	
-	# Rename variable - preserve the value and type
-	var value: Variant = ""
-	if vars.has(old_name):
-		value = vars[old_name]
-		vars.erase(old_name)
-	
-	if var_types.has(old_name):
-		var_types[new_name] = var_types[old_name]
-		var_types.erase(old_name)
-	else:
-		var_types[new_name] = var_type
-	
-	vars[new_name] = value
-	node.set_meta("flowkit_variables", vars)
-	node.set_meta("flowkit_variable_types", var_types)
-	hbox.set_meta("var_name", new_name)
-	_notify_property_changed()
-
-func _on_variable_type_changed(hbox: HBoxContainer, new_type: String) -> void:
-	if not node or not hbox:
-		return
-	
-	var var_name: String = hbox.get_meta("var_name", "")
-	if var_name.is_empty():
-		return
-	
-	var var_types: Dictionary = {}
-	if node.has_meta("flowkit_variable_types"):
-		var_types = node.get_meta("flowkit_variable_types", {}).duplicate()
-	
-	var_types[var_name] = new_type
-	node.set_meta("flowkit_variable_types", var_types)
-	hbox.set_meta("var_type", new_type)
-	_notify_property_changed()
-
-func _on_variable_value_changed(hbox: HBoxContainer, new_value: String) -> void:
-	if not node or not hbox:
-		return
-	
-	var var_name: String = hbox.get_meta("var_name", "")
-	if var_name.is_empty():
-		return
-	
-	var var_type: String = hbox.get_meta("var_type", "String")
-	
-	var vars: Dictionary = {}
-	if node.has_meta("flowkit_variables"):
-		vars = node.get_meta("flowkit_variables", {}).duplicate()
-	
-	# Store the value (conversion happens at runtime when accessed)
-	vars[var_name] = new_value
-	node.set_meta("flowkit_variables", vars)
-	_notify_property_changed()
-
-func _on_delete_variable(hbox: HBoxContainer) -> void:
-	if not node or not hbox:
-		return
-	
-	var var_name: String = hbox.get_meta("var_name", "")
-	if var_name.is_empty():
-		return
-	
-	var vars: Dictionary = {}
-	if node.has_meta("flowkit_variables"):
-		vars = node.get_meta("flowkit_variables", {}).duplicate()
-	
-	var var_types: Dictionary = {}
-	if node.has_meta("flowkit_variable_types"):
-		var_types = node.get_meta("flowkit_variable_types", {}).duplicate()
-	
-	vars.erase(var_name)
-	var_types.erase(var_name)
-	node.set_meta("flowkit_variables", vars)
-	node.set_meta("flowkit_variable_types", var_types)
-	_notify_property_changed()
-	
-	_refresh_variables()
 
 func _notify_property_changed() -> void:
 	# Mark the scene as modified in the editor
