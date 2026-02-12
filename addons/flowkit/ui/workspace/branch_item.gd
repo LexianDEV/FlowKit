@@ -102,6 +102,9 @@ func _show_context_menu() -> void:
 	context_menu.clear()
 	if action_data and action_data.branch_type != "else":
 		context_menu.add_item("Edit Condition", 0)
+		var is_negated = action_data.branch_condition and action_data.branch_condition.negated
+		var negate_text = "Set to True (remove negation)" if is_negated else "Set to False (negate)"
+		context_menu.add_item(negate_text, 4)
 		context_menu.add_separator()
 	context_menu.add_item("Add Else If Below", 1)
 	context_menu.add_item("Add Else Below", 2)
@@ -120,6 +123,15 @@ func _on_context_menu_id_pressed(id: int) -> void:
 			add_else_requested.emit(self)
 		3:  # Delete Branch
 			delete_requested.emit(self)
+		4:  # Negate Condition
+			_toggle_negate()
+
+func _toggle_negate() -> void:
+	if action_data and action_data.branch_condition:
+		before_data_changed.emit()
+		action_data.branch_condition.negated = not action_data.branch_condition.negated
+		_update_display()
+		data_changed.emit()
 
 func _on_add_action_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
