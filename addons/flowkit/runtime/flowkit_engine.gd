@@ -16,9 +16,16 @@ func _ready() -> void:
 	# Do a deferred check in case the scene is already present at startup.
 	call_deferred("_check_current_scene")
 
+var _is_physics_frame: bool = false  # Tracks which callback is currently running
+
 func _process(delta: float) -> void:
 	# Regularly check if the current_scene changed (robust against timing issues).
 	_check_for_scene_change()
+	# Store delta on FlowKitSystem so expressions can read it
+	var system = get_node_or_null("/root/FlowKitSystem")
+	if system:
+		system.delta = delta
+	_is_physics_frame = false
 	for entry in active_sheets:
 		_run_sheet(entry)
 	
@@ -26,6 +33,11 @@ func _process(delta: float) -> void:
 	_process_behaviors(delta, false)
 
 func _physics_process(delta: float) -> void:
+	# Store delta on FlowKitSystem so expressions can read it
+	var system = get_node_or_null("/root/FlowKitSystem")
+	if system:
+		system.delta = delta
+	_is_physics_frame = true
 	# Run sheets in physics process for physics-based events
 	for entry in active_sheets:
 		_run_sheet(entry)
@@ -192,6 +204,14 @@ func _run_sheet(entry: Dictionary) -> void:
 
 		# Signal events fire via callback — skip them in the poll loop
 		if registry.is_signal_event(block.event_id):
+			continue
+
+		# Skip events that belong to the wrong callback
+		# on_process_physics should only run during _physics_process
+		# on_process should only run during _process
+		if block.event_id == "on_process_physics" and not _is_physics_frame:
+			continue
+		if block.event_id == "on_process" and _is_physics_frame:
 			continue
 
 		# Poll the event with the block's inputs

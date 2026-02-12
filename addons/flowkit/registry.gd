@@ -151,8 +151,9 @@ func check_condition(condition_id: String, node: Node, inputs: Dictionary, negat
 			if provider.has_method("check"):
 				# Evaluate expressions in inputs before checking
 				# Use node as context for variable resolution (not scene_root)
+				# Pass node as target_node so n_ variable lookups resolve on the correct node
 				var context = node
-				var evaluated_inputs: Dictionary = FKExpressionEvaluator.evaluate_inputs(inputs, context, scene_root)
+				var evaluated_inputs: Dictionary = FKExpressionEvaluator.evaluate_inputs(inputs, context, scene_root, node)
 				var result = provider.check(node, evaluated_inputs, block_id)
 				return not result if negated else result
 	return false

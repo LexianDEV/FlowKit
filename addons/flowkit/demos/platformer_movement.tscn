@@ -160,16 +160,11 @@ animations = [{
 size = Vector2(12.000002, 19.000004)
 
 [node name="CharacterBody2D" type="CharacterBody2D" unique_id=2098043645]
-metadata/flowkit_behavior = {
-"id": "platformer_movement",
-"inputs": {
-"gravity": 900.0,
-"jump": "ui_accept",
-"jump_force": 350.0,
-"move_left": "ui_left",
-"move_right": "ui_right",
-"speed": 200.0
+metadata/flowkit_variables = {
+"jump": "700"
 }
+metadata/flowkit_variable_types = {
+"jump": "float"
 }
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="." unique_id=629746702]
