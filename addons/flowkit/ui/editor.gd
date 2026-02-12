@@ -37,6 +37,7 @@ var pending_id: String = ""
 var pending_target_row = null  # The event row being modified
 var pending_target_item = null  # The specific condition/action item being edited
 var pending_target_group = null  # The group to add content to (for event_in_group workflow)
+var pending_target_branch = null  # The branch item for branch sub-action workflows
 var selected_row = null  # Currently selected event row
 var selected_item = null  # Currently selected condition/action item
 var clipboard_events: Array = []  # Stores copied event data for paste
@@ -263,13 +264,31 @@ func _serialize_event_block(data: FKEventBlock) -> Dictionary:
 		})
 	
 	for act in data.actions:
-		result["actions"].append({
-			"action_id": act.action_id,
-			"target_node": str(act.target_node),
-			"inputs": act.inputs.duplicate()
-		})
+		result["actions"].append(_serialize_action(act))
 	
 	return result
+
+func _serialize_action(act: FKEventAction) -> Dictionary:
+	"""Serialize an action (including branch data) to a dictionary."""
+	var act_dict = {
+		"action_id": act.action_id,
+		"target_node": str(act.target_node),
+		"inputs": act.inputs.duplicate(),
+		"is_branch": act.is_branch,
+		"branch_type": act.branch_type
+	}
+	if act.is_branch:
+		if act.branch_condition:
+			act_dict["branch_condition"] = {
+				"condition_id": act.branch_condition.condition_id,
+				"target_node": str(act.branch_condition.target_node),
+				"inputs": act.branch_condition.inputs.duplicate(),
+				"negated": act.branch_condition.negated
+			}
+		act_dict["branch_actions"] = []
+		for sub_act in act.branch_actions:
+			act_dict["branch_actions"].append(_serialize_action(sub_act))
+	return act_dict
 
 func _serialize_group_block(data: FKGroupBlock) -> Dictionary:
 	"""Serialize a group block to a dictionary."""
@@ -398,13 +417,33 @@ func _deserialize_event_block(dict: Dictionary) -> FKEventBlock:
 		data.conditions.append(cond)
 	
 	for act_dict in dict.get("actions", []):
-		var act = FKEventAction.new()
-		act.action_id = act_dict.get("action_id", "")
-		act.target_node = NodePath(act_dict.get("target_node", ""))
-		act.inputs = act_dict.get("inputs", {}).duplicate()
+		var act = _deserialize_action(act_dict)
 		data.actions.append(act)
 	
 	return data
+
+func _deserialize_action(act_dict: Dictionary) -> FKEventAction:
+	"""Deserialize a dictionary to an action (including branch data)."""
+	var act = FKEventAction.new()
+	act.action_id = act_dict.get("action_id", "")
+	act.target_node = NodePath(act_dict.get("target_node", ""))
+	act.inputs = act_dict.get("inputs", {}).duplicate()
+	act.is_branch = act_dict.get("is_branch", false)
+	act.branch_type = act_dict.get("branch_type", "")
+	if act.is_branch:
+		var cond_dict = act_dict.get("branch_condition", null)
+		if cond_dict:
+			var cond = FKEventCondition.new()
+			cond.condition_id = cond_dict.get("condition_id", "")
+			cond.target_node = NodePath(cond_dict.get("target_node", ""))
+			cond.inputs = cond_dict.get("inputs", {}).duplicate()
+			cond.negated = cond_dict.get("negated", false)
+			cond.actions = [] as Array[FKEventAction]
+			act.branch_condition = cond
+		act.branch_actions = [] as Array[FKEventAction]
+		for sub_dict in act_dict.get("branch_actions", []):
+			act.branch_actions.append(_deserialize_action(sub_dict))
+	return act
 
 func _deserialize_group_block(dict: Dictionary) -> FKGroupBlock:
 	"""Deserialize a dictionary to a group block."""
@@ -576,11 +615,23 @@ func _duplicate_conditions(conditions: Array) -> Array:
 func _duplicate_actions(actions: Array) -> Array:
 	var result = []
 	for act in actions:
-		result.append({
+		var act_dict = {
 			"action_id": act.action_id,
 			"target_node": act.target_node,
-			"inputs": act.inputs.duplicate()
-		})
+			"inputs": act.inputs.duplicate(),
+			"is_branch": act.is_branch,
+			"branch_type": act.branch_type
+		}
+		if act.is_branch:
+			if act.branch_condition:
+				act_dict["branch_condition"] = {
+					"condition_id": act.branch_condition.condition_id,
+					"target_node": act.branch_condition.target_node,
+					"inputs": act.branch_condition.inputs.duplicate(),
+					"negated": act.branch_condition.negated
+				}
+			act_dict["branch_actions"] = _duplicate_actions(act.branch_actions)
+		result.append(act_dict)
 	return result
 
 func _paste_from_clipboard() -> void:
@@ -1087,13 +1138,34 @@ func _copy_event_block(data: FKEventBlock) -> FKEventBlock:
 		event_copy.conditions.append(cond_copy)
 	
 	for act in data.actions:
-		var act_copy = FKEventAction.new()
-		act_copy.action_id = act.action_id
-		act_copy.target_node = act.target_node
-		act_copy.inputs = act.inputs.duplicate()
+		var act_copy = _copy_action(act)
 		event_copy.actions.append(act_copy)
 	
 	return event_copy
+
+func _copy_action(act: FKEventAction) -> FKEventAction:
+	"""Create a clean copy of an action, including branch data."""
+	var act_copy = FKEventAction.new()
+	act_copy.action_id = act.action_id
+	act_copy.target_node = act.target_node
+	act_copy.inputs = act.inputs.duplicate()
+	act_copy.is_branch = act.is_branch
+	act_copy.branch_type = act.branch_type
+	
+	if act.branch_condition:
+		var cond_copy = FKEventCondition.new()
+		cond_copy.condition_id = act.branch_condition.condition_id
+		cond_copy.target_node = act.branch_condition.target_node
+		cond_copy.inputs = act.branch_condition.inputs.duplicate()
+		cond_copy.negated = act.branch_condition.negated
+		cond_copy.actions = [] as Array[FKEventAction]
+		act_copy.branch_condition = cond_copy
+	
+	act_copy.branch_actions = [] as Array[FKEventAction]
+	for sub_act in act.branch_actions:
+		act_copy.branch_actions.append(_copy_action(sub_act))
+	
+	return act_copy
 
 func _copy_group_block(data: FKGroupBlock) -> FKGroupBlock:
 	"""Create a clean copy of a group block with all children."""
@@ -1209,6 +1281,21 @@ func _connect_group_signals(group) -> void:
 	group.add_action_requested.connect(func(row): _on_row_add_action(row, row))
 	group.condition_dropped.connect(_on_condition_dropped)
 	group.action_dropped.connect(_on_action_dropped)
+	# Branch signals from groups
+	if group.has_signal("add_branch_requested"):
+		group.add_branch_requested.connect(func(row): _on_row_add_branch(row, row))
+	if group.has_signal("add_elseif_requested"):
+		group.add_elseif_requested.connect(_on_branch_add_elseif)
+	if group.has_signal("add_else_requested"):
+		group.add_else_requested.connect(_on_branch_add_else)
+	if group.has_signal("branch_condition_edit_requested"):
+		group.branch_condition_edit_requested.connect(_on_branch_condition_edit)
+	if group.has_signal("branch_action_add_requested"):
+		group.branch_action_add_requested.connect(_on_branch_action_add)
+	if group.has_signal("branch_action_edit_requested"):
+		group.branch_action_edit_requested.connect(_on_branch_action_edit)
+	if group.has_signal("nested_branch_add_requested"):
+		group.nested_branch_add_requested.connect(_on_nested_branch_add)
 
 func _on_group_add_event_requested(group_node) -> void:
 	"""Handle request to add an event inside a group."""
@@ -1298,6 +1385,14 @@ func _connect_event_row_signals(row) -> void:
 	row.action_dropped.connect(_on_action_dropped)
 	row.data_changed.connect(_save_sheet)
 	row.before_data_changed.connect(_push_undo_state)
+	# Branch signals
+	row.add_branch_requested.connect(_on_row_add_branch.bind(row))
+	row.add_elseif_requested.connect(_on_branch_add_elseif)
+	row.add_else_requested.connect(_on_branch_add_else)
+	row.branch_condition_edit_requested.connect(_on_branch_condition_edit)
+	row.branch_action_add_requested.connect(_on_branch_action_add)
+	row.branch_action_edit_requested.connect(_on_branch_action_edit)
+	row.nested_branch_add_requested.connect(_on_nested_branch_add)
 
 # === Menu Button Handlers ===
 
@@ -1556,6 +1651,12 @@ func _on_node_selected(node_path: String, node_class: String) -> void:
 		"action", "action_replace":
 			select_action_modal.populate_actions(node_path, node_class)
 			_popup_centered_on_editor(select_action_modal)
+		"branch_condition", "branch_condition_edit", "elseif_condition":
+			select_condition_modal.populate_conditions(node_path, node_class)
+			_popup_centered_on_editor(select_condition_modal)
+		"branch_action":
+			select_action_modal.populate_actions(node_path, node_class)
+			_popup_centered_on_editor(select_action_modal)
 
 func _on_event_selected(node_path: String, event_id: String, inputs: Array) -> void:
 	"""Event type selected."""
@@ -1586,6 +1687,12 @@ func _on_condition_selected(node_path: String, condition_id: String, inputs: Arr
 	else:
 		if pending_block_type == "condition_replace":
 			_replace_condition({})
+		elif pending_block_type == "branch_condition":
+			_finalize_branch_creation({})
+		elif pending_block_type == "branch_condition_edit":
+			_update_branch_condition({})
+		elif pending_block_type == "elseif_condition":
+			_finalize_elseif_creation({})
 		else:
 			_finalize_condition_creation({})
 
@@ -1600,6 +1707,8 @@ func _on_action_selected(node_path: String, action_id: String, inputs: Array) ->
 	else:
 		if pending_block_type == "action_replace":
 			_replace_action({})
+		elif pending_block_type == "branch_action":
+			_finalize_branch_action_creation({})
 		else:
 			_finalize_action_creation({})
 
@@ -1630,6 +1739,14 @@ func _on_expressions_confirmed(_node_path: String, _id: String, expressions: Dic
 			_replace_condition(expressions)
 		"action_replace":
 			_replace_action(expressions)
+		"branch_condition":
+			_finalize_branch_creation(expressions)
+		"branch_condition_edit":
+			_update_branch_condition(expressions)
+		"elseif_condition":
+			_finalize_elseif_creation(expressions)
+		"branch_action":
+			_finalize_branch_action_creation(expressions)
 
 func _finalize_event_creation(inputs: Dictionary) -> void:
 	"""Create and add event row (GDevelop-style)."""
@@ -1846,6 +1963,7 @@ func _reset_workflow() -> void:
 	pending_target_row = null
 	pending_target_item = null
 	pending_target_group = null
+	pending_target_branch = null
 
 # === Event Row Handlers ===
 
@@ -1911,11 +2029,224 @@ func _on_row_edit(signal_row, bound_row) -> void:
 
 func _on_row_add_condition(signal_row, bound_row) -> void:
 	pending_target_row = bound_row
+	pending_target_branch = null
 	_start_add_workflow("condition", bound_row)
 
 func _on_row_add_action(signal_row, bound_row) -> void:
 	pending_target_row = bound_row
+	pending_target_branch = null
 	_start_add_workflow("action", bound_row)
+
+# === Branch Handlers ===
+
+func _on_row_add_branch(signal_row, bound_row) -> void:
+	"""Start adding an IF branch to the event row."""
+	pending_target_row = bound_row
+	pending_target_branch = null  # Ensure no stale branch target from previous workflow
+	_start_add_workflow("branch_condition", bound_row)
+
+func _on_branch_add_elseif(branch_item, event_row) -> void:
+	"""Add an Else If branch below an existing branch."""
+	pending_target_row = event_row
+	pending_target_branch = branch_item
+	_start_add_workflow("elseif_condition", event_row)
+
+func _on_nested_branch_add(branch_item, event_row) -> void:
+	"""Start adding a nested IF branch inside a branch."""
+	pending_target_row = event_row
+	pending_target_branch = branch_item
+	_start_add_workflow("branch_condition", event_row)
+
+func _on_branch_add_else(branch_item, event_row) -> void:
+	"""Add an Else branch below an existing branch."""
+	_push_undo_state()
+
+	var branch_data = branch_item.get_action_data()
+	if not branch_data or not event_row:
+		return
+
+	# Create an else branch action
+	var else_data = FKEventAction.new()
+	else_data.is_branch = true
+	else_data.branch_type = "else"
+	else_data.branch_condition = null
+	else_data.branch_actions = [] as Array[FKEventAction]
+
+	# Find the array containing this branch (could be nested)
+	var actions_array: Array
+	if branch_item.parent_branch:
+		actions_array = branch_item.parent_branch.get_action_data().branch_actions
+	else:
+		var event_data = event_row.get_event_data()
+		if not event_data:
+			return
+		actions_array = event_data.actions
+
+	# Insert after the current branch
+	var idx = actions_array.find(branch_data)
+	if idx >= 0:
+		actions_array.insert(idx + 1, else_data)
+	else:
+		actions_array.append(else_data)
+
+	event_row.update_display()
+	_save_sheet()
+
+func _on_branch_condition_edit(branch_item, event_row) -> void:
+	"""Edit the condition of a branch."""
+	var act_data = branch_item.get_action_data()
+	if not act_data or not act_data.branch_condition:
+		return
+
+	var cond = act_data.branch_condition
+	var provider_inputs = []
+	if registry:
+		for provider in registry.condition_providers:
+			if provider.has_method("get_id") and provider.get_id() == cond.condition_id:
+				if provider.has_method("get_inputs"):
+					provider_inputs = provider.get_inputs()
+				break
+
+	pending_target_row = event_row
+	pending_target_branch = branch_item
+	pending_block_type = "branch_condition_edit"
+	pending_id = cond.condition_id
+	pending_node_path = str(cond.target_node)
+
+	if provider_inputs.size() > 0:
+		expression_modal.populate_inputs(str(cond.target_node), cond.condition_id, provider_inputs, cond.inputs)
+		_popup_centered_on_editor(expression_modal)
+	else:
+		# No inputs but user wants to change condition type - open node selector
+		_start_add_workflow("branch_condition_edit", event_row)
+
+func _on_branch_action_add(branch_item, event_row) -> void:
+	"""Add an action inside a branch."""
+	pending_target_row = event_row
+	pending_target_branch = branch_item
+	_start_add_workflow("branch_action", event_row)
+
+func _on_branch_action_edit(action_item, branch_item, event_row) -> void:
+	"""Edit an action inside a branch."""
+	var act_data = action_item.get_action_data()
+	if not act_data:
+		return
+
+	var provider_inputs = []
+	if registry:
+		for provider in registry.action_providers:
+			if provider.has_method("get_id") and provider.get_id() == act_data.action_id:
+				if provider.has_method("get_inputs"):
+					provider_inputs = provider.get_inputs()
+				break
+
+	if provider_inputs.size() > 0:
+		pending_target_row = event_row
+		pending_target_item = action_item
+		pending_target_branch = branch_item
+		pending_block_type = "action_edit"
+		pending_id = act_data.action_id
+		pending_node_path = str(act_data.target_node)
+
+		expression_modal.populate_inputs(str(act_data.target_node), act_data.action_id, provider_inputs, act_data.inputs)
+		_popup_centered_on_editor(expression_modal)
+	else:
+		print("Action has no inputs to edit")
+
+func _finalize_branch_creation(inputs: Dictionary) -> void:
+	"""Create an IF branch and add it to the target's actions."""
+	_push_undo_state()
+
+	var cond = FKEventCondition.new()
+	cond.condition_id = pending_id
+	cond.target_node = pending_node_path
+	cond.inputs = inputs
+	cond.negated = false
+
+	var branch_data = FKEventAction.new()
+	branch_data.is_branch = true
+	branch_data.branch_type = "if"
+	branch_data.branch_condition = cond
+	branch_data.branch_actions = [] as Array[FKEventAction]
+
+	# If pending_target_branch is set, add as nested branch
+	if pending_target_branch and pending_target_branch.has_method("add_branch_action"):
+		pending_target_branch.add_branch_action(branch_data)
+	elif pending_target_row and pending_target_row.has_method("add_action"):
+		pending_target_row.add_action(branch_data)
+
+	_show_content_state()
+	_reset_workflow()
+	_save_sheet()
+
+func _finalize_elseif_creation(inputs: Dictionary) -> void:
+	"""Create an ELSE IF branch and insert it after the current branch."""
+	_push_undo_state()
+
+	var cond = FKEventCondition.new()
+	cond.condition_id = pending_id
+	cond.target_node = pending_node_path
+	cond.inputs = inputs
+	cond.negated = false
+
+	var elseif_data = FKEventAction.new()
+	elseif_data.is_branch = true
+	elseif_data.branch_type = "elseif"
+	elseif_data.branch_condition = cond
+	elseif_data.branch_actions = [] as Array[FKEventAction]
+
+	if pending_target_branch and pending_target_row:
+		var branch_act_data = pending_target_branch.get_action_data()
+		# Find the array containing this branch (could be nested)
+		var actions_array: Array
+		if pending_target_branch.parent_branch:
+			actions_array = pending_target_branch.parent_branch.get_action_data().branch_actions
+		else:
+			var event_data = pending_target_row.get_event_data()
+			if not event_data:
+				_reset_workflow()
+				return
+			actions_array = event_data.actions
+		if branch_act_data:
+			var idx = actions_array.find(branch_act_data)
+			if idx >= 0:
+				actions_array.insert(idx + 1, elseif_data)
+			else:
+				actions_array.append(elseif_data)
+			pending_target_row.update_display()
+
+	_show_content_state()
+	_reset_workflow()
+	_save_sheet()
+
+func _update_branch_condition(expressions: Dictionary) -> void:
+	"""Update an existing branch's condition inputs."""
+	_push_undo_state()
+
+	if pending_target_branch:
+		var act_data = pending_target_branch.get_action_data()
+		if act_data and act_data.branch_condition:
+			act_data.branch_condition.inputs = expressions
+			pending_target_branch.update_display()
+
+	_reset_workflow()
+	_save_sheet()
+
+func _finalize_branch_action_creation(inputs: Dictionary) -> void:
+	"""Add an action inside a branch."""
+	_push_undo_state()
+
+	var data = FKEventAction.new()
+	data.action_id = pending_id
+	data.target_node = pending_node_path
+	data.inputs = inputs
+
+	if pending_target_branch and pending_target_branch.has_method("add_branch_action"):
+		pending_target_branch.add_branch_action(data)
+
+	_show_content_state()
+	_reset_workflow()
+	_save_sheet()
 
 # === Condition/Action Edit Handlers ===
 

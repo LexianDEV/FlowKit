@@ -1,0 +1,123 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://addons/flowkit/ui/workspace/branch_item.gd" id="1_branchitem"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_branch"]
+bg_color = Color(0.15, 0.17, 0.14, 1)
+border_width_left = 2
+border_color = Color(0.3, 0.8, 0.5, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_header"]
+bg_color = Color(0.16, 0.2, 0.16, 1)
+border_width_bottom = 1
+border_color = Color(0.3, 0.8, 0.5, 0.3)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_body"]
+bg_color = Color(0.12, 0.14, 0.13, 1)
+corner_radius_bottom_left = 3
+corner_radius_bottom_right = 3
+
+[node name="BranchItem" type="MarginContainer"]
+custom_minimum_size = Vector2(0, 32)
+script = ExtResource("1_branchitem")
+
+[node name="Panel" type="PanelContainer" parent="."]
+layout_mode = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_branch")
+
+[node name="VBox" type="VBoxContainer" parent="Panel"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="Header" type="PanelContainer" parent="Panel/VBox"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_header")
+
+[node name="HeaderMargin" type="MarginContainer" parent="Panel/VBox/Header"]
+layout_mode = 2
+theme_override_constants/margin_left = 6
+theme_override_constants/margin_top = 3
+theme_override_constants/margin_right = 6
+theme_override_constants/margin_bottom = 3
+
+[node name="HBox" type="HBoxContainer" parent="Panel/VBox/Header/HeaderMargin"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Icon" type="Label" parent="Panel/VBox/Header/HeaderMargin/HBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.3, 0.8, 0.5, 1)
+theme_override_font_sizes/font_size = 11
+text = "🔀"
+
+[node name="TypeLabel" type="Label" parent="Panel/VBox/Header/HeaderMargin/HBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.3, 0.8, 0.5, 1)
+theme_override_font_sizes/font_size = 11
+text = "IF"
+
+[node name="ConditionLabel" type="Label" parent="Panel/VBox/Header/HeaderMargin/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.85, 0.88, 0.82, 1)
+theme_override_font_sizes/font_size = 11
+text = ""
+text_overrun_behavior = 3
+
+[node name="Body" type="PanelContainer" parent="Panel/VBox"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_body")
+
+[node name="BodyMargin" type="MarginContainer" parent="Panel/VBox/Body"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 4
+theme_override_constants/margin_bottom = 4
+
+[node name="BodyVBox" type="VBoxContainer" parent="Panel/VBox/Body/BodyMargin"]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="ActionsContainer" type="VBoxContainer" parent="Panel/VBox/Body/BodyMargin/BodyVBox"]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="AddActionLabel" type="Label" parent="Panel/VBox/Body/BodyMargin/BodyVBox"]
+layout_mode = 2
+mouse_filter = 1
+theme_override_colors/font_color = Color(0.4, 0.45, 0.42, 1)
+theme_override_font_sizes/font_size = 10
+text = "Add action"
+
+[node name="ContextMenu" type="PopupMenu" parent="."]
+size = Vector2i(160, 100)
+item_count = 4
+item_0/text = "Edit Condition"
+item_0/id = 0
+item_1/text = "Add Else If Below"
+item_1/id = 1
+item_2/text = "Add Else Below"
+item_2/id = 2
+item_3/text = "Delete Branch"
+item_3/id = 3
+
+[node name="AddActionContextMenu" type="PopupMenu" parent="."]
+size = Vector2i(140, 60)
+item_count = 3
+item_0/text = "Add Action"
+item_0/id = 0
+item_1/text = ""
+item_1/id = -1
+item_1/separator = true
+item_2/text = "Add If Branch"
+item_2/id = 1

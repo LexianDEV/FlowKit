@@ -25,6 +25,14 @@ signal add_condition_requested(row)  ## Emitted when adding condition to event
 signal add_action_requested(row)  ## Emitted when adding action to event
 signal condition_dropped(source_row, condition_data, target_row)  ## Emitted when condition is dropped on an event
 signal action_dropped(source_row, action_data, target_row)  ## Emitted when action is dropped on an event
+# Branch signals
+signal add_branch_requested(row)  ## Emitted when adding IF branch to event
+signal add_elseif_requested(branch_item, row)  ## Emitted when adding Else If below a branch
+signal add_else_requested(branch_item, row)  ## Emitted when adding Else below a branch
+signal branch_condition_edit_requested(branch_item, row)  ## Emitted when editing branch condition
+signal branch_action_add_requested(branch_item, row)  ## Emitted when adding action inside branch
+signal branch_action_edit_requested(action_item, branch_item, row)  ## Emitted when editing action inside branch
+signal nested_branch_add_requested(branch_item, row)  ## Emitted when adding nested IF branch
 
 # === Constants ===
 const EVENT_ROW_SCENE = preload("res://addons/flowkit/ui/workspace/event_row.tscn")
@@ -247,6 +255,14 @@ func _instantiate_event_row(data: FKEventBlock) -> Control:
 	row.add_action_requested.connect(func(r): add_action_requested.emit(r))
 	row.condition_dropped.connect(func(src, cond, tgt): condition_dropped.emit(src, cond, tgt))
 	row.action_dropped.connect(func(src, act, tgt): action_dropped.emit(src, act, tgt))
+	# Branch signal forwarding
+	row.add_branch_requested.connect(func(r): add_branch_requested.emit(r))
+	row.add_elseif_requested.connect(func(bi, r): add_elseif_requested.emit(bi, r))
+	row.add_else_requested.connect(func(bi, r): add_else_requested.emit(bi, r))
+	row.branch_condition_edit_requested.connect(func(bi, r): branch_condition_edit_requested.emit(bi, r))
+	row.branch_action_add_requested.connect(func(bi, r): branch_action_add_requested.emit(bi, r))
+	row.branch_action_edit_requested.connect(func(ai, bi, r): branch_action_edit_requested.emit(ai, bi, r))
+	row.nested_branch_add_requested.connect(func(bi, r): nested_branch_add_requested.emit(bi, r))
 	row.data_changed.connect(_on_child_modified)
 	row.before_data_changed.connect(func(): before_data_changed.emit())
 	
@@ -296,6 +312,21 @@ func _instantiate_group(data: FKGroupBlock) -> Control:
 	nested.add_action_requested.connect(func(r): add_action_requested.emit(r))
 	nested.condition_dropped.connect(func(src, cond, tgt): condition_dropped.emit(src, cond, tgt))
 	nested.action_dropped.connect(func(src, act, tgt): action_dropped.emit(src, act, tgt))
+	# Branch signal forwarding for nested groups
+	if nested.has_signal("add_branch_requested"):
+		nested.add_branch_requested.connect(func(r): add_branch_requested.emit(r))
+	if nested.has_signal("add_elseif_requested"):
+		nested.add_elseif_requested.connect(func(bi, r): add_elseif_requested.emit(bi, r))
+	if nested.has_signal("add_else_requested"):
+		nested.add_else_requested.connect(func(bi, r): add_else_requested.emit(bi, r))
+	if nested.has_signal("branch_condition_edit_requested"):
+		nested.branch_condition_edit_requested.connect(func(bi, r): branch_condition_edit_requested.emit(bi, r))
+	if nested.has_signal("branch_action_add_requested"):
+		nested.branch_action_add_requested.connect(func(bi, r): branch_action_add_requested.emit(bi, r))
+	if nested.has_signal("branch_action_edit_requested"):
+		nested.branch_action_edit_requested.connect(func(ai, bi, r): branch_action_edit_requested.emit(ai, bi, r))
+	if nested.has_signal("nested_branch_add_requested"):
+		nested.nested_branch_add_requested.connect(func(bi, r): nested_branch_add_requested.emit(bi, r))
 	
 	return nested
 

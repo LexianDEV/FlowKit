@@ -17,6 +17,14 @@ signal data_changed()
 signal condition_dropped(source_row, condition_data, target_row)
 signal action_dropped(source_row, action_data, target_row)
 signal before_data_changed()  # Emitted before any data modification for undo state capture
+# Branch signals
+signal add_branch_requested(event_row)  # User wants to add an IF branch
+signal add_elseif_requested(branch_item, event_row)  # Add elseif after a branch
+signal add_else_requested(branch_item, event_row)  # Add else after a branch
+signal branch_condition_edit_requested(branch_item, event_row)  # Edit branch condition
+signal branch_action_add_requested(branch_item, event_row)  # Add action inside a branch
+signal branch_action_edit_requested(action_item, branch_item, event_row)  # Edit action inside branch
+signal nested_branch_add_requested(branch_item, event_row)  # Add nested IF branch inside a branch
 
 # Data
 var event_data: FKEventBlock
@@ -26,6 +34,7 @@ var is_selected: bool = false
 # Preloads
 const CONDITION_ITEM_SCENE = preload("res://addons/flowkit/ui/workspace/condition_item.tscn")
 const ACTION_ITEM_SCENE = preload("res://addons/flowkit/ui/workspace/action_item.tscn")
+const BRANCH_ITEM_SCENE = preload("res://addons/flowkit/ui/workspace/branch_item.tscn")
 
 # UI References
 var panel: PanelContainer
@@ -121,6 +130,24 @@ func _on_add_action_input(event: InputEvent) -> void:
 		if event.pressed:
 			_flash_label(add_action_label)
 			add_action_requested.emit(self)
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT:
+		if event.pressed:
+			_show_add_action_context_menu()
+
+func _show_add_action_context_menu() -> void:
+	var popup := PopupMenu.new()
+	popup.add_item("Add Action", 0)
+	popup.add_separator()
+	popup.add_item("Add If Branch", 1)
+	popup.id_pressed.connect(func(id):
+		match id:
+			0: add_action_requested.emit(self)
+			1: add_branch_requested.emit(self)
+		popup.queue_free()
+	)
+	add_child(popup)
+	popup.position = DisplayServer.mouse_get_position()
+	popup.popup()
 
 func _on_add_condition_hover(is_hovering: bool) -> void:
 	if add_condition_label:
@@ -234,13 +261,20 @@ func _update_actions() -> void:
 		actions_container.remove_child(child)
 		child.queue_free()
 	
-	# Add action items
-	for action_data in event_data.actions:
-		var item = ACTION_ITEM_SCENE.instantiate()
-		item.set_action_data(action_data)
-		item.set_registry(registry)
-		_connect_action_item_signals(item)
-		actions_container.add_child(item)
+	# Add action items (handles both regular actions and branches)
+	for act_data in event_data.actions:
+		if act_data.is_branch:
+			var branch = BRANCH_ITEM_SCENE.instantiate()
+			branch.set_action_data(act_data)
+			branch.set_registry(registry)
+			_connect_branch_item_signals(branch)
+			actions_container.add_child(branch)
+		else:
+			var item = ACTION_ITEM_SCENE.instantiate()
+			item.set_action_data(act_data)
+			item.set_registry(registry)
+			_connect_action_item_signals(item)
+			actions_container.add_child(item)
 
 func _connect_condition_item_signals(item) -> void:
 	if item.has_signal("selected"):
@@ -263,6 +297,42 @@ func _connect_action_item_signals(item) -> void:
 		item.delete_requested.connect(_on_action_item_delete)
 	if item.has_signal("reorder_requested"):
 		item.reorder_requested.connect(_on_action_reorder)
+
+func _connect_branch_item_signals(branch) -> void:
+	if branch.has_signal("selected"):
+		branch.selected.connect(func(node): action_selected.emit(node))
+	if branch.has_signal("edit_condition_requested"):
+		branch.edit_condition_requested.connect(func(item): branch_condition_edit_requested.emit(item, self))
+	if branch.has_signal("delete_requested"):
+		branch.delete_requested.connect(_on_branch_item_delete)
+	if branch.has_signal("add_elseif_requested"):
+		branch.add_elseif_requested.connect(func(item): add_elseif_requested.emit(item, self))
+	if branch.has_signal("add_else_requested"):
+		branch.add_else_requested.connect(func(item): add_else_requested.emit(item, self))
+	if branch.has_signal("add_branch_action_requested"):
+		branch.add_branch_action_requested.connect(func(item): branch_action_add_requested.emit(item, self))
+	if branch.has_signal("branch_action_edit_requested"):
+		branch.branch_action_edit_requested.connect(func(act_item, br_item): branch_action_edit_requested.emit(act_item, br_item, self))
+	if branch.has_signal("branch_action_selected"):
+		branch.branch_action_selected.connect(func(node): action_selected.emit(node))
+	if branch.has_signal("reorder_requested"):
+		branch.reorder_requested.connect(_on_action_reorder)
+	if branch.has_signal("data_changed"):
+		branch.data_changed.connect(func(): data_changed.emit())
+	if branch.has_signal("before_data_changed"):
+		branch.before_data_changed.connect(func(): before_data_changed.emit())
+	if branch.has_signal("add_nested_branch_requested"):
+		branch.add_nested_branch_requested.connect(func(item): nested_branch_add_requested.emit(item, self))
+
+func _on_branch_item_delete(item) -> void:
+	before_data_changed.emit()
+	var act_data = item.get_action_data()
+	if act_data and event_data:
+		var idx = event_data.actions.find(act_data)
+		if idx >= 0:
+			event_data.actions.remove_at(idx)
+			_update_actions()
+			data_changed.emit()
 
 func _on_condition_item_edit(item) -> void:
 	condition_edit_requested.emit(item)

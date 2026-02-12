@@ -282,20 +282,65 @@ func _execute_block(block: FKEventBlock, current_root: Node) -> void:
 	if not passed:
 		return
 
-	# Actions
-	for act in block.actions:
-		var anode: Node = null
-		if str(act.target_node) == "System":
-			anode = get_node("/root/FlowKitSystem")
+	# Execute all actions (with branch support, including nested branches)
+	await _execute_actions_list(block.actions, current_root, block.block_id)
+
+## Evaluate a branch's condition. Returns true if the condition passes.
+func _evaluate_branch_condition(act: FKEventAction, current_root: Node, block_id: String) -> bool:
+	if not act.branch_condition:
+		return false
+
+	var cond = act.branch_condition
+	var cnode: Node = null
+	if str(cond.target_node) == "System":
+		cnode = get_node("/root/FlowKitSystem")
+	else:
+		cnode = current_root.get_node_or_null(cond.target_node)
+		if not cnode:
+			return false
+
+	return registry.check_condition(cond.condition_id, cnode, cond.inputs, cond.negated, current_root, block_id)
+
+## Execute a list of actions, handling if/elseif/else branch chains recursively.
+## Used by both _execute_block (top-level actions) and nested branches.
+func _execute_actions_list(actions: Array, current_root: Node, block_id: String) -> void:
+	var branch_taken: bool = false
+	var in_branch_chain: bool = false
+
+	for act in actions:
+		if act.is_branch:
+			match act.branch_type:
+				"if":
+					branch_taken = false
+					in_branch_chain = true
+					var cond_passed = _evaluate_branch_condition(act, current_root, block_id)
+					if cond_passed:
+						branch_taken = true
+						await _execute_actions_list(act.branch_actions, current_root, block_id)
+				"elseif":
+					if in_branch_chain and not branch_taken:
+						var cond_passed = _evaluate_branch_condition(act, current_root, block_id)
+						if cond_passed:
+							branch_taken = true
+							await _execute_actions_list(act.branch_actions, current_root, block_id)
+				"else":
+					if in_branch_chain and not branch_taken:
+						branch_taken = true
+						await _execute_actions_list(act.branch_actions, current_root, block_id)
+					in_branch_chain = false
 		else:
-			anode = current_root.get_node_or_null(act.target_node)
-			if not anode:
-				print("[FlowKit] Action target node not found: ", act.target_node)
-				continue
-		var provider: Variant = await registry.execute_action(act.action_id, anode, act.inputs, current_root, block.block_id)
-		#if _is_multi_frame_provider(provider):
-		#	print("Awaiting async provider in _execute_block")
-		#	await provider.exec_completed
+			in_branch_chain = false
+			branch_taken = false
+
+			var anode: Node = null
+			if str(act.target_node) == "System":
+				anode = get_node("/root/FlowKitSystem")
+			else:
+				anode = current_root.get_node_or_null(act.target_node)
+				if not anode:
+					print("[FlowKit] Action target node not found: ", act.target_node)
+					continue
+			var provider: Variant = await registry.execute_action(act.action_id, anode, act.inputs, current_root, block_id)
 
 func _is_multi_frame_provider(provider: Variant) -> bool:
 	return provider and provider.has_method("requires_multi_frames") and provider.requires_multi_frames()
