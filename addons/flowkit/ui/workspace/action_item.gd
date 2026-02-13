@@ -183,6 +183,11 @@ func _can_drop_data(at_position: Vector2, data) -> bool:
 		_hide_drop_indicator()
 		return false
 	
+	# Prevent dropping a parent onto its own descendant
+	if _is_descendant_of(source_node):
+		_hide_drop_indicator()
+		return false
+	
 	# Check if source is adjacent and prevent indicator on the shared edge
 	var above = at_position.y < size.y / 2.0
 	if _is_adjacent_to_source(source_node, above):
@@ -191,6 +196,15 @@ func _can_drop_data(at_position: Vector2, data) -> bool:
 	
 	_show_drop_indicator(above)
 	return true
+
+func _is_descendant_of(node: Node) -> bool:
+	"""Check if this item is a descendant of the given node."""
+	var current = get_parent()
+	while current:
+		if current == node:
+			return true
+		current = current.get_parent()
+	return false
 
 func _is_adjacent_to_source(source_node: Node, drop_above: bool) -> bool:
 	"""Check if dropping would result in no actual movement (adjacent items)."""

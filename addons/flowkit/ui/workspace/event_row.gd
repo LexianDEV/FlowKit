@@ -317,6 +317,10 @@ func _connect_branch_item_signals(branch) -> void:
 		branch.branch_action_selected.connect(func(node): action_selected.emit(node))
 	if branch.has_signal("reorder_requested"):
 		branch.reorder_requested.connect(_on_action_reorder)
+	if branch.has_signal("action_cross_reorder_requested"):
+		branch.action_cross_reorder_requested.connect(_on_action_cross_reorder)
+	if branch.has_signal("action_dropped_into_branch"):
+		branch.action_dropped_into_branch.connect(_on_action_dropped_into_branch)
 	if branch.has_signal("data_changed"):
 		branch.data_changed.connect(func(): data_changed.emit())
 	if branch.has_signal("before_data_changed"):
@@ -420,6 +424,59 @@ func _on_condition_reorder(source_item, target_item, drop_above: bool) -> void:
 	_update_conditions()
 	data_changed.emit()
 
+func _recursive_remove_action(actions_array: Array, target_action) -> bool:
+	"""Recursively search and remove an action from actions array and branch sub-actions."""
+	var idx = actions_array.find(target_action)
+	if idx >= 0:
+		actions_array.remove_at(idx)
+		return true
+	for act in actions_array:
+		if act.is_branch and _recursive_remove_action(act.branch_actions, target_action):
+			return true
+	return false
+
+func _on_action_cross_reorder(source_data, target_data, is_drop_above: bool, target_branch) -> void:
+	"""Handle cross-context action reorder (action moved into a different branch)."""
+	if not event_data:
+		return
+	
+	before_data_changed.emit()
+	
+	# Remove source from wherever it is (top-level or any branch)
+	_recursive_remove_action(event_data.actions, source_data)
+	
+	# Insert into target branch at the correct position
+	var target_actions = target_branch.action_data.branch_actions
+	var target_idx = target_actions.find(target_data)
+	if target_idx >= 0:
+		var insert_idx = target_idx if is_drop_above else target_idx + 1
+		target_actions.insert(insert_idx, source_data)
+	else:
+		target_actions.append(source_data)
+	
+	_update_actions()
+	data_changed.emit()
+
+func _on_action_dropped_into_branch(source_item, target_branch) -> void:
+	"""Handle action/branch dropped into a branch's body area."""
+	if not event_data:
+		return
+	
+	var source_data = source_item.get_action_data()
+	if not source_data:
+		return
+	
+	before_data_changed.emit()
+	
+	# Remove source from wherever it is (top-level or any branch)
+	_recursive_remove_action(event_data.actions, source_data)
+	
+	# Add to target branch's sub-actions
+	target_branch.action_data.branch_actions.append(source_data)
+	
+	_update_actions()
+	data_changed.emit()
+
 func _on_action_reorder(source_item, target_item, drop_above: bool) -> void:
 	"""Handle reordering actions within the same event block."""
 	if not event_data:
@@ -434,11 +491,28 @@ func _on_action_reorder(source_item, target_item, drop_above: bool) -> void:
 	var source_idx = event_data.actions.find(source_data)
 	var target_idx = event_data.actions.find(target_data)
 	
-	# Source not in this event block - it's a cross-block drag, let the existing system handle it
-	if source_idx < 0:
+	if target_idx < 0:
 		return
 	
-	if target_idx < 0:
+	# Source not at top level - it's being moved from a branch to top level
+	if source_idx < 0:
+		before_data_changed.emit()
+		
+		# Recursively remove source from wherever it is (inside a branch)
+		if not _recursive_remove_action(event_data.actions, source_data):
+			return
+		
+		# Recalculate target index after removal (branch removal doesn't shift top-level indices
+		# unless the branch itself was removed, but we're removing an item FROM a branch)
+		target_idx = event_data.actions.find(target_data)
+		if target_idx < 0:
+			return
+		
+		var insert_idx = target_idx if drop_above else target_idx + 1
+		event_data.actions.insert(insert_idx, source_data)
+		
+		_update_actions()
+		data_changed.emit()
 		return
 	
 	# Same position, no change needed

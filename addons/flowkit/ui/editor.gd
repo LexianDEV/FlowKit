@@ -504,6 +504,9 @@ func _delete_selected_item() -> void:
 	if not parent_row:
 		return
 	
+	# Push undo state before deleting
+	_push_undo_state()
+	
 	# Check if it's a condition or action
 	if item_to_delete.has_method("get_condition_data"):
 		var cond_data = item_to_delete.get_condition_data()
@@ -519,6 +522,9 @@ func _delete_selected_item() -> void:
 			var idx = event_data.actions.find(act_data)
 			if idx >= 0:
 				event_data.actions.remove_at(idx)
+			else:
+				# Action might be inside a branch - search recursively
+				_recursive_remove_action_from_list(event_data.actions, act_data)
 	
 	# Clear selection
 	_deselect_item()
@@ -526,6 +532,28 @@ func _delete_selected_item() -> void:
 	# Update display and save
 	parent_row.update_display()
 	_save_sheet()
+
+func _recursive_remove_action_from_list(actions: Array, target_action) -> bool:
+	"""Recursively search and remove an action from actions array and branch sub-actions."""
+	var idx = actions.find(target_action)
+	if idx >= 0:
+		actions.remove_at(idx)
+		return true
+	for act in actions:
+		if act.is_branch and _recursive_remove_action_from_list(act.branch_actions, target_action):
+			return true
+	return false
+
+func _find_parent_branch(node: Node):
+	"""Find the branch_item that contains this node, or null if at top level."""
+	var current = node.get_parent()
+	while current:
+		if current.has_method("add_branch_action"):
+			return current
+		if current.has_method("get_event_data"):
+			return null  # Reached event_row, no branch parent
+		current = current.get_parent()
+	return null
 
 func _find_parent_event_row(node: Node):
 	"""Find the event_row that contains this node."""
@@ -757,8 +785,15 @@ func _paste_actions_from_clipboard() -> void:
 	if clipboard_actions.is_empty():
 		return
 	
-	# Determine target event row
+	# Determine target event row and branch
 	var target_row = selected_row
+	var target_branch = null
+	
+	# If an item is selected, check if it's inside a branch
+	if selected_item and is_instance_valid(selected_item):
+		target_branch = _find_parent_branch(selected_item)
+		if not target_row or not is_instance_valid(target_row):
+			target_row = _find_parent_event_row(selected_item)
 	
 	# If no row selected but an item is selected, find its parent row
 	if (not target_row or not is_instance_valid(target_row)) and selected_item and is_instance_valid(selected_item):
@@ -774,6 +809,22 @@ func _paste_actions_from_clipboard() -> void:
 	
 	# Push undo state before pasting
 	_push_undo_state()
+	
+	# Paste into branch if selected item is inside one
+	if target_branch:
+		var branch_data = target_branch.get_action_data()
+		if branch_data:
+			for action_dict in clipboard_actions:
+				var action = FKEventAction.new()
+				action.action_id = action_dict["action_id"]
+				action.target_node = action_dict["target_node"]
+				action.inputs = action_dict["inputs"].duplicate()
+				branch_data.branch_actions.append(action)
+			
+			target_row.update_display()
+			_save_sheet()
+			print("Pasted %d action(s) into branch" % clipboard_actions.size())
+			return
 	
 	var event_data = target_row.get_event_data()
 	if not event_data:
@@ -2340,13 +2391,15 @@ func _on_action_dropped(source_row, action_data: FKEventAction, target_row) -> v
 	if not source_row or not target_row or not action_data:
 		return
 	
-	# Remove from source
+	# Remove from source (search recursively in case it's inside a branch)
 	var source_data = source_row.get_event_data()
 	if source_data:
 		var idx = source_data.actions.find(action_data)
 		if idx >= 0:
 			source_data.actions.remove_at(idx)
-			source_row.update_display()
+		else:
+			_recursive_remove_action_from_list(source_data.actions, action_data)
+		source_row.update_display()
 	
 	# Add to target
 	var target_data = target_row.get_event_data()

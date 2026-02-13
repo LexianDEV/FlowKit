@@ -12,6 +12,8 @@ signal branch_action_delete_requested(action_item, branch_item)
 signal branch_action_selected(action_item)
 signal branch_action_reorder_requested(source_item, target_item, drop_above: bool)
 signal reorder_requested(source_item, target_item, drop_above: bool)
+signal action_cross_reorder_requested(source_data, target_data, is_drop_above: bool, target_branch)
+signal action_dropped_into_branch(source_item, target_branch_item)
 signal data_changed()
 signal before_data_changed()
 signal add_nested_branch_requested(branch_item)  # User wants to add a nested IF
@@ -39,6 +41,10 @@ var selected_stylebox: StyleBox
 var drop_indicator: ColorRect
 var is_drop_target: bool = false
 var drop_above: bool = true
+var is_body_drop: bool = false  # True when drop target is the body (insert into branch)
+var body_node: PanelContainer = null  # Reference to Body panel for highlight
+var body_original_stylebox: StyleBox = null
+var body_highlight_stylebox: StyleBox = null
 
 func _ready() -> void:
 	_setup_references()
@@ -305,6 +311,10 @@ func _connect_nested_branch_signals(nested) -> void:
 		nested.add_nested_branch_requested.connect(func(item): add_nested_branch_requested.emit(item))
 	if nested.has_signal("reorder_requested"):
 		nested.reorder_requested.connect(_on_sub_action_reorder)
+	if nested.has_signal("action_cross_reorder_requested"):
+		nested.action_cross_reorder_requested.connect(func(sd, td, above, tb): action_cross_reorder_requested.emit(sd, td, above, tb))
+	if nested.has_signal("action_dropped_into_branch"):
+		nested.action_dropped_into_branch.connect(func(si, bi): action_dropped_into_branch.emit(si, bi))
 	if nested.has_signal("data_changed"):
 		nested.data_changed.connect(func(): data_changed.emit())
 	if nested.has_signal("before_data_changed"):
@@ -334,7 +344,13 @@ func _on_sub_action_reorder(source_item, target_item, is_drop_above: bool) -> vo
 	var source_idx = action_data.branch_actions.find(source_data)
 	var target_idx = action_data.branch_actions.find(target_data)
 
-	if source_idx < 0 or target_idx < 0:
+	# Target not in this branch - shouldn't happen
+	if target_idx < 0:
+		return
+
+	# Source not in this branch - it's a cross-context drag
+	if source_idx < 0:
+		action_cross_reorder_requested.emit(source_data, target_data, is_drop_above, self)
 		return
 
 	if source_idx == target_idx:
@@ -377,6 +393,18 @@ func _setup_drop_indicator() -> void:
 	drop_indicator.visible = false
 	drop_indicator.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(drop_indicator)
+	# Setup body highlight for "drop into" visual feedback
+	body_node = get_node_or_null("Panel/VBox/Body")
+	if body_node:
+		body_original_stylebox = body_node.get_theme_stylebox("panel")
+		if body_original_stylebox:
+			body_highlight_stylebox = body_original_stylebox.duplicate()
+			if body_highlight_stylebox is StyleBoxFlat:
+				body_highlight_stylebox.border_width_left = 2
+				body_highlight_stylebox.border_width_top = 1
+				body_highlight_stylebox.border_width_right = 1
+				body_highlight_stylebox.border_width_bottom = 1
+				body_highlight_stylebox.border_color = Color(0.3, 0.8, 0.5, 0.8)
 
 func _show_drop_indicator(above: bool) -> void:
 	if not drop_indicator:
@@ -419,27 +447,77 @@ func _get_drag_data(at_position: Vector2):
 		"data": action_data
 	}
 
+func _is_drop_in_body_area(at_position: Vector2) -> bool:
+	"""Check if the drop position is within the body area of the branch."""
+	var header = get_node_or_null("Panel/VBox/Header")
+	if not header or not panel:
+		return false
+	# Convert at_position (local to this MarginContainer) to check against body area
+	var global_pos = global_position + at_position
+	var body = get_node_or_null("Panel/VBox/Body")
+	if body:
+		return body.get_global_rect().has_point(global_pos)
+	return false
+
+func _show_body_highlight() -> void:
+	"""Show visual feedback that item will be dropped INTO the branch."""
+	_hide_drop_indicator()  # Hide the above/below indicator
+	is_body_drop = true
+	if body_node and body_highlight_stylebox:
+		body_node.add_theme_stylebox_override("panel", body_highlight_stylebox)
+
+func _hide_body_highlight() -> void:
+	"""Remove the body drop highlight."""
+	is_body_drop = false
+	if body_node and body_original_stylebox:
+		body_node.add_theme_stylebox_override("panel", body_original_stylebox)
+
 func _can_drop_data(at_position: Vector2, data) -> bool:
 	if not data is Dictionary:
 		_hide_drop_indicator()
+		_hide_body_highlight()
 		return false
 
 	var drag_type = data.get("type", "")
 	if drag_type != "action_item":
 		_hide_drop_indicator()
+		_hide_body_highlight()
 		return false
 
 	var source_node = data.get("node")
 	if source_node == self:
 		_hide_drop_indicator()
+		_hide_body_highlight()
 		return false
 
+	# Prevent dropping a parent onto its own descendant
+	if _is_descendant_of(source_node):
+		_hide_drop_indicator()
+		_hide_body_highlight()
+		return false
+
+	# Check if dropping on body area (insert into branch) vs header area (reorder)
+	if _is_drop_in_body_area(at_position):
+		_show_body_highlight()
+		return true
+
+	_hide_body_highlight()
 	var above = at_position.y < size.y / 2.0
 	_show_drop_indicator(above)
 	return true
 
+func _is_descendant_of(node: Node) -> bool:
+	"""Check if this item is a descendant of the given node."""
+	var current = get_parent()
+	while current:
+		if current == node:
+			return true
+		current = current.get_parent()
+	return false
+
 func _drop_data(at_position: Vector2, data) -> void:
 	_hide_drop_indicator()
+	_hide_body_highlight()
 
 	if not data is Dictionary:
 		return
@@ -452,9 +530,15 @@ func _drop_data(at_position: Vector2, data) -> void:
 	if not source_node or source_node == self:
 		return
 
+	# If dropping on body area, insert into this branch as a sub-action
+	if _is_drop_in_body_area(at_position):
+		action_dropped_into_branch.emit(source_node, self)
+		return
+
 	var above = at_position.y < size.y / 2.0
 	reorder_requested.emit(source_node, self, above)
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_DRAG_END:
 		_hide_drop_indicator()
+		_hide_body_highlight()
