@@ -137,7 +137,7 @@ func _on_add_action_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		if event.pressed:
 			_flash_label(add_action_label)
-			add_branch_action_requested.emit(self)
+			_show_add_action_context_menu()
 			accept_event()
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT:
 		if event.pressed:

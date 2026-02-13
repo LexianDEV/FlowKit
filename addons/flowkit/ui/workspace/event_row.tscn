@@ -149,7 +149,7 @@ layout_mode = 2
 mouse_filter = 1
 theme_override_colors/font_color = Color(0.5, 0.55, 0.6, 1)
 theme_override_font_sizes/font_size = 11
-text = "Add action"
+text = "Add..."
 
 [node name="ContextMenu" type="PopupMenu" parent="."]
 size = Vector2i(200, 100)
