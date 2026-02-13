@@ -1,0 +1,44 @@
+[gd_scene format=3 uid="uid://djteo3tt3tmc5"]
+
+[node name="QuizGameExampleScene" type="Control" unique_id=342433504]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="HoldsAnswers" type="VBoxContainer" parent="." unique_id=1861476995]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.2
+anchor_top = 0.65
+anchor_right = 0.8
+anchor_bottom = 0.9
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="FirstAnswerButton" type="Button" parent="HoldsAnswers" unique_id=321524887]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+text = "Answer text here"
+
+[node name="DisplaysQuestion" type="Panel" parent="." unique_id=654895975]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.2
+anchor_top = 0.1
+anchor_right = 0.8
+anchor_bottom = 0.55
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="QuestionText" type="RichTextLabel" parent="DisplaysQuestion" unique_id=221335647]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.05
+anchor_top = 0.05
+anchor_right = 0.95
+anchor_bottom = 0.92
+text = "Insert question text here"
+horizontal_alignment = 1

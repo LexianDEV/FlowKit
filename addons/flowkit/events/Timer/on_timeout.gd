@@ -20,7 +20,7 @@ func setup(node: Node, trigger_callback: Callable, _block_id: String = "") -> vo
 	var timer: Timer = node
 	timer.timeout.connect(exec_actions)
 	pass
-    
+	
 var exec_actions: Callable
 
 func on_timeout() -> void:
