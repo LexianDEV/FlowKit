@@ -496,3 +496,46 @@ func _process_behaviors(delta: float, is_physics: bool) -> void:
 		else:
 			if behavior.has_method("process"):
 				behavior.process(node, delta, inputs)
+
+# --- Subsheet execution ----------------------------------------------------
+
+## Execute a subsheet by its ID, running all its actions in sequence.
+## This is called by the "Call Subsheet" action.
+func execute_subsheet(subsheet_id: String, context_node: Node) -> void:
+	# Find the active sheet that contains this subsheet
+	var current_root = get_tree().current_scene
+	if not current_root or not is_instance_valid(current_root):
+		push_error("[FlowKit] execute_subsheet: No valid current scene")
+		return
+	
+	# Search through active sheets to find the one containing this subsheet
+	var target_sheet: FKEventSheet = null
+	var target_root: Node = null
+	
+	for entry in active_sheets:
+		var sheet: FKEventSheet = entry.get("sheet", null)
+		var root: Node = entry.get("root", null)
+		if not sheet or not root:
+			continue
+		
+		# Check if this sheet has the subsheet
+		if sheet.has_method("get_subsheet"):
+			var subsheet = sheet.get_subsheet(subsheet_id)
+			if subsheet:
+				target_sheet = sheet
+				target_root = root
+				break
+	
+	if not target_sheet:
+		push_error("[FlowKit] execute_subsheet: Subsheet '%s' not found in any active sheet" % subsheet_id)
+		return
+	
+	var subsheet = target_sheet.get_subsheet(subsheet_id)
+	if not subsheet:
+		push_error("[FlowKit] execute_subsheet: Subsheet '%s' not found" % subsheet_id)
+		return
+	
+	# Execute the subsheet's actions
+	print("[FlowKit] Executing subsheet: ", subsheet.name, " (", subsheet_id, ")")
+	await _execute_actions_list(subsheet.actions, target_root, "subsheet_" + subsheet_id)
+

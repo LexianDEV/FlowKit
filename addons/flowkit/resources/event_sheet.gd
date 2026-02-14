@@ -10,6 +10,7 @@ class_name FKEventSheet
 @export var standalone_conditions: Array[FKEventCondition] = []
 @export var comments: Array[FKCommentBlock] = []
 @export var groups: Array[FKGroupBlock] = []
+@export var subsheets: Array[FKSubsheet] = []
 
 ## Stores the display order: [{"type": "event"|"comment"|"group", "index": int}, ...]
 @export var item_order: Array[Dictionary] = []
@@ -65,3 +66,36 @@ func rebuild_order_from_items(ordered_items: Array) -> void:
 				if data is FKGroupBlock:
 					item_order.append({"type": "group", "index": groups.size()})
 					groups.append(data)
+
+
+func add_subsheet(subsheet: FKSubsheet) -> void:
+	"""Add a new subsheet to this event sheet."""
+	if not subsheets:
+		subsheets = [] as Array[FKSubsheet]
+	subsheets.append(subsheet)
+
+
+func remove_subsheet(subsheet_id: String) -> bool:
+	"""Remove a subsheet by its ID. Returns true if found and removed."""
+	for i in range(subsheets.size()):
+		if subsheets[i].subsheet_id == subsheet_id:
+			subsheets.remove_at(i)
+			return true
+	return false
+
+
+func get_subsheet(subsheet_id: String) -> FKSubsheet:
+	"""Get a subsheet by its ID. Returns null if not found."""
+	for subsheet in subsheets:
+		if subsheet.subsheet_id == subsheet_id:
+			return subsheet
+	return null
+
+
+func get_subsheet_by_name(subsheet_name: String) -> FKSubsheet:
+	"""Get a subsheet by its name. Returns null if not found."""
+	for subsheet in subsheets:
+		if subsheet.name == subsheet_name:
+			return subsheet
+	return null
+
