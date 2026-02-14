@@ -1148,7 +1148,7 @@ func _save_and_reload_sheet() -> void:
 	_load_scene_sheet()
 
 func _generate_sheet_from_blocks() -> FKEventSheet:
-	"""Build event sheet from event rows, comments, and groups (GDevelop-style)."""
+	## Build event sheet from event rows, comments, and groups (GDevelop-style).
 	# Load existing sheet to preserve subsheets
 	var sheet_path = _get_sheet_path()
 	var sheet: FKEventSheet = null
@@ -2467,7 +2467,7 @@ func _on_manage_subsheets_pressed() -> void:
 
 
 func _on_subsheet_added(subsheet_name: String) -> void:
-	"""Handle adding a new subsheet."""
+	## Handle adding a new subsheet.
 	var sheet_path = _get_sheet_path()
 	if sheet_path == "":
 		return
@@ -2495,7 +2495,7 @@ func _on_subsheet_added(subsheet_name: String) -> void:
 
 
 func _on_subsheet_edited(subsheet_id: String, new_name: String) -> void:
-	"""Handle renaming a subsheet."""
+	## Handle renaming a subsheet.
 	var sheet_path = _get_sheet_path()
 	if sheet_path == "":
 		return
@@ -2553,7 +2553,7 @@ func _on_edit_subsheet_actions(subsheet_id: String) -> void:
 
 
 func _on_subsheet_actions_updated(subsheet_id: String) -> void:
-	"""Handle when subsheet actions are updated."""
+	## Handle when subsheet actions are updated.
 	var sheet_path = _get_sheet_path()
 	if sheet_path == "":
 		return

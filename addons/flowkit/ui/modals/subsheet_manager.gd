@@ -31,8 +31,8 @@ func set_sheet(sheet: FKEventSheet) -> void:
 	current_sheet = sheet
 	_refresh_list()
 
+## Refresh the subsheet list display.
 func _refresh_list() -> void:
-	"""Refresh the subsheet list display."""
 	# Clear existing items
 	for child in subsheet_list.get_children():
 		child.queue_free()
@@ -45,8 +45,8 @@ func _refresh_list() -> void:
 		var item = _create_subsheet_item(subsheet)
 		subsheet_list.add_child(item)
 
+## Create a UI item for a subsheet.
 func _create_subsheet_item(subsheet: FKSubsheet) -> HBoxContainer:
-	"""Create a UI item for a subsheet."""
 	var container = HBoxContainer.new()
 	container.set_h_size_flags(Control.SIZE_EXPAND_FILL)
 	
@@ -76,8 +76,8 @@ func _create_subsheet_item(subsheet: FKSubsheet) -> HBoxContainer:
 	
 	return container
 
+## Handle add subsheet button press.
 func _on_add_button_pressed() -> void:
-	"""Handle add subsheet button press."""
 	var dialog = AcceptDialog.new()
 	dialog.title = "New Subsheet"
 	dialog.ok_button_text = "Create"
@@ -105,8 +105,8 @@ func _on_add_button_pressed() -> void:
 	dialog.popup_centered(Vector2i(300, 150))
 	line_edit.grab_focus()
 
+## Handle renaming a subsheet.
 func _on_rename_subsheet(subsheet: FKSubsheet) -> void:
-	"""Handle renaming a subsheet."""
 	var dialog = AcceptDialog.new()
 	dialog.title = "Rename Subsheet"
 	dialog.ok_button_text = "Rename"
@@ -133,8 +133,8 @@ func _on_rename_subsheet(subsheet: FKSubsheet) -> void:
 	dialog.popup_centered(Vector2i(300, 150))
 	line_edit.grab_focus()
 
+## Handle deleting a subsheet.
 func _on_delete_subsheet(subsheet: FKSubsheet) -> void:
-	"""Handle deleting a subsheet."""
 	var dialog = ConfirmationDialog.new()
 	dialog.title = "Delete Subsheet"
 	dialog.dialog_text = "Are you sure you want to delete '%s'?" % subsheet.name

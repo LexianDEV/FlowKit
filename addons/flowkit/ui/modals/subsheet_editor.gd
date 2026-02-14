@@ -63,7 +63,7 @@ func _refresh_actions() -> void:
 		actions_list.add_child(item)
 
 func _create_action_item(action: FKEventAction, index: int) -> HBoxContainer:
-	"""Create a UI item for an action."""
+	## Create a UI item for an action.
 	var container = HBoxContainer.new()
 	container.set_h_size_flags(Control.SIZE_EXPAND_FILL)
 	
@@ -102,12 +102,12 @@ func _create_action_item(action: FKEventAction, index: int) -> HBoxContainer:
 	return container
 
 func _on_add_action_pressed() -> void:
-	"""Start the workflow to add a new action."""
+	## Start the workflow to add a new action.
 	pending_action_index = -1
 	_show_select_node_modal()
 
 func _on_edit_action(index: int) -> void:
-	"""Edit an existing action."""
+	## Edit an existing action.
 	pending_action_index = index
 	var action = current_subsheet.actions[index]
 	pending_action_node_path = str(action.target_node)
@@ -115,7 +115,7 @@ func _on_edit_action(index: int) -> void:
 	_show_expression_modal(action.inputs)
 
 func _on_delete_action(index: int) -> void:
-	"""Delete an action."""
+	## Delete an action.
 	if index >= 0 and index < current_subsheet.actions.size():
 		var new_actions: Array[FKEventAction] = []
 		for i in range(current_subsheet.actions.size()):
@@ -126,7 +126,7 @@ func _on_delete_action(index: int) -> void:
 		emit_signal("actions_updated", current_subsheet.subsheet_id)
 
 func _on_move_action(from_index: int, to_index: int) -> void:
-	"""Move an action in the list."""
+	## Move an action in the list.
 	if from_index < 0 or from_index >= current_subsheet.actions.size():
 		return
 	if to_index < 0 or to_index >= current_subsheet.actions.size():
@@ -156,7 +156,7 @@ func _on_node_selected(node_path: String, node_class: String) -> void:
 	_show_select_action_modal(node_class)
 
 func _show_select_action_modal(node_class: String) -> void:
-	"""Show modal to select action."""
+	## Show modal to select action.
 	# Create modal if needed
 	if not select_action_modal:
 		var select_scene = load("res://addons/flowkit/ui/modals/select_action.tscn")
@@ -170,7 +170,7 @@ func _show_select_action_modal(node_class: String) -> void:
 	select_action_modal.popup_centered(Vector2i(600, 500))
 
 func _on_action_selected(action_id: String, inputs: Array) -> void:
-	"""Handle action selection."""
+	## Handle action selection.
 	pending_action_id = action_id
 	
 	if inputs.size() > 0:
@@ -202,7 +202,7 @@ func _on_expressions_confirmed(expressions: Dictionary) -> void:
 	_create_or_update_action(expressions)
 
 func _create_or_update_action(inputs: Dictionary) -> void:
-	"""Create a new action or update existing one."""
+	## Create a new action or update existing one.
 	if pending_action_index == -1:
 		# Create new action
 		var action = FKEventAction.new()

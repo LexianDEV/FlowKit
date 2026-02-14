@@ -20,12 +20,12 @@ func _init(p_subsheet_id: String = "", p_name: String = "Subsheet") -> void:
 
 
 func _generate_unique_id() -> String:
-	"""Generate a unique ID for this subsheet using timestamp and random component."""
+	## Generate a unique ID for this subsheet using timestamp and random component.
 	var timestamp = Time.get_unix_time_from_system()
 	return "subsheet_%d_%d" % [int(timestamp), randi()]
 
 
 func ensure_subsheet_id() -> void:
-	"""Ensure this subsheet has a unique ID (called when loading from old saved sheets)."""
+	## Ensure this subsheet has a unique ID (called when loading from old saved sheets).
 	if subsheet_id.is_empty():
 		subsheet_id = _generate_unique_id()

@@ -69,14 +69,14 @@ func rebuild_order_from_items(ordered_items: Array) -> void:
 
 
 func add_subsheet(subsheet: FKSubsheet) -> void:
-	"""Add a new subsheet to this event sheet."""
+	## Add a new subsheet to this event sheet.
 	if not subsheets:
 		subsheets = [] as Array[FKSubsheet]
 	subsheets.append(subsheet)
 
 
 func remove_subsheet(subsheet_id: String) -> bool:
-	"""Remove a subsheet by its ID. Returns true if found and removed."""
+	## Remove a subsheet by its ID. Returns true if found and removed.
 	for i in range(subsheets.size()):
 		if subsheets[i].subsheet_id == subsheet_id:
 			subsheets.remove_at(i)
@@ -93,7 +93,7 @@ func get_subsheet(subsheet_id: String) -> FKSubsheet:
 
 
 func get_subsheet_by_name(subsheet_name: String) -> FKSubsheet:
-	"""Get a subsheet by its name. Returns null if not found."""
+	## Get a subsheet by its name. Returns null if not found.
 	for subsheet in subsheets:
 		if subsheet.name == subsheet_name:
 			return subsheet
