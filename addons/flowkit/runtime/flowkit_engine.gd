@@ -1,10 +1,13 @@
 extends Node
 class_name FlowKitEngine
 
+const ExpressionEvaluator = preload("res://addons/flowkit/runtime/expression_evaluator.gd")
+
 var registry: FKRegistry
 var active_sheets: Array = []  # Each entry: {"sheet": FKEventSheet, "root": Node, "scene_name": String, "uid": int}
 var last_scene: Node = null
 var active_behavior_nodes: Array = []  # Track nodes with active behaviors
+var _block_event_providers: Dictionary = {}  # block_id -> per-block event provider instance
 
 func _ready() -> void:
 	# Load registry
@@ -65,6 +68,7 @@ func _on_scene_changed(scene_root: Node) -> void:
 	
 	# Teardown signal events on previous sheets before clearing
 	_teardown_all_signal_events()
+	_block_event_providers.clear()
 	
 	if scene_root == null:
 		# Scene unloaded: clear active sheets (optional)
@@ -118,6 +122,8 @@ func _load_sheets_for_scene(scene_root: Node) -> void:
 				_ensure_block_ids_in_groups(sheet.groups)
 				var entry := {"sheet": sheet, "root": node_root, "scene_name": scene_name, "uid": uid}
 				active_sheets.append(entry)
+				# Create per-block event provider instances (each block gets its own)
+				_create_block_providers(entry)
 				# Setup signal-based events so they can connect to node signals
 				_setup_signal_events(entry)
 				print("[FlowKit] Loaded event sheet for scene: ", scene_name, " (node: ", node_root.name, ") with ", sheet.events.size(), " events")
@@ -144,6 +150,24 @@ func _collect_node_paths(node: Node, uid_to_node: Dictionary) -> void:
 
 	for child in node.get_children():
 		_collect_node_paths(child, uid_to_node)
+
+
+## Create a new event provider instance for each event block in a sheet entry.
+## This ensures each block has its own isolated state.
+func _create_block_providers(entry: Dictionary) -> void:
+	var sheet: FKEventSheet = entry.get("sheet", null)
+	if not sheet:
+		return
+
+	var all_events: Array = []
+	all_events.append_array(sheet.events)
+	_collect_events_from_groups(sheet.groups, all_events)
+
+	for block in all_events:
+		if block.block_id and not _block_event_providers.has(block.block_id):
+			var instance = registry.create_event_instance(block.event_id)
+			if instance:
+				_block_event_providers[block.block_id] = instance
 
 
 func _run_sheet(entry: Dictionary) -> void:
@@ -202,8 +226,13 @@ func _run_sheet(entry: Dictionary) -> void:
 				print("[FlowKit] Event polling target node not found: ", block.target_node, " in scene root: ", current_root.name)
 				continue
 
+		# Get the per-block event provider instance
+		var provider = _block_event_providers.get(block.block_id, null)
+		if not provider:
+			continue
+
 		# Signal events fire via callback — skip them in the poll loop
-		if registry.is_signal_event(block.event_id):
+		if provider.has_method("is_signal_event") and provider.is_signal_event():
 			continue
 
 		# Skip events that belong to the wrong callback
@@ -214,8 +243,11 @@ func _run_sheet(entry: Dictionary) -> void:
 		if block.event_id == "on_process" and _is_physics_frame:
 			continue
 
-		# Poll the event with the block's inputs
-		var event_triggered = registry.poll_event(block.event_id, node, block.inputs, block.block_id, current_root)
+		# Poll the event with the per-block provider instance
+		if not provider.has_method("poll"):
+			continue
+		var evaluated_inputs: Dictionary = ExpressionEvaluator.evaluate_inputs(block.inputs, node, current_root)
+		var event_triggered = provider.poll(node, evaluated_inputs, block.block_id)
 		if not event_triggered:
 			continue
 
@@ -237,6 +269,13 @@ func _setup_signal_events(entry: Dictionary) -> void:
 	_collect_events_from_groups(sheet.groups, all_events)
 
 	for block in all_events:
+		var provider = _block_event_providers.get(block.block_id, null)
+		if not provider:
+			continue
+
+		if not (provider.has_method("is_signal_event") and provider.is_signal_event()):
+			continue
+
 		var node: Node = null
 		if str(block.target_node) == "System":
 			node = get_node("/root/FlowKitSystem")
@@ -247,7 +286,8 @@ func _setup_signal_events(entry: Dictionary) -> void:
 
 		# Build a trigger callback that runs this block's conditions & actions
 		var trigger_cb: Callable = _make_trigger_callback(block, root_node)
-		registry.setup_event(block.event_id, node, trigger_cb, block.block_id)
+		if provider.has_method("setup"):
+			provider.setup(node, trigger_cb, block.block_id)
 
 ## Teardown all signal events across every active sheet.
 func _teardown_all_signal_events() -> void:
@@ -262,6 +302,10 @@ func _teardown_all_signal_events() -> void:
 		_collect_events_from_groups(sheet.groups, all_events)
 
 		for block in all_events:
+			var provider = _block_event_providers.get(block.block_id, null)
+			if not provider:
+				continue
+
 			var node: Node = null
 			if str(block.target_node) == "System":
 				node = get_node_or_null("/root/FlowKitSystem")
@@ -269,7 +313,9 @@ func _teardown_all_signal_events() -> void:
 				node = root_node.get_node_or_null(block.target_node)
 				if not node:
 					continue
-			registry.teardown_event(block.event_id, node, block.block_id)
+
+			if provider.has_method("teardown"):
+				provider.teardown(node, block.block_id)
 
 ## Create a Callable that evaluates a block's conditions and runs its actions.
 ## This is what signal events call when their signal fires.
