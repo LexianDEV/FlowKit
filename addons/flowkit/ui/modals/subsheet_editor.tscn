@@ -1,0 +1,54 @@
+[gd_scene load_steps=2 format=3 uid="uid://bslh8vxrw06gj"]
+
+[ext_resource type="Script" path="res://addons/flowkit/ui/modals/subsheet_editor.gd" id="1_script"]
+
+[node name="SubsheetEditorModal" type="Window"]
+title = "Edit Subsheet Actions"
+initial_position = 2
+size = Vector2i(600, 500)
+min_size = Vector2i(500, 400)
+script = ExtResource("1_script")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="SubsheetNameLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+text = "Editing Subsheet"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+text = "Actions:"
+
+[node name="ScrollContainer" type="ScrollContainer" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ActionsList" type="VBoxContainer" parent="VBoxContainer/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="ButtonContainer" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="AddActionButton" type="Button" parent="VBoxContainer/ButtonContainer"]
+layout_mode = 2
+text = "Add Action"
+
+[node name="CloseButton" type="Button" parent="VBoxContainer/ButtonContainer"]
+layout_mode = 2
+text = "Close"

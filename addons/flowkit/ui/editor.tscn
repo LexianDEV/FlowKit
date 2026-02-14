@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3 uid="uid://d1uy22pv42td3"]
+[gd_scene load_steps=13 format=3 uid="uid://d1uy22pv42td3"]
 
 [ext_resource type="Script" uid="uid://bwh2bhg4rvhcx" path="res://addons/flowkit/ui/editor.gd" id="1_clean"]
 [ext_resource type="Script" uid="uid://d3kkt2ew5wf7j" path="res://addons/flowkit/ui/blocks_container.gd" id="2_blocks"]
@@ -8,6 +8,8 @@
 [ext_resource type="PackedScene" uid="uid://c7j20avh3m4rj" path="res://addons/flowkit/ui/modals/select_action.tscn" id="10_select_action"]
 [ext_resource type="PackedScene" uid="uid://d58fx0alhbxs" path="res://addons/flowkit/ui/modals/expression_editor.tscn" id="11_expression_editor"]
 [ext_resource type="PackedScene" uid="uid://cam4a1xj6n7ql" path="res://addons/flowkit/ui/modals/select_condition.tscn" id="12_select_condition"]
+[ext_resource type="PackedScene" uid="uid://cgr0y5vkpkgj0" path="res://addons/flowkit/ui/modals/subsheet_manager.tscn" id="13_subsheet_manager"]
+[ext_resource type="PackedScene" uid="uid://bslh8vxrw06gj" path="res://addons/flowkit/ui/modals/subsheet_editor.tscn" id="14_subsheet_editor"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bg"]
 bg_color = Color(0.12, 0.12, 0.15, 1)
@@ -109,6 +111,14 @@ theme_override_font_sizes/font_size = 16
 flat = true
 text = "📁"
 
+[node name="ManageSubsheetsButton" type="Button" parent="OuterVBox/TopMargin/TopBar"]
+layout_mode = 2
+tooltip_text = "Manage Subsheets"
+theme_override_colors/font_color = Color(1.0, 0.7, 0.4, 1)
+theme_override_font_sizes/font_size = 16
+flat = true
+text = "🔧"
+
 [node name="ScrollContainer" type="ScrollContainer" parent="OuterVBox"]
 layout_mode = 2
 size_flags_vertical = 3
@@ -170,6 +180,10 @@ text = "➕ Add Event"
 
 [node name="ExpressionModal" parent="." instance=ExtResource("11_expression_editor")]
 
+[node name="SubsheetManagerModal" parent="." instance=ExtResource("13_subsheet_manager")]
+
+[node name="SubsheetEditorModal" parent="." instance=ExtResource("14_subsheet_editor")]
+
 [connection signal="generate_manifest" from="OuterVBox/TopMargin/TopBar/MenuBar" to="." method="_on_generate_manifest"]
 [connection signal="generate_providers" from="OuterVBox/TopMargin/TopBar/MenuBar" to="." method="_on_generate_providers"]
 [connection signal="new_sheet" from="OuterVBox/TopMargin/TopBar/MenuBar" to="." method="_on_new_sheet"]
@@ -180,6 +194,7 @@ text = "➕ Add Event"
 [connection signal="id_pressed" from="OuterVBox/TopMargin/TopBar/MenuBar/Edit" to="OuterVBox/TopMargin/TopBar/MenuBar" method="_on_edit_id_pressed"]
 [connection signal="pressed" from="OuterVBox/TopMargin/TopBar/AddCommentButton" to="." method="_on_add_comment_button_pressed"]
 [connection signal="pressed" from="OuterVBox/TopMargin/TopBar/AddGroupButton" to="." method="_on_add_group_button_pressed"]
+[connection signal="pressed" from="OuterVBox/TopMargin/TopBar/ManageSubsheetsButton" to="." method="_on_manage_subsheets_pressed"]
 [connection signal="pressed" from="OuterVBox/BottomMargin/ButtonContainer/AddEventButton" to="." method="_on_add_event_button_pressed"]
 [connection signal="node_selected" from="SelectNodeModal" to="." method="_on_node_selected"]
 [connection signal="event_selected" from="SelectEventModal" to="." method="_on_event_selected"]
