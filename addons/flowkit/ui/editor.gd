@@ -29,6 +29,8 @@ const DRAG_SPACER_HEIGHT := 50  # Height of temporary drop zone
 @onready var select_condition_modal := $SelectConditionModal
 @onready var select_action_modal := $SelectActionModal
 @onready var expression_modal := $ExpressionModal
+@onready var subsheet_manager_modal := $SubsheetManagerModal
+@onready var subsheet_editor_modal := $SubsheetEditorModal
 
 # Workflow state
 var pending_block_type: String = ""  # "event", "condition", "action", "event_replace", "event_in_group", etc.
@@ -64,6 +66,16 @@ func _ready() -> void:
 	# Connect block_moved signals for autosave and undo state on drag-and-drop reorder
 	blocks_container.before_block_moved.connect(_push_undo_state)
 	blocks_container.block_moved.connect(_save_and_reload_sheet)
+	
+	# Connect subsheet modal signals
+	if subsheet_manager_modal:
+		subsheet_manager_modal.subsheet_added.connect(_on_subsheet_added)
+		subsheet_manager_modal.subsheet_edited.connect(_on_subsheet_edited)
+		subsheet_manager_modal.subsheet_deleted.connect(_on_subsheet_deleted)
+		subsheet_manager_modal.edit_subsheet_actions.connect(_on_edit_subsheet_actions)
+	
+	if subsheet_editor_modal:
+		subsheet_editor_modal.actions_updated.connect(_on_subsheet_actions_updated)
 
 func _setup_ui() -> void:
 	"""Initialize UI state."""
@@ -85,6 +97,10 @@ func set_editor_interface(interface: EditorInterface) -> void:
 	else:
 		# If modal isn't ready yet, defer it
 		call_deferred("_set_expression_interface", interface)
+	if subsheet_manager_modal:
+		subsheet_manager_modal.set_editor_interface(interface)
+	if subsheet_editor_modal:
+		subsheet_editor_modal.set_editor_interface(interface)
 
 func set_registry(reg: Node) -> void:
 	registry = reg
@@ -95,6 +111,8 @@ func set_registry(reg: Node) -> void:
 		select_condition_modal.set_registry(reg)
 	if select_action_modal:
 		select_action_modal.set_registry(reg)
+	if subsheet_editor_modal:
+		subsheet_editor_modal.set_registry(reg)
 
 func set_generator(gen) -> void:
 	generator = gen
@@ -1131,7 +1149,15 @@ func _save_and_reload_sheet() -> void:
 
 func _generate_sheet_from_blocks() -> FKEventSheet:
 	"""Build event sheet from event rows, comments, and groups (GDevelop-style)."""
-	var sheet = FKEventSheet.new()
+	# Load existing sheet to preserve subsheets
+	var sheet_path = _get_sheet_path()
+	var sheet: FKEventSheet = null
+	if sheet_path != "" and FileAccess.file_exists(sheet_path):
+		sheet = ResourceLoader.load(sheet_path)
+	
+	if not sheet:
+		sheet = FKEventSheet.new()
+	
 	var events: Array[FKEventBlock] = []
 	var comments: Array[FKCommentBlock] = []
 	var groups: Array[FKGroupBlock] = []
@@ -1170,6 +1196,8 @@ func _generate_sheet_from_blocks() -> FKEventSheet:
 	sheet.groups = groups
 	sheet.item_order = item_order
 	sheet.standalone_conditions = standalone_conditions
+	# Preserve existing subsheets (don't overwrite them)
+	# sheet.subsheets is already set from loaded sheet or empty array from new sheet
 	return sheet
 
 func _copy_event_block(data: FKEventBlock) -> FKEventBlock:
@@ -2418,3 +2446,124 @@ func _on_action_dropped(source_row, action_data: FKEventAction, target_row) -> v
 func _generate_unique_block_id(event_id: String) -> String:
 	"""Generate a unique ID for an event block."""
 	return "%s_%d_%d" % [event_id, Time.get_ticks_msec(), randi()]
+
+
+# === Subsheet Management ===
+
+func _on_manage_subsheets_pressed() -> void:
+	"""Show the subsheet manager modal."""
+	var sheet_path = _get_sheet_path()
+	if sheet_path == "" or not FileAccess.file_exists(sheet_path):
+		push_warning("No event sheet loaded. Please save the event sheet first.")
+		return
+	
+	var sheet = ResourceLoader.load(sheet_path)
+	if not (sheet is FKEventSheet):
+		return
+	
+	if subsheet_manager_modal:
+		subsheet_manager_modal.set_sheet(sheet)
+		_popup_centered_on_editor(subsheet_manager_modal)
+
+
+func _on_subsheet_added(subsheet_name: String) -> void:
+	"""Handle adding a new subsheet."""
+	var sheet_path = _get_sheet_path()
+	if sheet_path == "":
+		return
+	
+	var sheet = ResourceLoader.load(sheet_path)
+	if not (sheet is FKEventSheet):
+		return
+	
+	# Create new subsheet
+	var subsheet = FKSubsheet.new()
+	subsheet.name = subsheet_name
+	
+	# Add to sheet
+	if not sheet.subsheets:
+		sheet.subsheets = [] as Array[FKSubsheet]
+	sheet.add_subsheet(subsheet)
+	
+	# Save sheet
+	var error = ResourceSaver.save(sheet, sheet_path)
+	if error == OK:
+		print("[FlowKit] Added subsheet: ", subsheet_name)
+		# Refresh the subsheet manager
+		if subsheet_manager_modal:
+			subsheet_manager_modal.set_sheet(sheet)
+
+
+func _on_subsheet_edited(subsheet_id: String, new_name: String) -> void:
+	"""Handle renaming a subsheet."""
+	var sheet_path = _get_sheet_path()
+	if sheet_path == "":
+		return
+	
+	var sheet = ResourceLoader.load(sheet_path)
+	if not (sheet is FKEventSheet):
+		return
+	
+	# Find and update subsheet
+	var subsheet = sheet.get_subsheet(subsheet_id)
+	if subsheet:
+		subsheet.name = new_name
+		
+		# Save sheet
+		var error = ResourceSaver.save(sheet, sheet_path)
+		if error == OK:
+			print("[FlowKit] Renamed subsheet: ", new_name)
+
+
+func _on_subsheet_deleted(subsheet_id: String) -> void:
+	"""Handle deleting a subsheet."""
+	var sheet_path = _get_sheet_path()
+	if sheet_path == "":
+		return
+	
+	var sheet = ResourceLoader.load(sheet_path)
+	if not (sheet is FKEventSheet):
+		return
+	
+	# Remove subsheet
+	if sheet.remove_subsheet(subsheet_id):
+		# Save sheet
+		var error = ResourceSaver.save(sheet, sheet_path)
+		if error == OK:
+			print("[FlowKit] Deleted subsheet")
+
+
+func _on_edit_subsheet_actions(subsheet_id: String) -> void:
+	"""Handle editing subsheet actions."""
+	var sheet_path = _get_sheet_path()
+	if sheet_path == "":
+		return
+	
+	var sheet = ResourceLoader.load(sheet_path)
+	if not (sheet is FKEventSheet):
+		return
+	
+	var subsheet = sheet.get_subsheet(subsheet_id)
+	if not subsheet:
+		return
+	
+	if subsheet_editor_modal:
+		subsheet_editor_modal.set_subsheet(subsheet, sheet)
+		_popup_centered_on_editor(subsheet_editor_modal)
+
+
+func _on_subsheet_actions_updated(subsheet_id: String) -> void:
+	"""Handle when subsheet actions are updated."""
+	var sheet_path = _get_sheet_path()
+	if sheet_path == "":
+		return
+	
+	var sheet = ResourceLoader.load(sheet_path)
+	if not (sheet is FKEventSheet):
+		return
+	
+	# Save sheet with updated subsheet
+	var error = ResourceSaver.save(sheet, sheet_path)
+	if error == OK:
+		print("[FlowKit] Updated subsheet actions")
+
