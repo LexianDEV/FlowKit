@@ -25,35 +25,213 @@ inputs = {
 }
 
 [sub_resource type="Resource" id="Resource_j21vh"]
+script = ExtResource("3_j21vh")
+action_id = "Set Text"
+target_node = NodePath("DisplaysQuestion/QuestionText")
+inputs = {
+"New Text": "\"When was Godot 4.3\\nfirst released?\""
+}
+
+[sub_resource type="Resource" id="Resource_emcdn"]
+script = ExtResource("3_j21vh")
+action_id = "set_variable"
+target_node = NodePath("System")
+inputs = {
+"Name": "\"firstAnswerText\"",
+"Value": "\"August 14, 2024\""
+}
+
+[sub_resource type="Resource" id="Resource_ulxaw"]
+script = ExtResource("3_j21vh")
+action_id = "set_variable"
+target_node = NodePath("System")
+inputs = {
+"Name": "\"secondAnswerText\"",
+"Value": "\"July 3rd, 2024\""
+}
+
+[sub_resource type="Resource" id="Resource_rpy5k"]
+script = ExtResource("3_j21vh")
+action_id = "set_variable"
+target_node = NodePath("System")
+inputs = {
+"Name": "\"thirdAnswerText\"",
+"Value": "\"March 1st, 2024\""
+}
+
+[sub_resource type="Resource" id="Resource_efrgi"]
+script = ExtResource("3_j21vh")
+action_id = "set_variable"
+target_node = NodePath("System")
+inputs = {
+"Name": "\"fourthAnswerText\"",
+"Value": "\"July 28th, 2024\""
+}
+
+[sub_resource type="Resource" id="Resource_e6bne"]
+script = ExtResource("3_j21vh")
+action_id = "Set Text"
+target_node = NodePath("HoldsAnswers/FirstAnswerButton")
+inputs = {
+"New Text": "system.get_var(\"firstAnswerText\")"
+}
+
+[sub_resource type="Resource" id="Resource_1h0yk"]
+script = ExtResource("3_j21vh")
+action_id = "Set Text"
+target_node = NodePath("HoldsAnswers/SecondAnswerButton")
+inputs = {
+"New Text": "system.get_var(\"secondAnswerText\")"
+}
+
+[sub_resource type="Resource" id="Resource_7gjgi"]
+script = ExtResource("3_j21vh")
+action_id = "Set Text"
+target_node = NodePath("HoldsAnswers/ThirdAnswerButton")
+inputs = {
+"New Text": "system.get_var(\"thirdAnswerText\")"
+}
+
+[sub_resource type="Resource" id="Resource_njo67"]
+script = ExtResource("3_j21vh")
+action_id = "Set Text"
+target_node = NodePath("HoldsAnswers/FourthAnswerButton")
+inputs = {
+"New Text": "system.get_var(\"fourthAnswerText\")"
+}
+
+[sub_resource type="Resource" id="Resource_7p70r"]
+script = ExtResource("3_j21vh")
+action_id = "set_variable"
+target_node = NodePath("System")
+inputs = {
+"Name": "\"correctAnswer\"",
+"Value": "system.get_var(\"firstAnswerText\")"
+}
+
+[sub_resource type="Resource" id="Resource_jl3cs"]
 script = ExtResource("2_uoxok")
 block_id = "event_1770938702_2561723233"
 event_id = "on_ready"
 target_node = NodePath(".")
-actions = Array[ExtResource("3_j21vh")]([SubResource("Resource_df7pu"), SubResource("Resource_uoxok")])
+actions = Array[ExtResource("3_j21vh")]([SubResource("Resource_df7pu"), SubResource("Resource_uoxok"), SubResource("Resource_j21vh"), SubResource("Resource_emcdn"), SubResource("Resource_ulxaw"), SubResource("Resource_rpy5k"), SubResource("Resource_efrgi"), SubResource("Resource_e6bne"), SubResource("Resource_1h0yk"), SubResource("Resource_7gjgi"), SubResource("Resource_njo67"), SubResource("Resource_7p70r")])
 
-[sub_resource type="Resource" id="Resource_emcdn"]
+[sub_resource type="Resource" id="Resource_y38jp"]
+script = ExtResource("3_j21vh")
+action_id = "set_variable"
+target_node = NodePath("System")
+inputs = {
+"Name": "\"chosenAnswer\"",
+"Value": "system.get_text(\"firstAnswerText\")"
+}
+
+[sub_resource type="Resource" id="Resource_6grxg"]
 script = ExtResource("3_j21vh")
 action_id = "Print Message"
 target_node = NodePath(".")
 inputs = {
 "color": "",
-"message": "Response to button press"
+"message": "\"Chose\" + str(system.get_var(\"chosenAnswer\"))"
 }
 
-[sub_resource type="Resource" id="Resource_ulxaw"]
+[sub_resource type="Resource" id="Resource_jpbjx"]
 script = ExtResource("2_uoxok")
 block_id = "event_1770938646_2269187284"
 event_id = "On Button Pressed"
 target_node = NodePath("HoldsAnswers/FirstAnswerButton")
-actions = Array[ExtResource("3_j21vh")]([SubResource("Resource_emcdn")])
+actions = Array[ExtResource("3_j21vh")]([SubResource("Resource_y38jp"), SubResource("Resource_6grxg")])
+
+[sub_resource type="Resource" id="Resource_ewbs2"]
+script = ExtResource("3_j21vh")
+action_id = "Print Message"
+target_node = NodePath(".")
+inputs = {
+"color": "",
+"message": "Response to second answer's button press"
+}
+
+[sub_resource type="Resource" id="Resource_7e0ye"]
+script = ExtResource("3_j21vh")
+action_id = "set_variable"
+target_node = NodePath("System")
+inputs = {
+"Name": "\"chosenAnswer\"",
+"Value": "system.get_var(\"secondAnswerText\")"
+}
+
+[sub_resource type="Resource" id="Resource_yayi7"]
+script = ExtResource("2_uoxok")
+block_id = "event_1771011257_1303004973"
+event_id = "On Button Pressed"
+target_node = NodePath("HoldsAnswers/SecondAnswerButton")
+actions = Array[ExtResource("3_j21vh")]([SubResource("Resource_ewbs2"), SubResource("Resource_7e0ye")])
+
+[sub_resource type="Resource" id="Resource_4t33x"]
+script = ExtResource("3_j21vh")
+action_id = "Print Message"
+target_node = NodePath(".")
+inputs = {
+"color": "",
+"message": "Response to third answer's button press"
+}
+
+[sub_resource type="Resource" id="Resource_3wu3y"]
+script = ExtResource("3_j21vh")
+action_id = "set_variable"
+target_node = NodePath("System")
+inputs = {
+"Name": "\"chosenAnswer\"",
+"Value": "system.get_var(\"thirdAnswerText\")"
+}
+
+[sub_resource type="Resource" id="Resource_8wvsr"]
+script = ExtResource("2_uoxok")
+block_id = "event_1771011260_802884928"
+event_id = "On Button Pressed"
+target_node = NodePath("HoldsAnswers/ThirdAnswerButton")
+actions = Array[ExtResource("3_j21vh")]([SubResource("Resource_4t33x"), SubResource("Resource_3wu3y")])
+
+[sub_resource type="Resource" id="Resource_apwru"]
+script = ExtResource("3_j21vh")
+action_id = "Print Message"
+target_node = NodePath(".")
+inputs = {
+"color": "",
+"message": "Response to fourth answer's button press"
+}
+
+[sub_resource type="Resource" id="Resource_yrydo"]
+script = ExtResource("3_j21vh")
+action_id = "set_variable"
+target_node = NodePath("System")
+inputs = {
+"Name": "\"chosenAnswer\"",
+"Value": "system.get_var(\"fourthAnswerText\")"
+}
+
+[sub_resource type="Resource" id="Resource_hlcqt"]
+script = ExtResource("2_uoxok")
+block_id = "event_1771011263_4034373400"
+event_id = "On Button Pressed"
+target_node = NodePath("HoldsAnswers/FourthAnswerButton")
+actions = Array[ExtResource("3_j21vh")]([SubResource("Resource_apwru"), SubResource("Resource_yrydo")])
 
 [resource]
 script = ExtResource("6_rpy5k")
-events = Array[ExtResource("2_uoxok")]([SubResource("Resource_j21vh"), SubResource("Resource_ulxaw")])
+events = Array[ExtResource("2_uoxok")]([SubResource("Resource_jl3cs"), SubResource("Resource_jpbjx"), SubResource("Resource_yayi7"), SubResource("Resource_8wvsr"), SubResource("Resource_hlcqt")])
 item_order = Array[Dictionary]([{
 "index": 0,
 "type": "event"
 }, {
 "index": 1,
+"type": "event"
+}, {
+"index": 2,
+"type": "event"
+}, {
+"index": 3,
+"type": "event"
+}, {
+"index": 4,
 "type": "event"
 }])
