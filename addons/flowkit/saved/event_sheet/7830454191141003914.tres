@@ -1,21 +1,24 @@
-[gd_resource type="Resource" script_class="FKEventSheet" format=3 uid="uid://bude0li5knaft"]
+[gd_resource type="Resource" script_class="FKEventSheet" load_steps=53 format=3 uid="uid://bude0li5knaft"]
 
-[ext_resource type="Script" uid="uid://b1y3c8rnt2rcg" path="res://addons/flowkit/resources/fk_comment.gd" id="1_df7pu"]
-[ext_resource type="Script" uid="uid://bxdhylwvr4osy" path="res://addons/flowkit/resources/event_block.gd" id="2_uoxok"]
-[ext_resource type="Script" uid="uid://bwbi0utcwmxwf" path="res://addons/flowkit/resources/event_action.gd" id="3_j21vh"]
-[ext_resource type="Script" uid="uid://bmaxurgrsv4ct" path="res://addons/flowkit/resources/event_condition.gd" id="4_emcdn"]
-[ext_resource type="Script" path="res://addons/flowkit/resources/fk_group.gd" id="5_ulxaw"]
-[ext_resource type="Script" uid="uid://bumsyiqkp46l1" path="res://addons/flowkit/resources/event_sheet.gd" id="6_rpy5k"]
+[ext_resource type="Script" path="res://addons/flowkit/resources/fk_comment.gd" id="1_e8buc"]
+[ext_resource type="Script" path="res://addons/flowkit/resources/event_block.gd" id="2_uoxok"]
+[ext_resource type="Script" path="res://addons/flowkit/resources/event_action.gd" id="3_j21vh"]
+[ext_resource type="Script" path="res://addons/flowkit/resources/event_condition.gd" id="4_s7nm7"]
+[ext_resource type="Script" path="res://addons/flowkit/resources/fk_group.gd" id="5_i1nl3"]
+[ext_resource type="Script" path="res://addons/flowkit/resources/event_sheet.gd" id="6_rpy5k"]
 
-[sub_resource type="Resource" id="Resource_df7pu"]
+[sub_resource type="Resource" id="Resource_x0bs7"]
 script = ExtResource("3_j21vh")
 action_id = "set_window_mode"
 target_node = NodePath("System")
 inputs = {
 "Mode": "windowed"
 }
+is_branch = false
+branch_type = ""
+branch_actions = Array[ExtResource("3_j21vh")]([])
 
-[sub_resource type="Resource" id="Resource_uoxok"]
+[sub_resource type="Resource" id="Resource_omwdj"]
 script = ExtResource("3_j21vh")
 action_id = "set_window_size"
 target_node = NodePath("System")
@@ -23,16 +26,58 @@ inputs = {
 "Height": "720",
 "Width": "1280"
 }
+is_branch = false
+branch_type = ""
+branch_actions = Array[ExtResource("3_j21vh")]([])
 
-[sub_resource type="Resource" id="Resource_j21vh"]
+[sub_resource type="Resource" id="Resource_onje1"]
+script = ExtResource("3_j21vh")
+action_id = "set_variable"
+target_node = NodePath("System")
+inputs = {
+"Name": "\"firstQuestion\"",
+"Value": "\"[center]When was Godot 4.3\\nfirst released?[/center]\""
+}
+is_branch = false
+branch_type = ""
+branch_actions = Array[ExtResource("3_j21vh")]([])
+
+[sub_resource type="Resource" id="Resource_bsn7i"]
+script = ExtResource("3_j21vh")
+action_id = "set_variable"
+target_node = NodePath("System")
+inputs = {
+"Name": "\"secondQuestion\"",
+"Value": "\"[center]What license is Godot released under?[/center]\""
+}
+is_branch = false
+branch_type = ""
+branch_actions = Array[ExtResource("3_j21vh")]([])
+
+[sub_resource type="Resource" id="Resource_ox7w8"]
+script = ExtResource("3_j21vh")
+action_id = "set_variable"
+target_node = NodePath("System")
+inputs = {
+"Name": "\"thirdQuestion\"",
+"Value": "\"[center]Which Godot version was the first to officially support C#?[/center]\""
+}
+is_branch = false
+branch_type = ""
+branch_actions = Array[ExtResource("3_j21vh")]([])
+
+[sub_resource type="Resource" id="Resource_22fd3"]
 script = ExtResource("3_j21vh")
 action_id = "Set Text"
 target_node = NodePath("DisplaysQuestion/QuestionText")
 inputs = {
-"New Text": "\"When was Godot 4.3\\nfirst released?\""
+"New Text": "system.get_var(\"firstQuestion\")"
 }
+is_branch = false
+branch_type = ""
+branch_actions = Array[ExtResource("3_j21vh")]([])
 
-[sub_resource type="Resource" id="Resource_emcdn"]
+[sub_resource type="Resource" id="Resource_vuuaa"]
 script = ExtResource("3_j21vh")
 action_id = "set_variable"
 target_node = NodePath("System")
@@ -40,8 +85,11 @@ inputs = {
 "Name": "\"firstAnswerText\"",
 "Value": "\"August 14, 2024\""
 }
+is_branch = false
+branch_type = ""
+branch_actions = Array[ExtResource("3_j21vh")]([])
 
-[sub_resource type="Resource" id="Resource_ulxaw"]
+[sub_resource type="Resource" id="Resource_15xnl"]
 script = ExtResource("3_j21vh")
 action_id = "set_variable"
 target_node = NodePath("System")
@@ -49,8 +97,11 @@ inputs = {
 "Name": "\"secondAnswerText\"",
 "Value": "\"July 3rd, 2024\""
 }
+is_branch = false
+branch_type = ""
+branch_actions = Array[ExtResource("3_j21vh")]([])
 
-[sub_resource type="Resource" id="Resource_rpy5k"]
+[sub_resource type="Resource" id="Resource_gpk1f"]
 script = ExtResource("3_j21vh")
 action_id = "set_variable"
 target_node = NodePath("System")
@@ -58,8 +109,11 @@ inputs = {
 "Name": "\"thirdAnswerText\"",
 "Value": "\"March 1st, 2024\""
 }
+is_branch = false
+branch_type = ""
+branch_actions = Array[ExtResource("3_j21vh")]([])
 
-[sub_resource type="Resource" id="Resource_efrgi"]
+[sub_resource type="Resource" id="Resource_surbb"]
 script = ExtResource("3_j21vh")
 action_id = "set_variable"
 target_node = NodePath("System")
@@ -67,40 +121,55 @@ inputs = {
 "Name": "\"fourthAnswerText\"",
 "Value": "\"July 28th, 2024\""
 }
+is_branch = false
+branch_type = ""
+branch_actions = Array[ExtResource("3_j21vh")]([])
 
-[sub_resource type="Resource" id="Resource_e6bne"]
+[sub_resource type="Resource" id="Resource_qgufi"]
 script = ExtResource("3_j21vh")
 action_id = "Set Text"
 target_node = NodePath("HoldsAnswers/FirstAnswerButton")
 inputs = {
 "New Text": "system.get_var(\"firstAnswerText\")"
 }
+is_branch = false
+branch_type = ""
+branch_actions = Array[ExtResource("3_j21vh")]([])
 
-[sub_resource type="Resource" id="Resource_1h0yk"]
+[sub_resource type="Resource" id="Resource_m167a"]
 script = ExtResource("3_j21vh")
 action_id = "Set Text"
 target_node = NodePath("HoldsAnswers/SecondAnswerButton")
 inputs = {
 "New Text": "system.get_var(\"secondAnswerText\")"
 }
+is_branch = false
+branch_type = ""
+branch_actions = Array[ExtResource("3_j21vh")]([])
 
-[sub_resource type="Resource" id="Resource_7gjgi"]
+[sub_resource type="Resource" id="Resource_hlsg2"]
 script = ExtResource("3_j21vh")
 action_id = "Set Text"
 target_node = NodePath("HoldsAnswers/ThirdAnswerButton")
 inputs = {
 "New Text": "system.get_var(\"thirdAnswerText\")"
 }
+is_branch = false
+branch_type = ""
+branch_actions = Array[ExtResource("3_j21vh")]([])
 
-[sub_resource type="Resource" id="Resource_njo67"]
+[sub_resource type="Resource" id="Resource_ice48"]
 script = ExtResource("3_j21vh")
 action_id = "Set Text"
 target_node = NodePath("HoldsAnswers/FourthAnswerButton")
 inputs = {
 "New Text": "system.get_var(\"fourthAnswerText\")"
 }
+is_branch = false
+branch_type = ""
+branch_actions = Array[ExtResource("3_j21vh")]([])
 
-[sub_resource type="Resource" id="Resource_7p70r"]
+[sub_resource type="Resource" id="Resource_ddhf2"]
 script = ExtResource("3_j21vh")
 action_id = "set_variable"
 target_node = NodePath("System")
@@ -108,15 +177,236 @@ inputs = {
 "Name": "\"correctAnswer\"",
 "Value": "system.get_var(\"firstAnswerText\")"
 }
+is_branch = false
+branch_type = ""
+branch_actions = Array[ExtResource("3_j21vh")]([])
 
-[sub_resource type="Resource" id="Resource_jl3cs"]
+[sub_resource type="Resource" id="Resource_rv76o"]
+script = ExtResource("3_j21vh")
+action_id = "set_variable"
+target_node = NodePath("System")
+inputs = {
+"Name": "\"firstQuestionFirstAnswer\"",
+"Value": "\"August 14, 2024\""
+}
+is_branch = false
+branch_type = ""
+branch_actions = Array[ExtResource("3_j21vh")]([])
+
+[sub_resource type="Resource" id="Resource_f3gy0"]
+script = ExtResource("3_j21vh")
+action_id = "set_variable"
+target_node = NodePath("System")
+inputs = {
+"Name": "\"firstQuestionSecondAnswer\"",
+"Value": "\"July 3rd, 2024\""
+}
+is_branch = false
+branch_type = ""
+branch_actions = Array[ExtResource("3_j21vh")]([])
+
+[sub_resource type="Resource" id="Resource_uo25h"]
+script = ExtResource("3_j21vh")
+action_id = "set_variable"
+target_node = NodePath("System")
+inputs = {
+"Name": "\"firstQuestionThirdAnswer\"",
+"Value": "\"March 1st, 2024\""
+}
+is_branch = false
+branch_type = ""
+branch_actions = Array[ExtResource("3_j21vh")]([])
+
+[sub_resource type="Resource" id="Resource_8mudg"]
+script = ExtResource("3_j21vh")
+action_id = "set_variable"
+target_node = NodePath("System")
+inputs = {
+"Name": "\"firstQuestionFourthAnswer\"",
+"Value": "\"July 28th, 2024\""
+}
+is_branch = false
+branch_type = ""
+branch_actions = Array[ExtResource("3_j21vh")]([])
+
+[sub_resource type="Resource" id="Resource_qy70f"]
+script = ExtResource("3_j21vh")
+action_id = "set_variable"
+target_node = NodePath("System")
+inputs = {
+"Name": "\"firstQuestionCorrectAnswer\"",
+"Value": "system.get_var(\"firstQuestionFirstAnswer\")"
+}
+is_branch = false
+branch_type = ""
+branch_actions = Array[ExtResource("3_j21vh")]([])
+
+[sub_resource type="Resource" id="Resource_bjb8g"]
+script = ExtResource("3_j21vh")
+action_id = "set_variable"
+target_node = NodePath("System")
+inputs = {
+"Name": "\"secondQuestionFirstAnswer\"",
+"Value": "\"Apache 2.0\""
+}
+is_branch = false
+branch_type = ""
+branch_actions = Array[ExtResource("3_j21vh")]([])
+
+[sub_resource type="Resource" id="Resource_5kbx3"]
+script = ExtResource("3_j21vh")
+action_id = "set_variable"
+target_node = NodePath("System")
+inputs = {
+"Name": "\"secondQuestionSecondAnswer\"",
+"Value": "\"Zlib License\""
+}
+is_branch = false
+branch_type = ""
+branch_actions = Array[ExtResource("3_j21vh")]([])
+
+[sub_resource type="Resource" id="Resource_fr72r"]
+script = ExtResource("3_j21vh")
+action_id = "set_variable"
+target_node = NodePath("System")
+inputs = {
+"Name": "\"secondQuestionThirdAnswer\"",
+"Value": "\"MIT\""
+}
+is_branch = false
+branch_type = ""
+branch_actions = Array[ExtResource("3_j21vh")]([])
+
+[sub_resource type="Resource" id="Resource_yf6qe"]
+script = ExtResource("3_j21vh")
+action_id = "set_variable"
+target_node = NodePath("System")
+inputs = {
+"Name": "\"secondQuestionFourthAnswer\"",
+"Value": "\"Creative Commons BY‑SA\""
+}
+is_branch = false
+branch_type = ""
+branch_actions = Array[ExtResource("3_j21vh")]([])
+
+[sub_resource type="Resource" id="Resource_jw8d3"]
+script = ExtResource("3_j21vh")
+action_id = "set_variable"
+target_node = NodePath("System")
+inputs = {
+"Name": "\"secondQuestionCorrectAnswer\"",
+"Value": "system.get_var(\"secondQuestionThirdAnswer\")"
+}
+is_branch = false
+branch_type = ""
+branch_actions = Array[ExtResource("3_j21vh")]([])
+
+[sub_resource type="Resource" id="Resource_075gu"]
+script = ExtResource("3_j21vh")
+action_id = "set_variable"
+target_node = NodePath("System")
+inputs = {
+"Name": "\"thirdQuestionFirstAnswer\"",
+"Value": "\"2.1\""
+}
+is_branch = false
+branch_type = ""
+branch_actions = Array[ExtResource("3_j21vh")]([])
+
+[sub_resource type="Resource" id="Resource_8shih"]
+script = ExtResource("3_j21vh")
+action_id = "set_variable"
+target_node = NodePath("System")
+inputs = {
+"Name": "\"thirdQuestionSecondAnswer\"",
+"Value": "\"4.0\""
+}
+is_branch = false
+branch_type = ""
+branch_actions = Array[ExtResource("3_j21vh")]([])
+
+[sub_resource type="Resource" id="Resource_mv8ql"]
+script = ExtResource("3_j21vh")
+action_id = "set_variable"
+target_node = NodePath("System")
+inputs = {
+"Name": "\"thirdQuestionThirdAnswer\"",
+"Value": "\"3.5\""
+}
+is_branch = false
+branch_type = ""
+branch_actions = Array[ExtResource("3_j21vh")]([])
+
+[sub_resource type="Resource" id="Resource_xlatf"]
+script = ExtResource("3_j21vh")
+action_id = "set_variable"
+target_node = NodePath("System")
+inputs = {
+"Name": "\"thirdQuestionFourthAnswer\"",
+"Value": "\"3.0\""
+}
+is_branch = false
+branch_type = ""
+branch_actions = Array[ExtResource("3_j21vh")]([])
+
+[sub_resource type="Resource" id="Resource_73rvm"]
+script = ExtResource("3_j21vh")
+action_id = "set_variable"
+target_node = NodePath("System")
+inputs = {
+"Name": "\"thirdQuestionCorrectAnswer\"",
+"Value": "system.get_var(\"thirdQuestionFourthAnswer\")"
+}
+is_branch = false
+branch_type = ""
+branch_actions = Array[ExtResource("3_j21vh")]([])
+
+[sub_resource type="Resource" id="Resource_13lj6"]
+script = ExtResource("3_j21vh")
+action_id = "set_variable"
+target_node = NodePath("System")
+inputs = {
+"Name": "\"currentCorrectAnswer\"",
+"Value": "system.get_var(\"firstQuestionCorrectAnswer\")"
+}
+is_branch = false
+branch_type = ""
+branch_actions = Array[ExtResource("3_j21vh")]([])
+
+[sub_resource type="Resource" id="Resource_kwkdn"]
+script = ExtResource("3_j21vh")
+action_id = "set_variable"
+target_node = NodePath("System")
+inputs = {
+"Name": "\"currentFirstAnswer\"",
+"Value": "system.get_var(\"firstQuestionFirstAnswer\")"
+}
+is_branch = false
+branch_type = ""
+branch_actions = Array[ExtResource("3_j21vh")]([])
+
+[sub_resource type="Resource" id="Resource_82ixy"]
+script = ExtResource("3_j21vh")
+action_id = "set_variable"
+target_node = NodePath("System")
+inputs = {
+"Name": "\"currentSecondAnswer\"",
+"Value": "system.get_var(\"firstQuestionSecondAnswer\")"
+}
+is_branch = false
+branch_type = ""
+branch_actions = Array[ExtResource("3_j21vh")]([])
+
+[sub_resource type="Resource" id="Resource_00etc"]
 script = ExtResource("2_uoxok")
 block_id = "event_1770938702_2561723233"
 event_id = "on_ready"
 target_node = NodePath(".")
-actions = Array[ExtResource("3_j21vh")]([SubResource("Resource_df7pu"), SubResource("Resource_uoxok"), SubResource("Resource_j21vh"), SubResource("Resource_emcdn"), SubResource("Resource_ulxaw"), SubResource("Resource_rpy5k"), SubResource("Resource_efrgi"), SubResource("Resource_e6bne"), SubResource("Resource_1h0yk"), SubResource("Resource_7gjgi"), SubResource("Resource_njo67"), SubResource("Resource_7p70r")])
+inputs = {}
+conditions = Array[ExtResource("4_s7nm7")]([])
+actions = Array[ExtResource("3_j21vh")]([SubResource("Resource_x0bs7"), SubResource("Resource_omwdj"), SubResource("Resource_onje1"), SubResource("Resource_bsn7i"), SubResource("Resource_ox7w8"), SubResource("Resource_22fd3"), SubResource("Resource_vuuaa"), SubResource("Resource_15xnl"), SubResource("Resource_gpk1f"), SubResource("Resource_surbb"), SubResource("Resource_qgufi"), SubResource("Resource_m167a"), SubResource("Resource_hlsg2"), SubResource("Resource_ice48"), SubResource("Resource_ddhf2"), SubResource("Resource_rv76o"), SubResource("Resource_f3gy0"), SubResource("Resource_uo25h"), SubResource("Resource_8mudg"), SubResource("Resource_qy70f"), SubResource("Resource_bjb8g"), SubResource("Resource_5kbx3"), SubResource("Resource_fr72r"), SubResource("Resource_yf6qe"), SubResource("Resource_jw8d3"), SubResource("Resource_075gu"), SubResource("Resource_8shih"), SubResource("Resource_mv8ql"), SubResource("Resource_xlatf"), SubResource("Resource_73rvm"), SubResource("Resource_13lj6"), SubResource("Resource_kwkdn"), SubResource("Resource_82ixy")])
 
-[sub_resource type="Resource" id="Resource_y38jp"]
+[sub_resource type="Resource" id="Resource_xtm12"]
 script = ExtResource("3_j21vh")
 action_id = "set_variable"
 target_node = NodePath("System")
@@ -124,24 +414,32 @@ inputs = {
 "Name": "\"chosenAnswer\"",
 "Value": "system.get_text(\"firstAnswerText\")"
 }
+is_branch = false
+branch_type = ""
+branch_actions = Array[ExtResource("3_j21vh")]([])
 
-[sub_resource type="Resource" id="Resource_6grxg"]
+[sub_resource type="Resource" id="Resource_x00d3"]
 script = ExtResource("3_j21vh")
 action_id = "Print Message"
 target_node = NodePath(".")
 inputs = {
 "color": "",
-"message": "\"Chose\" + str(system.get_var(\"chosenAnswer\"))"
+"message": "\"Chose \" + str(system.get_var(\"chosenAnswer\"))"
 }
+is_branch = false
+branch_type = ""
+branch_actions = Array[ExtResource("3_j21vh")]([])
 
-[sub_resource type="Resource" id="Resource_jpbjx"]
+[sub_resource type="Resource" id="Resource_uak2q"]
 script = ExtResource("2_uoxok")
 block_id = "event_1770938646_2269187284"
 event_id = "On Button Pressed"
 target_node = NodePath("HoldsAnswers/FirstAnswerButton")
-actions = Array[ExtResource("3_j21vh")]([SubResource("Resource_y38jp"), SubResource("Resource_6grxg")])
+inputs = {}
+conditions = Array[ExtResource("4_s7nm7")]([])
+actions = Array[ExtResource("3_j21vh")]([SubResource("Resource_xtm12"), SubResource("Resource_x00d3")])
 
-[sub_resource type="Resource" id="Resource_ewbs2"]
+[sub_resource type="Resource" id="Resource_p3n54"]
 script = ExtResource("3_j21vh")
 action_id = "Print Message"
 target_node = NodePath(".")
@@ -149,8 +447,11 @@ inputs = {
 "color": "",
 "message": "Response to second answer's button press"
 }
+is_branch = false
+branch_type = ""
+branch_actions = Array[ExtResource("3_j21vh")]([])
 
-[sub_resource type="Resource" id="Resource_7e0ye"]
+[sub_resource type="Resource" id="Resource_s5eer"]
 script = ExtResource("3_j21vh")
 action_id = "set_variable"
 target_node = NodePath("System")
@@ -158,15 +459,20 @@ inputs = {
 "Name": "\"chosenAnswer\"",
 "Value": "system.get_var(\"secondAnswerText\")"
 }
+is_branch = false
+branch_type = ""
+branch_actions = Array[ExtResource("3_j21vh")]([])
 
-[sub_resource type="Resource" id="Resource_yayi7"]
+[sub_resource type="Resource" id="Resource_4w0p4"]
 script = ExtResource("2_uoxok")
 block_id = "event_1771011257_1303004973"
 event_id = "On Button Pressed"
 target_node = NodePath("HoldsAnswers/SecondAnswerButton")
-actions = Array[ExtResource("3_j21vh")]([SubResource("Resource_ewbs2"), SubResource("Resource_7e0ye")])
+inputs = {}
+conditions = Array[ExtResource("4_s7nm7")]([])
+actions = Array[ExtResource("3_j21vh")]([SubResource("Resource_p3n54"), SubResource("Resource_s5eer")])
 
-[sub_resource type="Resource" id="Resource_4t33x"]
+[sub_resource type="Resource" id="Resource_nt1mc"]
 script = ExtResource("3_j21vh")
 action_id = "Print Message"
 target_node = NodePath(".")
@@ -174,8 +480,11 @@ inputs = {
 "color": "",
 "message": "Response to third answer's button press"
 }
+is_branch = false
+branch_type = ""
+branch_actions = Array[ExtResource("3_j21vh")]([])
 
-[sub_resource type="Resource" id="Resource_3wu3y"]
+[sub_resource type="Resource" id="Resource_ultop"]
 script = ExtResource("3_j21vh")
 action_id = "set_variable"
 target_node = NodePath("System")
@@ -183,15 +492,20 @@ inputs = {
 "Name": "\"chosenAnswer\"",
 "Value": "system.get_var(\"thirdAnswerText\")"
 }
+is_branch = false
+branch_type = ""
+branch_actions = Array[ExtResource("3_j21vh")]([])
 
-[sub_resource type="Resource" id="Resource_8wvsr"]
+[sub_resource type="Resource" id="Resource_cyes4"]
 script = ExtResource("2_uoxok")
 block_id = "event_1771011260_802884928"
 event_id = "On Button Pressed"
 target_node = NodePath("HoldsAnswers/ThirdAnswerButton")
-actions = Array[ExtResource("3_j21vh")]([SubResource("Resource_4t33x"), SubResource("Resource_3wu3y")])
+inputs = {}
+conditions = Array[ExtResource("4_s7nm7")]([])
+actions = Array[ExtResource("3_j21vh")]([SubResource("Resource_nt1mc"), SubResource("Resource_ultop")])
 
-[sub_resource type="Resource" id="Resource_apwru"]
+[sub_resource type="Resource" id="Resource_b6q24"]
 script = ExtResource("3_j21vh")
 action_id = "Print Message"
 target_node = NodePath(".")
@@ -199,8 +513,11 @@ inputs = {
 "color": "",
 "message": "Response to fourth answer's button press"
 }
+is_branch = false
+branch_type = ""
+branch_actions = Array[ExtResource("3_j21vh")]([])
 
-[sub_resource type="Resource" id="Resource_yrydo"]
+[sub_resource type="Resource" id="Resource_qwl7j"]
 script = ExtResource("3_j21vh")
 action_id = "set_variable"
 target_node = NodePath("System")
@@ -208,17 +525,25 @@ inputs = {
 "Name": "\"chosenAnswer\"",
 "Value": "system.get_var(\"fourthAnswerText\")"
 }
+is_branch = false
+branch_type = ""
+branch_actions = Array[ExtResource("3_j21vh")]([])
 
-[sub_resource type="Resource" id="Resource_hlcqt"]
+[sub_resource type="Resource" id="Resource_3d381"]
 script = ExtResource("2_uoxok")
 block_id = "event_1771011263_4034373400"
 event_id = "On Button Pressed"
 target_node = NodePath("HoldsAnswers/FourthAnswerButton")
-actions = Array[ExtResource("3_j21vh")]([SubResource("Resource_apwru"), SubResource("Resource_yrydo")])
+inputs = {}
+conditions = Array[ExtResource("4_s7nm7")]([])
+actions = Array[ExtResource("3_j21vh")]([SubResource("Resource_b6q24"), SubResource("Resource_qwl7j")])
 
 [resource]
 script = ExtResource("6_rpy5k")
-events = Array[ExtResource("2_uoxok")]([SubResource("Resource_jl3cs"), SubResource("Resource_jpbjx"), SubResource("Resource_yayi7"), SubResource("Resource_8wvsr"), SubResource("Resource_hlcqt")])
+events = Array[ExtResource("2_uoxok")]([SubResource("Resource_00etc"), SubResource("Resource_uak2q"), SubResource("Resource_4w0p4"), SubResource("Resource_cyes4"), SubResource("Resource_3d381")])
+standalone_conditions = Array[ExtResource("4_s7nm7")]([])
+comments = Array[ExtResource("1_e8buc")]([])
+groups = Array[ExtResource("5_i1nl3")]([])
 item_order = Array[Dictionary]([{
 "index": 0,
 "type": "event"
