@@ -1,5 +1,8 @@
 [gd_scene format=3 uid="uid://djteo3tt3tmc5"]
 
+[ext_resource type="AudioStream" uid="uid://bny6jfn2ly1pc" path="res://addons/flowkit/assets/correct.ogg" id="1_pkab1"]
+[ext_resource type="AudioStream" uid="uid://bnf4cojnc0yjj" path="res://addons/flowkit/assets/wrong.ogg" id="2_738q0"]
+
 [node name="QuizGameExampleScene" type="Control" unique_id=342433504]
 layout_mode = 3
 anchors_preset = 15
@@ -56,5 +59,12 @@ anchor_top = 0.05
 anchor_right = 0.95
 anchor_bottom = 0.92
 theme_override_font_sizes/normal_font_size = 48
+bbcode_enabled = true
 text = "Insert question text here"
 horizontal_alignment = 1
+
+[node name="CorrectVoiceClip" type="AudioStreamPlayer2D" parent="." unique_id=766974469]
+stream = ExtResource("1_pkab1")
+
+[node name="INcorrectVoiceClip" type="AudioStreamPlayer2D" parent="." unique_id=990458769]
+stream = ExtResource("2_738q0")
