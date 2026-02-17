@@ -42,10 +42,7 @@ var selected_row = null  # Currently selected event row
 var selected_item = null  # Currently selected condition/action item
 var clipboard_events: Array = []  # Stores copied event data for paste
 
-# Undo/Redo state
-var undo_stack: Array = []  # Stack of previous states
-var redo_stack: Array = []  # Stack of undone states
-const MAX_UNDO_STATES: int = 50  # Maximum number of undo states to keep
+var undo_manager: FKUndoManager = FKUndoManager.new()
 
 # Clipboard for different item types
 var clipboard_type: String = ""  # "event", "action", "condition", "group"
@@ -54,12 +51,6 @@ var clipboard_conditions: Array = []  # Stores copied condition data
 var clipboard_group: Dictionary = {}  # Stores copied group data
 
 func _ready() -> void:
-	# Initialize undo/redo stacks
-	if undo_stack == null:
-		undo_stack = []
-	if redo_stack == null:
-		redo_stack = []
-	
 	_setup_ui()
 	# Connect block_moved signals for autosave and undo state on drag-and-drop reorder
 	blocks_container.before_block_moved.connect(_push_undo_state)
@@ -314,52 +305,34 @@ func _serialize_group_block(data: FKGroupBlock) -> Dictionary:
 	return result
 
 func _push_undo_state() -> void:
-	"""Push current state to undo stack before making changes."""
-	var state = _capture_sheet_state()
-	undo_stack.append(state)
-	
-	# Limit undo stack size
-	while undo_stack.size() > MAX_UNDO_STATES:
-		undo_stack.pop_front()
-	
-	# Clear redo stack when new action is performed
-	redo_stack.clear()
+	"""Push current state to undo manager before making changes."""
+	var state := _capture_sheet_state()
+	undo_manager.push_state(state)
 
 func _clear_undo_history() -> void:
 	"""Clear undo/redo history (called when switching scenes)."""
-	undo_stack.clear()
-	redo_stack.clear()
+	undo_manager.clear()
 
 func _undo() -> void:
 	"""Undo the last action."""
-	if undo_stack.is_empty():
+	if not undo_manager.can_undo():
 		return
-	
-	# Push current state to redo stack
-	var current_state = _capture_sheet_state()
-	redo_stack.append(current_state)
-	
-	# Pop previous state from undo stack
-	var previous_state = undo_stack.pop_back()
-	
-	# Restore state
+
+	var current_state := _capture_sheet_state()
+	var previous_state := undo_manager.undo(current_state)
+
 	_restore_sheet_state(previous_state)
 	_save_sheet()
 	print("[FlowKit] Undo performed")
-
+	
 func _redo() -> void:
 	"""Redo the last undone action."""
-	if redo_stack.is_empty():
+	if not undo_manager.can_redo():
 		return
-	
-	# Push current state to undo stack
-	var current_state = _capture_sheet_state()
-	undo_stack.append(current_state)
-	
-	# Pop next state from redo stack
-	var next_state = redo_stack.pop_back()
-	
-	# Restore state
+
+	var current_state := _capture_sheet_state()
+	var next_state := undo_manager.redo(current_state)
+
 	_restore_sheet_state(next_state)
 	_save_sheet()
 	print("[FlowKit] Redo performed")
