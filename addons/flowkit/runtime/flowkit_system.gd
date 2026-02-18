@@ -18,6 +18,8 @@ var variables: Dictionary = {}
 # Node variable storage (per-node variables using metadata)
 var node_variables: Dictionary = {}
 
+var global_signals: FKGlobalSignals = FKGlobalSignals.new()
+
 func _ready() -> void:
 	if not _ready_fired:
 		_ready_fired = true
