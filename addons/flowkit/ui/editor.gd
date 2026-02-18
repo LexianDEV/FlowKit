@@ -697,10 +697,7 @@ func _paste_events_from_clipboard() -> void:
 			
 			# Restore actions
 			for act_dict in event_data_dict["actions"]:
-				var act = FKEventAction.new()
-				act.action_id = act_dict["action_id"]
-				act.target_node = act_dict["target_node"]
-				act.inputs = act_dict["inputs"].duplicate()
+				var act = _deserialize_action(act_dict)
 				data.actions.append(act)
 			
 			# Add to group via the group's method
@@ -739,10 +736,7 @@ func _paste_events_from_clipboard() -> void:
 		
 		# Restore actions
 		for act_dict in event_data_dict["actions"]:
-			var act = FKEventAction.new()
-			act.action_id = act_dict["action_id"]
-			act.target_node = act_dict["target_node"]
-			act.inputs = act_dict["inputs"].duplicate()
+			var act = _deserialize_action(act_dict)
 			data.actions.append(act)
 		
 		var new_row = _create_event_row(data)
