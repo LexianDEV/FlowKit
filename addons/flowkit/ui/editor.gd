@@ -40,15 +40,9 @@ var pending_target_group = null  # The group to add content to (for event_in_gro
 var pending_target_branch = null  # The branch item for branch sub-action workflows
 var selected_row = null  # Currently selected event row
 var selected_item = null  # Currently selected condition/action item
-var clipboard_events: Array = []  # Stores copied event data for paste
 
 var undo_manager: FKUndoManager = FKUndoManager.new()
-
-# Clipboard for different item types
-var clipboard_type: String = ""  # "event", "action", "condition", "group"
-var clipboard_actions: Array = []  # Stores copied action data
-var clipboard_conditions: Array = []  # Stores copied condition data
-var clipboard_group: Dictionary = {}  # Stores copied group data
+var clipboard := FKClipboardManager.new()
 
 func _ready() -> void:
 	_setup_ui()
@@ -169,16 +163,176 @@ func _input(event: InputEvent) -> void:
 	# Handle Ctrl+C (copy) - only if not editing text
 	elif event.keycode == KEY_C and event.ctrl_pressed and not is_editing_text:
 		if selected_item and is_instance_valid(selected_item):
-			_copy_selected_item()
+			if selected_item and selected_item.has_method("get_action_data"):
+				clipboard.copy_action(selected_item.get_action_data())
+			elif selected_item and selected_item.has_method("get_condition_data"):
+				clipboard.copy_condition(selected_item.get_condition_data())
+	
 			get_viewport().set_input_as_handled()
 		elif selected_row and is_instance_valid(selected_row):
-			_copy_selected_row()
+			if selected_row and selected_row.has_method("get_event_data"):
+				clipboard.copy_event(selected_row.get_event_data())
+			elif selected_row and selected_row.has_method("get_group_data"):
+				clipboard.copy_group(selected_row.get_group_data())
 			get_viewport().set_input_as_handled()
 	# Handle Ctrl+V (paste) - only if not editing text
 	elif event.keycode == KEY_V and event.ctrl_pressed and not is_editing_text:
-		_paste_from_clipboard()
+		
+		match clipboard.get_clipboard_type():
+			"event":
+				_paste_events()
+			"action":
+				_paste_actions()
+			"condition":
+				_paste_conditions()
+			"group":
+				_paste_group()
+				
 		get_viewport().set_input_as_handled()
 
+func _paste_events() -> void:
+	var new_events = clipboard.paste_event()
+	if new_events.is_empty():
+		return
+
+	_push_undo_state()
+
+	var insert_idx = blocks_container.get_child_count()
+	if selected_row:
+		insert_idx = selected_row.get_index() + 1
+
+	var first_row = null
+	for ev in new_events:
+		var row = _create_event_row(ev)
+		blocks_container.add_child(row)
+		blocks_container.move_child(row, insert_idx)
+		insert_idx += 1
+		if first_row == null:
+			first_row = row
+
+	_save_sheet()
+
+	if first_row:
+		_on_row_selected(first_row)
+		
+func _find_parent_branch(node: Node):
+	"""Find the branch_item that contains this node, or null if at top level."""
+	var current = node.get_parent()
+	while current:
+		if current.has_method("add_branch_action"):
+			return current
+		if current.has_method("get_event_data"):
+			return null  # Reached event_row, no branch parent
+		current = current.get_parent()
+	return null
+	
+func _paste_actions() -> void:
+	var target_row = selected_row
+
+	# If only an item is selected, find its parent row
+	if not target_row and selected_item:
+		target_row = _find_parent_event_row(selected_item)
+
+	if not target_row:
+		return
+
+	var new_actions = clipboard.paste_action()
+	if new_actions.is_empty():
+		return
+
+	_push_undo_state()
+
+	# Check if pasting into a branch
+	var target_branch = null
+	if selected_item:
+		target_branch = _find_parent_branch(selected_item)
+
+	if target_branch:
+		var branch_data = target_branch.get_action_data()
+		for act in new_actions:
+			branch_data.branch_actions.append(act)
+		target_row.update_display()
+		_save_sheet()
+		_on_row_selected(target_row)
+		return
+
+	# Normal paste into event row
+	var data = target_row.get_event_data()
+	for act in new_actions:
+		data.actions.append(act)
+
+	target_row.update_display()
+	_save_sheet()
+	_on_row_selected(target_row)
+
+func _paste_conditions() -> void:
+	var target_row = selected_row
+
+	# If only an item is selected, find its parent row
+	if not target_row and selected_item:
+		target_row = _find_parent_event_row(selected_item)
+
+	if not target_row:
+		return
+
+	var new_conditions = clipboard.paste_condition()
+	if new_conditions.is_empty():
+		return
+
+	_push_undo_state()
+
+	var data = target_row.get_event_data()
+	for cond in new_conditions:
+		data.conditions.append(cond)
+
+	target_row.update_display()
+	_save_sheet()
+	_on_row_selected(target_row)
+
+func _paste_group() -> void:
+	var new_group = clipboard.paste_group()
+	if not new_group:
+		return
+
+	_push_undo_state()
+
+	var target_group = null
+
+	# Case 1: selected row *is* a group
+	if selected_row and selected_row.has_method("get_group_data"):
+		target_group = selected_row
+
+	# Case 2: selected row is inside a group
+	elif selected_row:
+		var parent = selected_row.get_parent()
+		while parent:
+			if parent.has_method("get_group_data"):
+				target_group = parent
+				break
+			parent = parent.get_parent()
+
+	# Paste inside a group if we found one
+	if target_group:
+		if target_group.has_method("add_group_to_group"):
+			target_group.add_group_to_group(new_group)
+		else:
+			# Fallback: append to children manually
+			target_group.get_group_data().children.append({
+				"type": "group",
+				"data": new_group
+			})
+		target_group.update_display()
+		_save_sheet()
+		_on_row_selected(target_group)
+		return
+
+	# Otherwise paste at root level
+	var group_node = _create_group_block(new_group)
+	blocks_container.add_child(group_node)
+
+	_save_sheet()
+	_on_row_selected(group_node)
+	
 func _is_click_on_event_row(mouse_pos: Vector2) -> bool:
 	"""Check if the mouse position is over any event row."""
 	for block in _get_blocks():
@@ -294,13 +448,13 @@ func _serialize_group_block(data: FKGroupBlock) -> Dictionary:
 	for child_dict in data.children:
 		var child_type = child_dict.get("type", "")
 		var child_data = child_dict.get("data")
-		
+		var children = result["children"]
 		if child_type == "event" and child_data is FKEventBlock:
-			result["children"].append(_serialize_event_block(child_data))
+			children.append(_serialize_event_block(child_data))
 		elif child_type == "comment" and child_data is FKCommentBlock:
-			result["children"].append(_serialize_comment_block(child_data))
+			children.append(_serialize_comment_block(child_data))
 		elif child_type == "group" and child_data is FKGroupBlock:
-			result["children"].append(_serialize_group_block(child_data))
+			children.append(_serialize_group_block(child_data))
 	
 	return result
 
@@ -525,17 +679,6 @@ func _recursive_remove_action_from_list(actions: Array, target_action) -> bool:
 			return true
 	return false
 
-func _find_parent_branch(node: Node):
-	"""Find the branch_item that contains this node, or null if at top level."""
-	var current = node.get_parent()
-	while current:
-		if current.has_method("add_branch_action"):
-			return current
-		if current.has_method("get_event_data"):
-			return null  # Reached event_row, no branch parent
-		current = current.get_parent()
-	return null
-
 func _find_parent_event_row(node: Node):
 	"""Find the event_row that contains this node."""
 	var current = node.get_parent()
@@ -543,394 +686,6 @@ func _find_parent_event_row(node: Node):
 		if current.has_method("get_event_data"):
 			return current
 		current = current.get_parent()
-	return null
-
-func _copy_selected_row() -> void:
-	"""Copy selected event row or group to clipboard."""
-	if not selected_row or not is_instance_valid(selected_row):
-		return
-	
-	# Check if it's a group
-	if selected_row.has_method("get_group_data"):
-		var group_data = selected_row.get_group_data()
-		if group_data:
-			clipboard_type = "group"
-			clipboard_group = _serialize_group_block(group_data)
-			print("Copied 1 group to clipboard")
-		return
-	
-	# Otherwise it's an event row
-	clipboard_events.clear()
-	clipboard_type = "event"
-	
-	if selected_row.has_method("get_event_data"):
-		var data = selected_row.get_event_data()
-		if data:
-			clipboard_events.append({
-				"event_id": data.event_id,
-				"target_node": data.target_node,
-				"inputs": data.inputs.duplicate(),
-				"conditions": _duplicate_conditions(data.conditions),
-				"actions": _duplicate_actions(data.actions)
-			})
-	
-	print("Copied %d event(s) to clipboard" % clipboard_events.size())
-
-func _copy_selected_item() -> void:
-	"""Copy selected action or condition to clipboard."""
-	if not selected_item or not is_instance_valid(selected_item):
-		return
-	
-	# Check if it's an action
-	if selected_item.has_method("get_action_data"):
-		var action_data = selected_item.get_action_data()
-		if action_data:
-			clipboard_type = "action"
-			clipboard_actions.clear()
-			clipboard_actions.append({
-				"action_id": action_data.action_id,
-				"target_node": action_data.target_node,
-				"inputs": action_data.inputs.duplicate()
-			})
-			print("Copied 1 action to clipboard")
-			return
-	
-	# Check if it's a condition
-	if selected_item.has_method("get_condition_data"):
-		var condition_data = selected_item.get_condition_data()
-		if condition_data:
-			clipboard_type = "condition"
-			clipboard_conditions.clear()
-			clipboard_conditions.append({
-				"condition_id": condition_data.condition_id,
-				"target_node": condition_data.target_node,
-				"inputs": condition_data.inputs.duplicate(),
-				"negated": condition_data.negated
-			})
-			print("Copied 1 condition to clipboard")
-			return
-
-func _duplicate_conditions(conditions: Array) -> Array:
-	var result = []
-	for cond in conditions:
-		result.append({
-			"condition_id": cond.condition_id,
-			"target_node": cond.target_node,
-			"inputs": cond.inputs.duplicate(),
-			"negated": cond.negated
-		})
-	return result
-
-func _duplicate_actions(actions: Array) -> Array:
-	var result = []
-	for act in actions:
-		var act_dict = {
-			"action_id": act.action_id,
-			"target_node": act.target_node,
-			"inputs": act.inputs.duplicate(),
-			"is_branch": act.is_branch,
-			"branch_type": act.branch_type
-		}
-		if act.is_branch:
-			if act.branch_condition:
-				act_dict["branch_condition"] = {
-					"condition_id": act.branch_condition.condition_id,
-					"target_node": act.branch_condition.target_node,
-					"inputs": act.branch_condition.inputs.duplicate(),
-					"negated": act.branch_condition.negated
-				}
-			act_dict["branch_actions"] = _duplicate_actions(act.branch_actions)
-		result.append(act_dict)
-	return result
-
-func _paste_from_clipboard() -> void:
-	"""Paste from clipboard - events, actions, conditions, or groups depending on clipboard type."""
-	if clipboard_type == "action":
-		_paste_actions_from_clipboard()
-	elif clipboard_type == "condition":
-		_paste_conditions_from_clipboard()
-	elif clipboard_type == "group":
-		_paste_group_from_clipboard()
-	else:
-		_paste_events_from_clipboard()
-
-func _paste_events_from_clipboard() -> void:
-	"""Paste events from clipboard after selected row (or at end)."""
-	if clipboard_events.is_empty():
-		return
-	
-	# Push undo state before pasting
-	_push_undo_state()
-	
-	# Check if we're pasting into a group
-	var target_group = null
-	if selected_row and is_instance_valid(selected_row):
-		# Check if selected_row is a group
-		if selected_row.has_method("get_group_data"):
-			target_group = selected_row
-		# Check if selected_row is inside a group
-		elif selected_row.has_method("get_event_data"):
-			var parent = selected_row.get_parent()
-			while parent:
-				if parent.has_method("get_group_data"):
-					target_group = parent
-					break
-				parent = parent.get_parent()
-	
-	# If pasting into a group
-	if target_group:
-		for event_data_dict in clipboard_events:
-			# Generate new block_id for pasted events
-			var data = FKEventBlock.new("", event_data_dict["event_id"], event_data_dict["target_node"])
-			data.inputs = event_data_dict["inputs"].duplicate()
-			data.conditions = [] as Array[FKEventCondition]
-			data.actions = [] as Array[FKEventAction]
-			
-			# Restore conditions
-			for cond_dict in event_data_dict["conditions"]:
-				var cond = FKEventCondition.new()
-				cond.condition_id = cond_dict["condition_id"]
-				cond.target_node = cond_dict["target_node"]
-				cond.inputs = cond_dict["inputs"].duplicate()
-				cond.negated = cond_dict["negated"]
-				data.conditions.append(cond)
-			
-			# Restore actions
-			for act_dict in event_data_dict["actions"]:
-				var act = _deserialize_action(act_dict)
-				data.actions.append(act)
-			
-			# Add to group via the group's method
-			if target_group.has_method("add_event_to_group"):
-				target_group.add_event_to_group(data)
-		
-		_save_sheet()
-		# Keep group selected after paste so subsequent pastes work correctly
-		_on_row_selected(target_group)
-		print("Pasted %d event(s) into group" % clipboard_events.size())
-		return
-	
-	# Otherwise, paste into main blocks_container
-	# Calculate insert position
-	var insert_idx = blocks_container.get_child_count()
-	if selected_row and is_instance_valid(selected_row):
-		insert_idx = selected_row.get_index() + 1
-	
-	# Create and insert event rows
-	var first_new_row = null
-	for event_data_dict in clipboard_events:
-		# Generate new block_id for pasted events (pass empty string to auto-generate)
-		var data = FKEventBlock.new("", event_data_dict["event_id"], event_data_dict["target_node"])
-		data.inputs = event_data_dict["inputs"].duplicate()
-		data.conditions = [] as Array[FKEventCondition]
-		data.actions = [] as Array[FKEventAction]
-		
-		# Restore conditions
-		for cond_dict in event_data_dict["conditions"]:
-			var cond = FKEventCondition.new()
-			cond.condition_id = cond_dict["condition_id"]
-			cond.target_node = cond_dict["target_node"]
-			cond.inputs = cond_dict["inputs"].duplicate()
-			cond.negated = cond_dict["negated"]
-			data.conditions.append(cond)
-		
-		# Restore actions
-		for act_dict in event_data_dict["actions"]:
-			var act = _deserialize_action(act_dict)
-			data.actions.append(act)
-		
-		var new_row = _create_event_row(data)
-		blocks_container.add_child(new_row)
-		blocks_container.move_child(new_row, insert_idx)
-		insert_idx += 1
-		if not first_new_row:
-			first_new_row = new_row
-	
-	_show_content_state()
-	_save_sheet()
-	
-	# Select the first pasted row
-	if first_new_row:
-		_on_row_selected(first_new_row)
-	
-	print("Pasted %d event(s) from clipboard" % clipboard_events.size())
-
-func _paste_actions_from_clipboard() -> void:
-	"""Paste actions from clipboard into the selected event row or parent of selected item."""
-	if clipboard_actions.is_empty():
-		return
-	
-	# Determine target event row and branch
-	var target_row = selected_row
-	var target_branch = null
-	
-	# If an item is selected, check if it's inside a branch
-	if selected_item and is_instance_valid(selected_item):
-		target_branch = _find_parent_branch(selected_item)
-		if not target_row or not is_instance_valid(target_row):
-			target_row = _find_parent_event_row(selected_item)
-	
-	# If no row selected but an item is selected, find its parent row
-	if (not target_row or not is_instance_valid(target_row)) and selected_item and is_instance_valid(selected_item):
-		target_row = _find_parent_event_row(selected_item)
-	
-	# Still no row? Try hovering
-	if not target_row or not is_instance_valid(target_row):
-		target_row = _find_event_row_at_mouse()
-	
-	if not target_row or not is_instance_valid(target_row):
-		print("Cannot paste actions: no event row found")
-		return
-	
-	# Push undo state before pasting
-	_push_undo_state()
-	
-	# Paste into branch if selected item is inside one
-	if target_branch:
-		var branch_data = target_branch.get_action_data()
-		if branch_data:
-			for action_dict in clipboard_actions:
-				var action = FKEventAction.new()
-				action.action_id = action_dict["action_id"]
-				action.target_node = action_dict["target_node"]
-				action.inputs = action_dict["inputs"].duplicate()
-				branch_data.branch_actions.append(action)
-			
-			target_row.update_display()
-			_save_sheet()
-			_on_row_selected(target_row)
-			print("Pasted %d action(s) into branch" % clipboard_actions.size())
-			return
-	
-	if not target_row.has_method("get_event_data"):
-		print("Cannot paste actions: selected row is not an event")
-		return
-	
-	var event_data = target_row.get_event_data()
-	if not event_data:
-		return
-	
-	# Paste each action
-	for action_dict in clipboard_actions:
-		var action = FKEventAction.new()
-		action.action_id = action_dict["action_id"]
-		action.target_node = action_dict["target_node"]
-		action.inputs = action_dict["inputs"].duplicate()
-		
-		event_data.actions.append(action)
-	
-	# Update the display and re-select to ensure selection persists
-	target_row.update_display()
-	_save_sheet()
-	_on_row_selected(target_row)
-	
-	print("Pasted %d action(s) from clipboard" % clipboard_actions.size())
-
-func _paste_conditions_from_clipboard() -> void:
-	"""Paste conditions from clipboard into the selected event row or parent of selected item."""
-	if clipboard_conditions.is_empty():
-		return
-	
-	# Determine target event row
-	var target_row = selected_row
-	
-	# If no row selected but an item is selected, find its parent row
-	if (not target_row or not is_instance_valid(target_row)) and selected_item and is_instance_valid(selected_item):
-		target_row = _find_parent_event_row(selected_item)
-	
-	# Still no row? Try hovering
-	if not target_row or not is_instance_valid(target_row):
-		target_row = _find_event_row_at_mouse()
-	
-	if not target_row or not is_instance_valid(target_row):
-		print("Cannot paste conditions: no event row found")
-		return
-	
-	# Push undo state before pasting
-	_push_undo_state()
-	
-	if not target_row.has_method("get_event_data"):
-		print("Cannot paste conditions: selected row is not an event")
-		return
-	
-	var event_data = target_row.get_event_data()
-	if not event_data:
-		return
-	
-	# Paste each condition
-	for condition_dict in clipboard_conditions:
-		var condition = FKEventCondition.new()
-		condition.condition_id = condition_dict["condition_id"]
-		condition.target_node = condition_dict["target_node"]
-		condition.inputs = condition_dict["inputs"].duplicate()
-		condition.negated = condition_dict["negated"]
-		condition.actions = [] as Array[FKEventAction]
-		
-		event_data.conditions.append(condition)
-	
-	# Update the display and re-select to ensure selection persists
-	target_row.update_display()
-	_save_sheet()
-	_on_row_selected(target_row)
-	
-	print("Pasted %d condition(s) from clipboard" % clipboard_conditions.size())
-
-func _paste_group_from_clipboard() -> void:
-	"""Paste group from clipboard as a nested group inside the selected group, or at top level."""
-	if clipboard_group.is_empty():
-		return
-	
-	_push_undo_state()
-	
-	# Check if we're pasting into a group
-	var target_group = null
-	if selected_row and is_instance_valid(selected_row):
-		# Check if selected_row is a group
-		if selected_row.has_method("get_group_data"):
-			target_group = selected_row
-		# Check if selected_row is inside a group (event or child of group)
-		else:
-			var parent = selected_row.get_parent()
-			while parent:
-				if parent.has_method("get_group_data"):
-					target_group = parent
-					break
-				parent = parent.get_parent()
-	
-	# Deserialize the group
-	var group_data = _deserialize_group_block(clipboard_group)
-	
-	# If pasting into a group, add as nested group
-	if target_group:
-		var target_group_data = target_group.get_group_data()
-		if target_group_data:
-			target_group_data.children.append({"type": "group", "data": group_data})
-			# Trigger rebuild
-			if target_group.has_method("_rebuild_child_nodes"):
-				target_group._rebuild_child_nodes()
-			_save_sheet()
-			print("Pasted group as nested group")
-			return
-	
-	# Otherwise paste at top level
-	var group = _create_group_block(group_data)
-	
-	# Calculate insert position
-	var insert_idx = blocks_container.get_child_count()
-	if selected_row and is_instance_valid(selected_row):
-		insert_idx = selected_row.get_index() + 1
-	
-	blocks_container.add_child(group)
-	blocks_container.move_child(group, insert_idx)
-	_save_sheet()
-	print("Pasted group at top level")
-
-func _find_event_row_at_mouse() -> Control:
-	"""Find event row at mouse position."""
-	var mouse_pos = get_global_mouse_position()
-	for row in _get_blocks():
-		if row.get_global_rect().has_point(mouse_pos):
-			return row
 	return null
 
 func _set_expression_interface(interface: EditorInterface) -> void:
