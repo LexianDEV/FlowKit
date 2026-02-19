@@ -462,8 +462,16 @@ func _delete_selected_row() -> void:
 		row_to_delete.queue_free()
 		_save_sheet()
 	else:
-		# Row is inside a group - emit the delete signal to let the group handle it
-		row_to_delete.delete_event_requested.emit(row_to_delete)
+		# Row is inside a group - emit the appropriate delete signal
+		if row_to_delete.has_method("get_group_data"):
+			# It's a nested group
+			row_to_delete.delete_requested.emit()
+		elif row_to_delete.has_method("get_comment_data"):
+			# It's a comment
+			row_to_delete.delete_requested.emit()
+		else:
+			# It's an event row
+			row_to_delete.delete_event_requested.emit(row_to_delete)
 
 func _delete_selected_item() -> void:
 	"""Delete the currently selected condition or action item."""
@@ -689,10 +697,7 @@ func _paste_events_from_clipboard() -> void:
 			
 			# Restore actions
 			for act_dict in event_data_dict["actions"]:
-				var act = FKEventAction.new()
-				act.action_id = act_dict["action_id"]
-				act.target_node = act_dict["target_node"]
-				act.inputs = act_dict["inputs"].duplicate()
+				var act = _deserialize_action(act_dict)
 				data.actions.append(act)
 			
 			# Add to group via the group's method
@@ -731,10 +736,7 @@ func _paste_events_from_clipboard() -> void:
 		
 		# Restore actions
 		for act_dict in event_data_dict["actions"]:
-			var act = FKEventAction.new()
-			act.action_id = act_dict["action_id"]
-			act.target_node = act_dict["target_node"]
-			act.inputs = act_dict["inputs"].duplicate()
+			var act = _deserialize_action(act_dict)
 			data.actions.append(act)
 		
 		var new_row = _create_event_row(data)
@@ -796,8 +798,13 @@ func _paste_actions_from_clipboard() -> void:
 			
 			target_row.update_display()
 			_save_sheet()
+			_on_row_selected(target_row)
 			print("Pasted %d action(s) into branch" % clipboard_actions.size())
 			return
+	
+	if not target_row.has_method("get_event_data"):
+		print("Cannot paste actions: selected row is not an event")
+		return
 	
 	var event_data = target_row.get_event_data()
 	if not event_data:
@@ -812,9 +819,10 @@ func _paste_actions_from_clipboard() -> void:
 		
 		event_data.actions.append(action)
 	
-	# Update the display
+	# Update the display and re-select to ensure selection persists
 	target_row.update_display()
 	_save_sheet()
+	_on_row_selected(target_row)
 	
 	print("Pasted %d action(s) from clipboard" % clipboard_actions.size())
 
@@ -841,6 +849,10 @@ func _paste_conditions_from_clipboard() -> void:
 	# Push undo state before pasting
 	_push_undo_state()
 	
+	if not target_row.has_method("get_event_data"):
+		print("Cannot paste conditions: selected row is not an event")
+		return
+	
 	var event_data = target_row.get_event_data()
 	if not event_data:
 		return
@@ -856,9 +868,10 @@ func _paste_conditions_from_clipboard() -> void:
 		
 		event_data.conditions.append(condition)
 	
-	# Update the display
+	# Update the display and re-select to ensure selection persists
 	target_row.update_display()
 	_save_sheet()
+	_on_row_selected(target_row)
 	
 	print("Pasted %d condition(s) from clipboard" % clipboard_conditions.size())
 
@@ -919,6 +932,7 @@ func _find_event_row_at_mouse() -> Control:
 		if row.get_global_rect().has_point(mouse_pos):
 			return row
 	return null
+
 func _set_expression_interface(interface: EditorInterface) -> void:
 	if expression_modal:
 		expression_modal.set_editor_interface(interface)
