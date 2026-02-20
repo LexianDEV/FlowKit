@@ -1,6 +1,6 @@
-[gd_scene load_steps=2 format=3 uid="uid://buxqkjavs51qe"]
+[gd_scene format=3 uid="uid://buxqkjavs51qe"]
 
-[ext_resource type="Script" uid="uid://dbwkcp776nx4d" path="res://addons/flowkit/ui/modals/select.gd" id="1_select"]
+[ext_resource type="Script" uid="uid://dbwkcp776nx4d" path="res://addons/flowkit/ui/modals/select_node_modal.gd" id="1_select"]
 
 [node name="select" type="PopupPanel"]
 oversampling_override = 1.0

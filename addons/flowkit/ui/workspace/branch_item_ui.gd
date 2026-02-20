@@ -1,5 +1,6 @@
 @tool
 extends MarginContainer
+class_name BranchItemUi
 
 signal selected(item)
 signal edit_condition_requested(item)
@@ -23,7 +24,7 @@ var registry: Node
 var is_selected: bool = false
 var parent_branch = null  # Reference to parent branch_item for nested branches
 
-const ACTION_ITEM_SCENE = preload("res://addons/flowkit/ui/workspace/action_item.tscn")
+const ACTION_ITEM_SCENE = preload("res://addons/flowkit/ui/workspace/action_item_ui.tscn")
 
 # UI References
 var panel: PanelContainer
@@ -265,7 +266,7 @@ func _update_branch_actions() -> void:
 	# Add action items for branch_actions (handles both regular and nested branches)
 	for sub_action in action_data.branch_actions:
 		if sub_action.is_branch:
-			var branch_scene = load("res://addons/flowkit/ui/workspace/branch_item.tscn")
+			var branch_scene = load("res://addons/flowkit/ui/workspace/branch_item_ui.tscn")
 			var nested = branch_scene.instantiate()
 			nested.set_action_data(sub_action)
 			nested.set_registry(registry)

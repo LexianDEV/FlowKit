@@ -1,6 +1,6 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene format=3]
 
-[ext_resource type="Script" path="res://addons/flowkit/ui/workspace/condition_item.gd" id="1_conditem"]
+[ext_resource type="Script" uid="uid://c3ro3i6s632hp" path="res://addons/flowkit/ui/workspace/condition_item_ui.gd" id="1_conditem"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_item"]
 bg_color = Color(0.16, 0.15, 0.14, 1)

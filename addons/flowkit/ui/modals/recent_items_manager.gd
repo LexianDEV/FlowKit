@@ -1,5 +1,6 @@
 @tool
 extends RefCounted
+class_name FKRecentItemsManagerUi
 """
 Manages recent items for modals (nodes, actions, events, conditions).
 Persists data to a config file.

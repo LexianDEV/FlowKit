@@ -1,5 +1,6 @@
 @tool
 extends MenuBar
+class_name FKMenuBar
 
 signal new_sheet
 signal save_sheet

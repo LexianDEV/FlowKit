@@ -1,11 +1,12 @@
 @tool
 extends PopupPanel
+class_name FKSelectEventModal
 
-signal condition_selected(node_path: String, condition_id: String, condition_inputs: Array)
+signal event_selected(node_path: String, event_id: String, event_inputs: Array)
 
 var selected_node_path: String = ""
 var selected_node_class: String = ""
-var available_conditions: Array = []
+var available_events: Array = []
 
 @onready var search_box := $VBoxContainer/SearchBox
 @onready var item_list := $VBoxContainer/HSplitContainer/MainPanel/MainVBox/ItemList
@@ -35,18 +36,18 @@ func _ready() -> void:
 	# Load recent items manager
 	_recent_items_manager = load("res://addons/flowkit/ui/modals/recent_items_manager.gd").new()
 	
-	# Load all available conditions
-	_load_available_conditions()
+	# Load all available events
+	_load_available_events()
 
-func _load_available_conditions() -> void:
-	"""Load all condition scripts from the conditions folder."""
-	available_conditions.clear()
-	var conditions_path: String = "res://addons/flowkit/conditions"
-	_scan_directory_recursive(conditions_path)
-	print("Loaded ", available_conditions.size(), " conditions")
+func _load_available_events() -> void:
+	"""Load all event scripts from the events folder."""
+	available_events.clear()
+	var events_path: String = "res://addons/flowkit/events"
+	_scan_directory_recursive(events_path)
+	print("Loaded ", available_events.size(), " events")
 
 func _scan_directory_recursive(path: String) -> void:
-	"""Recursively scan directories for condition scripts."""
+	"""Recursively scan directories for event scripts."""
 	var dir: DirAccess = DirAccess.open(path)
 	if not dir:
 		return
@@ -61,17 +62,17 @@ func _scan_directory_recursive(path: String) -> void:
 			# Recursively scan subdirectory
 			_scan_directory_recursive(full_path)
 		elif file_name.ends_with(".gd") and not file_name.ends_with(".gd.uid"):
-			var condition_script: Variant = load(full_path)
-			if condition_script:
-				var condition_instance: Variant = condition_script.new()
-				available_conditions.append(condition_instance)
+			var event_script: Variant = load(full_path)
+			if event_script:
+				var event_instance: Variant = event_script.new()
+				available_events.append(event_instance)
 		
 		file_name = dir.get_next()
 	
 	dir.list_dir_end()
 
-func populate_conditions(node_path: String, node_class: String) -> void:
-	"""Populate the list with conditions compatible with the selected node."""
+func populate_events(node_path: String, node_class: String) -> void:
+	"""Populate the list with events compatible with the selected node."""
 	selected_node_path = node_path
 	selected_node_class = node_class
 	
@@ -81,18 +82,31 @@ func populate_conditions(node_path: String, node_class: String) -> void:
 	_all_items_cache.clear()
 	description_label.text = ""
 	
-	# Filter conditions that support this node type
-	for condition in available_conditions:
-		var supported_types = condition.get_supported_types()
-		if _is_node_compatible(node_class, supported_types):
-			var condition_name = condition.get_name()
-			var condition_id = condition.get_id()
-			
-			_all_items_cache.append({
-				"name": condition_name,
-				"metadata": {"id": condition_id, "inputs": condition.get_inputs()}
-			})
-			
+	# Filter events that support this node type
+	for event in available_events:
+		# Check if this is the new FKEvent pattern or old FKEventProvider pattern
+		if event.has_method("get_id"):
+			# New FKEvent pattern
+			var supported_types = event.get_supported_types()
+			if _is_node_compatible(node_class, supported_types):
+				var event_name = event.get_name()
+				var event_id = event.get_id()
+				
+				_all_items_cache.append({
+					"name": event_name,
+					"metadata": event_id
+				})
+		elif event.has_method("get_events_for"):
+			# Old FKEventProvider pattern
+			var supported_types = event.get_supported_types()
+			if _is_node_compatible(node_class, supported_types):
+				var events_list = event.get_events_for(null)
+				for event_data in events_list:
+					_all_items_cache.append({
+						"name": event_data["name"],
+						"metadata": event_data["id"]
+					})
+	
 	_update_list()
 	_populate_recent_list()
 
@@ -108,9 +122,9 @@ func _update_list(filter_text: String = "") -> void:
 	
 	if item_list.item_count == 0:
 		if filter_text.is_empty():
-			item_list.add_item("No conditions available for this node type")
+			item_list.add_item("No events available for this node type")
 		else:
-			item_list.add_item("No conditions found")
+			item_list.add_item("No events found")
 		item_list.set_item_disabled(0, true)
 
 func _on_search_text_changed(new_text: String) -> void:
@@ -137,24 +151,26 @@ func _is_node_compatible(node_class: String, supported_types: Array) -> bool:
 	return false
 
 func _on_item_activated(index: int) -> void:
-	"""Handle condition selection."""
+	"""Handle event selection."""
 	if item_list.is_item_disabled(index):
 		return
 	
-	var metadata = item_list.get_item_metadata(index)
-	var condition_id = metadata["id"]
-	var inputs = metadata["inputs"]
+	var event_id = item_list.get_item_metadata(index)
 	
-	# Find condition name for recent items
-	var condition_name = ""
-	for condition in available_conditions:
-		if condition.get_id() == condition_id:
-			condition_name = condition.get_name()
+	# Find the event provider to get its inputs and name
+	var event_inputs: Array = []
+	var event_name = ""
+	for event in available_events:
+		if event.has_method("get_id") and event.get_id() == event_id:
+			if event.has_method("get_inputs"):
+				event_inputs = event.get_inputs()
+			if event.has_method("get_name"):
+				event_name = event.get_name()
 			break
 	
-	print("Condition selected: ", condition_id, " for node: ", selected_node_path)
-	_recent_items_manager.add_recent_condition(condition_id, condition_name, selected_node_class)
-	condition_selected.emit(selected_node_path, condition_id, inputs)
+	print("Event selected: ", event_id, " for node: ", selected_node_path, " with inputs: ", event_inputs)
+	_recent_items_manager.add_recent_event(event_id, event_name, selected_node_class)
+	event_selected.emit(selected_node_path, event_id, event_inputs)
 	hide()
 
 func _on_item_selected(index: int) -> void:
@@ -163,13 +179,12 @@ func _on_item_selected(index: int) -> void:
 		description_label.text = ""
 		return
 	
-	var metadata = item_list.get_item_metadata(index)
-	var condition_id = metadata["id"]
+	var event_id = item_list.get_item_metadata(index)
 	
-	# Find the condition and get description
-	for condition in available_conditions:
-		if condition.get_id() == condition_id:
-			description_label.text = condition.get_description()
+	# Find the event and get description
+	for event in available_events:
+		if event.has_method("get_id") and event.get_id() == event_id:
+			description_label.text = event.get_description()
 			break
 
 func _on_popup_hide() -> void:
@@ -177,44 +192,44 @@ func _on_popup_hide() -> void:
 		search_box.clear()
 
 func _populate_recent_list() -> void:
-	"""Populate the recent conditions list."""
+	"""Populate the recent events list."""
 	if not recent_item_list or not _recent_items_manager:
 		return
 	
 	recent_item_list.clear()
 	
-	# Filter recent conditions for current node type
+	# Filter recent events for current node type
 	var recent_for_type = []
-	for recent_condition in _recent_items_manager.recent_conditions:
-		if recent_condition["node_class"] == selected_node_class:
-			recent_for_type.append(recent_condition)
+	for recent_event in _recent_items_manager.recent_events:
+		if recent_event["node_class"] == selected_node_class:
+			recent_for_type.append(recent_event)
 	
 	if recent_for_type.is_empty():
 		recent_item_list.add_item("(No recent items)")
 		recent_item_list.set_item_disabled(0, true)
 		return
 	
-	for recent_condition in recent_for_type:
-		recent_item_list.add_item(recent_condition["name"])
+	for recent_event in recent_for_type:
+		recent_item_list.add_item(recent_event["name"])
 		var index = recent_item_list.item_count - 1
-		recent_item_list.set_item_metadata(index, recent_condition)
+		recent_item_list.set_item_metadata(index, recent_event)
 
 func _on_recent_item_activated(index: int) -> void:
 	"""Handle selection from recent items."""
 	if recent_item_list.is_item_disabled(index):
 		return
 	
-	var recent_condition = recent_item_list.get_item_metadata(index)
-	var condition_id = recent_condition["id"]
+	var recent_event = recent_item_list.get_item_metadata(index)
+	var event_id = recent_event["id"]
 	
-	# Find the condition to get its inputs
-	var condition_inputs: Array = []
-	for condition in available_conditions:
-		if condition.get_id() == condition_id:
-			condition_inputs = condition.get_inputs()
+	# Find the event to get its inputs
+	var event_inputs: Array = []
+	for event in available_events:
+		if event.has_method("get_id") and event.get_id() == event_id:
+			if event.has_method("get_inputs"):
+				event_inputs = event.get_inputs()
 			break
 	
-	print("Recent condition selected: ", condition_id, " for node: ", selected_node_path)
-	condition_selected.emit(selected_node_path, condition_id, condition_inputs)
+	print("Recent event selected: ", event_id, " for node: ", selected_node_path)
+	event_selected.emit(selected_node_path, event_id, event_inputs)
 	hide()
-

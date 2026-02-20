@@ -1,6 +1,6 @@
-[gd_scene load_steps=3 format=3 uid="uid://bh6btjhk8rtay"]
+[gd_scene format=3 uid="uid://bh6btjhk8rtay"]
 
-[ext_resource type="Script" uid="uid://c8hkx3u260w7f" path="res://addons/flowkit/ui/workspace/event.gd" id="1_3fk2m"]
+[ext_resource type="Script" uid="uid://c8hkx3u260w7f" path="res://addons/flowkit/ui/workspace/event_ui.gd" id="1_dlcxj"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_event"]
 bg_color = Color(0.18, 0.26, 0.2, 1)
@@ -17,16 +17,16 @@ shadow_color = Color(0, 0, 0, 0.3)
 shadow_size = 4
 shadow_offset = Vector2(0, 2)
 
-[node name="Event" type="MarginContainer"]
+[node name="Event" type="MarginContainer" unique_id=997405827]
 theme_override_constants/margin_bottom = 2
-script = ExtResource("1_3fk2m")
+script = ExtResource("1_dlcxj")
 
-[node name="Panel" type="PanelContainer" parent="."]
+[node name="Panel" type="PanelContainer" parent="." unique_id=1979644392]
 layout_mode = 2
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_event")
 
-[node name="MarginContainer" type="MarginContainer" parent="Panel"]
+[node name="MarginContainer" type="MarginContainer" parent="Panel" unique_id=962048655]
 layout_mode = 2
 mouse_filter = 2
 theme_override_constants/margin_left = 16
@@ -34,27 +34,25 @@ theme_override_constants/margin_top = 12
 theme_override_constants/margin_right = 16
 theme_override_constants/margin_bottom = 12
 
-[node name="HBoxContainer" type="HBoxContainer" parent="Panel/MarginContainer"]
+[node name="HBoxContainer" type="HBoxContainer" parent="Panel/MarginContainer" unique_id=8380070]
 layout_mode = 2
 mouse_filter = 2
 theme_override_constants/separation = 8
 
-[node name="Icon" type="Label" parent="Panel/MarginContainer/HBoxContainer"]
+[node name="Icon" type="Label" parent="Panel/MarginContainer/HBoxContainer" unique_id=60171617]
 layout_mode = 2
-mouse_filter = 2
 theme_override_colors/font_color = Color(0.2, 0.8, 0.3, 1)
 theme_override_font_sizes/font_size = 18
 text = "⚡"
 
-[node name="Label" type="Label" parent="Panel/MarginContainer/HBoxContainer"]
+[node name="Label" type="Label" parent="Panel/MarginContainer/HBoxContainer" unique_id=1801034788]
 layout_mode = 2
 size_flags_horizontal = 3
-mouse_filter = 2
 theme_override_colors/font_color = Color(0.9, 0.95, 0.9, 1)
 theme_override_font_sizes/font_size = 14
 text = "Event"
 
-[node name="ContextMenu" type="PopupMenu" parent="."]
+[node name="ContextMenu" type="PopupMenu" parent="." unique_id=1026142428]
 oversampling_override = 1.0
 size = Vector2i(200, 100)
 item_count = 4

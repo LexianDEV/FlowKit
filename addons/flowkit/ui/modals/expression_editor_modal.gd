@@ -1,5 +1,6 @@
 @tool
 extends PopupPanel
+class_name FKExpressionEditorModal
 
 signal expressions_confirmed(node_path: String, action_id: String, expressions: Dictionary)
 

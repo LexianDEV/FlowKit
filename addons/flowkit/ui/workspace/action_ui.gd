@@ -1,5 +1,6 @@
 @tool
 extends MarginContainer
+class_name ActionUi
 
 signal insert_action_requested(action_node)
 signal replace_action_requested(action_node)

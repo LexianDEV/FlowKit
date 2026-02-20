@@ -17,7 +17,7 @@ func _disable_plugin() -> void:
 
 func _enter_tree() -> void:
 	# Load UI
-	editor = preload("res://addons/flowkit/ui/editor.tscn").instantiate()
+	editor = preload("res://addons/flowkit/ui/main_editor.tscn").instantiate()
 
 	# Load registry
 	action_registry = preload("res://addons/flowkit/registry.gd").new()

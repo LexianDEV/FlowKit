@@ -1,6 +1,6 @@
-[gd_scene load_steps=3 format=3 uid="uid://d58fx0alhbxs"]
+[gd_scene format=3 uid="uid://d58fx0alhbxs"]
 
-[ext_resource type="Script" path="res://addons/flowkit/ui/modals/expression_editor.gd" id="1_expr"]
+[ext_resource type="Script" uid="uid://hyumo0w6ukas" path="res://addons/flowkit/ui/modals/expression_editor_modal.gd" id="1_expr"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1"]
 bg_color = Color(0.2, 0.2, 0.2, 0.5)

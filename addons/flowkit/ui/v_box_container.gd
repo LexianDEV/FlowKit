@@ -1,5 +1,6 @@
 @tool
 extends VBoxContainer
+class_name FKVBoxContainer
 
 func _can_drop_data(at_position: Vector2, data) -> bool:
 	# Check if data is a dictionary with our expected structure

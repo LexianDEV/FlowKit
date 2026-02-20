@@ -1,5 +1,6 @@
 @tool
 extends Control
+class_name DropZoneUi
 
 signal item_dropped(drag_data: Dictionary)
 

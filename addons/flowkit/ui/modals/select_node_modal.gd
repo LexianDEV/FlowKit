@@ -1,5 +1,6 @@
 @tool
 extends PopupPanel
+class_name FKSelectNodeModal
 
 signal node_selected(node_path: String, node_class: String)
 

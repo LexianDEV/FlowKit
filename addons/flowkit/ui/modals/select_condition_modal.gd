@@ -1,11 +1,12 @@
 @tool
 extends PopupPanel
+class_name FKSelectConditionModal
 
-signal action_selected(node_path: String, action_id: String, action_inputs: Array)
+signal condition_selected(node_path: String, condition_id: String, condition_inputs: Array)
 
 var selected_node_path: String = ""
 var selected_node_class: String = ""
-var available_actions: Array = []
+var available_conditions: Array = []
 
 @onready var search_box := $VBoxContainer/SearchBox
 @onready var item_list := $VBoxContainer/HSplitContainer/MainPanel/MainVBox/ItemList
@@ -35,18 +36,18 @@ func _ready() -> void:
 	# Load recent items manager
 	_recent_items_manager = load("res://addons/flowkit/ui/modals/recent_items_manager.gd").new()
 	
-	# Load all available actions
-	_load_available_actions()
+	# Load all available conditions
+	_load_available_conditions()
 
-func _load_available_actions() -> void:
-	"""Load all action scripts from the actions folder."""
-	available_actions.clear()
-	var actions_path: String = "res://addons/flowkit/actions"
-	_scan_directory_recursive(actions_path)
-	print("Loaded ", available_actions.size(), " actions")
+func _load_available_conditions() -> void:
+	"""Load all condition scripts from the conditions folder."""
+	available_conditions.clear()
+	var conditions_path: String = "res://addons/flowkit/conditions"
+	_scan_directory_recursive(conditions_path)
+	print("Loaded ", available_conditions.size(), " conditions")
 
 func _scan_directory_recursive(path: String) -> void:
-	"""Recursively scan directories for action scripts."""
+	"""Recursively scan directories for condition scripts."""
 	var dir: DirAccess = DirAccess.open(path)
 	if not dir:
 		return
@@ -61,17 +62,17 @@ func _scan_directory_recursive(path: String) -> void:
 			# Recursively scan subdirectory
 			_scan_directory_recursive(full_path)
 		elif file_name.ends_with(".gd") and not file_name.ends_with(".gd.uid"):
-			var action_script: Variant = load(full_path)
-			if action_script:
-				var action_instance: Variant = action_script.new()
-				available_actions.append(action_instance)
+			var condition_script: Variant = load(full_path)
+			if condition_script:
+				var condition_instance: Variant = condition_script.new()
+				available_conditions.append(condition_instance)
 		
 		file_name = dir.get_next()
 	
 	dir.list_dir_end()
 
-func populate_actions(node_path: String, node_class: String) -> void:
-	"""Populate the list with actions compatible with the selected node."""
+func populate_conditions(node_path: String, node_class: String) -> void:
+	"""Populate the list with conditions compatible with the selected node."""
 	selected_node_path = node_path
 	selected_node_class = node_class
 	
@@ -81,16 +82,16 @@ func populate_actions(node_path: String, node_class: String) -> void:
 	_all_items_cache.clear()
 	description_label.text = ""
 	
-	# Filter actions that support this node type
-	for action in available_actions:
-		var supported_types = action.get_supported_types()
+	# Filter conditions that support this node type
+	for condition in available_conditions:
+		var supported_types = condition.get_supported_types()
 		if _is_node_compatible(node_class, supported_types):
-			var action_name = action.get_name()
-			var action_id = action.get_id()
+			var condition_name = condition.get_name()
+			var condition_id = condition.get_id()
 			
 			_all_items_cache.append({
-				"name": action_name,
-				"metadata": {"id": action_id, "inputs": action.get_inputs()}
+				"name": condition_name,
+				"metadata": {"id": condition_id, "inputs": condition.get_inputs()}
 			})
 			
 	_update_list()
@@ -108,9 +109,9 @@ func _update_list(filter_text: String = "") -> void:
 	
 	if item_list.item_count == 0:
 		if filter_text.is_empty():
-			item_list.add_item("No actions available for this node type")
+			item_list.add_item("No conditions available for this node type")
 		else:
-			item_list.add_item("No actions found")
+			item_list.add_item("No conditions found")
 		item_list.set_item_disabled(0, true)
 
 func _on_search_text_changed(new_text: String) -> void:
@@ -137,24 +138,24 @@ func _is_node_compatible(node_class: String, supported_types: Array) -> bool:
 	return false
 
 func _on_item_activated(index: int) -> void:
-	"""Handle action selection."""
+	"""Handle condition selection."""
 	if item_list.is_item_disabled(index):
 		return
 	
 	var metadata = item_list.get_item_metadata(index)
-	var action_id = metadata["id"]
+	var condition_id = metadata["id"]
 	var inputs = metadata["inputs"]
 	
-	# Find action name for recent items
-	var action_name = ""
-	for action in available_actions:
-		if action.get_id() == action_id:
-			action_name = action.get_name()
+	# Find condition name for recent items
+	var condition_name = ""
+	for condition in available_conditions:
+		if condition.get_id() == condition_id:
+			condition_name = condition.get_name()
 			break
 	
-	print("Action selected: ", action_id, " for node: ", selected_node_path)
-	_recent_items_manager.add_recent_action(action_id, action_name, selected_node_class)
-	action_selected.emit(selected_node_path, action_id, inputs)
+	print("Condition selected: ", condition_id, " for node: ", selected_node_path)
+	_recent_items_manager.add_recent_condition(condition_id, condition_name, selected_node_class)
+	condition_selected.emit(selected_node_path, condition_id, inputs)
 	hide()
 
 func _on_item_selected(index: int) -> void:
@@ -164,12 +165,12 @@ func _on_item_selected(index: int) -> void:
 		return
 	
 	var metadata = item_list.get_item_metadata(index)
-	var action_id = metadata["id"]
+	var condition_id = metadata["id"]
 	
-	# Find the action and get description
-	for action in available_actions:
-		if action.get_id() == action_id:
-			description_label.text = action.get_description()
+	# Find the condition and get description
+	for condition in available_conditions:
+		if condition.get_id() == condition_id:
+			description_label.text = condition.get_description()
 			break
 
 func _on_popup_hide() -> void:
@@ -177,44 +178,43 @@ func _on_popup_hide() -> void:
 		search_box.clear()
 
 func _populate_recent_list() -> void:
-	"""Populate the recent actions list."""
+	"""Populate the recent conditions list."""
 	if not recent_item_list or not _recent_items_manager:
 		return
 	
 	recent_item_list.clear()
 	
-	# Filter recent actions for current node type
+	# Filter recent conditions for current node type
 	var recent_for_type = []
-	for recent_action in _recent_items_manager.recent_actions:
-		if recent_action["node_class"] == selected_node_class:
-			recent_for_type.append(recent_action)
+	for recent_condition in _recent_items_manager.recent_conditions:
+		if recent_condition["node_class"] == selected_node_class:
+			recent_for_type.append(recent_condition)
 	
 	if recent_for_type.is_empty():
 		recent_item_list.add_item("(No recent items)")
 		recent_item_list.set_item_disabled(0, true)
 		return
 	
-	for recent_action in recent_for_type:
-		recent_item_list.add_item(recent_action["name"])
+	for recent_condition in recent_for_type:
+		recent_item_list.add_item(recent_condition["name"])
 		var index = recent_item_list.item_count - 1
-		recent_item_list.set_item_metadata(index, recent_action)
+		recent_item_list.set_item_metadata(index, recent_condition)
 
 func _on_recent_item_activated(index: int) -> void:
 	"""Handle selection from recent items."""
 	if recent_item_list.is_item_disabled(index):
 		return
 	
-	var recent_action = recent_item_list.get_item_metadata(index)
-	var action_id = recent_action["id"]
+	var recent_condition = recent_item_list.get_item_metadata(index)
+	var condition_id = recent_condition["id"]
 	
-	# Find the action to get its inputs
-	var action_inputs: Array = []
-	for action in available_actions:
-		if action.get_id() == action_id:
-			action_inputs = action.get_inputs()
+	# Find the condition to get its inputs
+	var condition_inputs: Array = []
+	for condition in available_conditions:
+		if condition.get_id() == condition_id:
+			condition_inputs = condition.get_inputs()
 			break
 	
-	print("Recent action selected: ", action_id, " for node: ", selected_node_path)
-	action_selected.emit(selected_node_path, action_id, action_inputs)
+	print("Recent condition selected: ", condition_id, " for node: ", selected_node_path)
+	condition_selected.emit(selected_node_path, condition_id, condition_inputs)
 	hide()
-

@@ -1,0 +1,107 @@
+[gd_scene format=3 uid="uid://crj5y8vh2m3qi"]
+
+[ext_resource type="Script" uid="uid://dcajc4erjcorh" path="res://addons/flowkit/ui/modals/select_event_modal.gd" id="1_event"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_p4fh0"]
+bg_color = Color(0.2, 0.2, 0.2, 0.8)
+
+[node name="SelectEvent" type="PopupPanel" unique_id=484748214]
+oversampling_override = 1.0
+title = "Select an Event"
+position = Vector2i(0, 36)
+size = Vector2i(900, 600)
+visible = true
+unresizable = false
+borderless = false
+keep_title_visible = true
+script = ExtResource("1_event")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=847659102]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 4.0
+offset_top = 4.0
+offset_right = -4.0
+offset_bottom = -4.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="SearchBox" type="LineEdit" parent="VBoxContainer" unique_id=747443420]
+layout_mode = 2
+placeholder_text = "Search..."
+
+[node name="HSplitContainer" type="HSplitContainer" parent="VBoxContainer" unique_id=1000490510]
+layout_mode = 2
+size_flags_vertical = 3
+split_offsets = PackedInt32Array(450)
+split_offset = 450
+
+[node name="RecentPanel" type="Panel" parent="VBoxContainer/HSplitContainer" unique_id=1125754745]
+custom_minimum_size = Vector2(400, 0)
+layout_mode = 2
+
+[node name="RecentVBox" type="VBoxContainer" parent="VBoxContainer/HSplitContainer/RecentPanel" unique_id=1284515379]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 4.0
+offset_top = 4.0
+offset_right = -4.0
+offset_bottom = -4.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="RecentLabel" type="Label" parent="VBoxContainer/HSplitContainer/RecentPanel/RecentVBox" unique_id=1726395661]
+layout_mode = 2
+text = "Recent"
+
+[node name="RecentItemList" type="ItemList" parent="VBoxContainer/HSplitContainer/RecentPanel/RecentVBox" unique_id=2106685401]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="MainPanel" type="Panel" parent="VBoxContainer/HSplitContainer" unique_id=1547409558]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="MainVBox" type="VBoxContainer" parent="VBoxContainer/HSplitContainer/MainPanel" unique_id=1185937288]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 4.0
+offset_top = 4.0
+offset_right = -4.0
+offset_bottom = -4.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="AllLabel" type="Label" parent="VBoxContainer/HSplitContainer/MainPanel/MainVBox" unique_id=1574812680]
+layout_mode = 2
+text = "All Events"
+
+[node name="ItemList" type="ItemList" parent="VBoxContainer/HSplitContainer/MainPanel/MainVBox" unique_id=1339107950]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="DescriptionPanel" type="Panel" parent="VBoxContainer/HSplitContainer/MainPanel/MainVBox" unique_id=373112039]
+custom_minimum_size = Vector2(0, 150)
+layout_mode = 2
+size_flags_vertical = 0
+theme_override_styles/panel = SubResource("StyleBoxFlat_p4fh0")
+
+[node name="ScrollContainer" type="ScrollContainer" parent="VBoxContainer/HSplitContainer/MainPanel/MainVBox/DescriptionPanel" unique_id=585313885]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 4.0
+offset_right = -8.0
+offset_bottom = -4.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="DescriptionLabel" type="Label" parent="VBoxContainer/HSplitContainer/MainPanel/MainVBox/DescriptionPanel/ScrollContainer" unique_id=671680351]
+layout_mode = 2
+size_flags_horizontal = 3
+autowrap_mode = 3

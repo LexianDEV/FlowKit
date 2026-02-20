@@ -1,5 +1,6 @@
 @tool
 extends Control
+class_name FKMainEditor
 
 var editor_interface: EditorInterface
 var registry: Node
@@ -7,16 +8,16 @@ var generator
 var current_scene_uid: int = 0
 
 # Scene preloads - GDevelop-style event rows
-const EVENT_ROW_SCENE = preload("res://addons/flowkit/ui/workspace/event_row.tscn")
-const COMMENT_SCENE = preload("res://addons/flowkit/ui/workspace/comment.tscn")
-const GROUP_SCENE = preload("res://addons/flowkit/ui/workspace/group.tscn")
+const EVENT_ROW_SCENE = preload("res://addons/flowkit/ui/workspace/event_row_ui.tscn")
+const COMMENT_SCENE = preload("res://addons/flowkit/ui/workspace/comment_ui.tscn")
+const GROUP_SCENE = preload("res://addons/flowkit/ui/workspace/group_ui.tscn")
 
 # UI References
-@onready var scroll_container := $OuterVBox/ScrollContainer
-@onready var blocks_container := $OuterVBox/ScrollContainer/MarginContainer/BlocksContainer
-@onready var empty_label := $OuterVBox/ScrollContainer/MarginContainer/BlocksContainer/EmptyLabel
-@onready var add_event_btn := $OuterVBox/BottomMargin/ButtonContainer/AddEventButton
-@onready var menu_bar := $"OuterVBox/TopMargin/TopBar/MenuBar"
+@onready var scroll_container: ScrollContainer = $OuterVBox/ScrollContainer
+@onready var blocks_container: BlockContainerUi = $OuterVBox/ScrollContainer/MarginContainer/BlocksContainer
+@onready var empty_label: Label = $OuterVBox/ScrollContainer/MarginContainer/BlocksContainer/EmptyLabel
+@onready var add_event_btn: Button = $OuterVBox/BottomMargin/ButtonContainer/AddEventButton
+@onready var menu_bar: FKMenuBar = $"OuterVBox/TopMargin/TopBar/MenuBar"
 
 # Drag spacer state
 var drag_spacer_top: Control = null  # Temporary spacer at top during drag
@@ -24,11 +25,11 @@ var drag_spacer_bottom: Control = null  # Temporary spacer at bottom during drag
 const DRAG_SPACER_HEIGHT := 50  # Height of temporary drop zone
 
 # Modals
-@onready var select_node_modal := $SelectNodeModal
-@onready var select_event_modal := $SelectEventModal
-@onready var select_condition_modal := $SelectConditionModal
-@onready var select_action_modal := $SelectActionModal
-@onready var expression_modal := $ExpressionModal
+@onready var select_node_modal: FKSelectNodeModal = $SelectNodeModal
+@onready var select_event_modal: FKSelectEventModal = $SelectEventModal
+@onready var select_condition_modal: FKSelectConditionModal = $SelectConditionModal
+@onready var select_action_modal: FKSelectActionModal = $SelectActionModal
+@onready var expression_modal: FKExpressionEditorModal = $ExpressionModal
 
 # Workflow state
 var pending_block_type: String = ""  # "event", "condition", "action", "event_replace", "event_in_group", etc.
@@ -215,7 +216,7 @@ func _paste_events() -> void:
 	if first_row:
 		_on_row_selected(first_row)
 		
-func _find_parent_branch(node: Node):
+func _find_parent_branch(node: Node) -> BranchItemUi:
 	"""Find the branch_item that contains this node, or null if at top level."""
 	var current = node.get_parent()
 	while current:
@@ -679,7 +680,7 @@ func _recursive_remove_action_from_list(actions: Array, target_action) -> bool:
 			return true
 	return false
 
-func _find_parent_event_row(node: Node):
+func _find_parent_event_row(node: Node) -> FKEventRowUi:
 	"""Find the event_row that contains this node."""
 	var current = node.get_parent()
 	while current:
@@ -1096,7 +1097,7 @@ func _on_group_add_event_requested(group_node) -> void:
 	_start_add_workflow("event_in_group")
 
 func _on_group_add_comment_requested(group_node) -> void:
-	"""Handle request to add a comment inside a group (already handled in group.gd)."""
+	"""Handle request to add a comment inside a group (already handled in group_ui.gd)."""
 	pass
 
 func _on_group_selected(node) -> void:

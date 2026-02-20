@@ -1,0 +1,68 @@
+[gd_scene format=3 uid="uid://dl3kh1mn8jl71"]
+
+[ext_resource type="Script" uid="uid://c8f8kxunihlmc" path="res://addons/flowkit/ui/workspace/action_ui.gd" id="1_cfrs7"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_action"]
+bg_color = Color(0.2, 0.22, 0.28, 1)
+border_width_left = 4
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.4, 0.6, 0.95, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+shadow_color = Color(0, 0, 0, 0.3)
+shadow_size = 4
+shadow_offset = Vector2(0, 2)
+
+[node name="Action" type="MarginContainer" unique_id=1132662520]
+theme_override_constants/margin_left = 48
+theme_override_constants/margin_bottom = 2
+script = ExtResource("1_cfrs7")
+
+[node name="Panel" type="PanelContainer" parent="." unique_id=707018358]
+layout_mode = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_action")
+
+[node name="MarginContainer" type="MarginContainer" parent="Panel" unique_id=417407034]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 6
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Panel/MarginContainer" unique_id=266486617]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
+
+[node name="Icon" type="Label" parent="Panel/MarginContainer/HBoxContainer" unique_id=651257797]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.6, 0.95, 1)
+theme_override_font_sizes/font_size = 16
+text = "▸"
+
+[node name="Label" type="Label" parent="Panel/MarginContainer/HBoxContainer" unique_id=1643637026]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
+theme_override_colors/font_color = Color(0.9, 0.92, 0.95, 1)
+theme_override_font_sizes/font_size = 13
+text = "Action"
+
+[node name="ContextMenu" type="PopupMenu" parent="." unique_id=103253028]
+oversampling_override = 1.0
+size = Vector2i(200, 100)
+item_count = 4
+item_0/text = "Add Action Below"
+item_0/id = 0
+item_1/text = "Replace Action"
+item_1/id = 1
+item_2/text = "Edit Action"
+item_2/id = 2
+item_3/text = "Delete Action"
+item_3/id = 3

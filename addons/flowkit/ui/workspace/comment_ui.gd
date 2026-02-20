@@ -1,5 +1,6 @@
 @tool
 extends MarginContainer
+class_name CommentUi
 
 signal selected(comment_node)
 signal delete_requested

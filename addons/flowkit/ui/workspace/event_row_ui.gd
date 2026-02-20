@@ -1,5 +1,6 @@
 @tool
 extends MarginContainer
+class_name FKEventRowUi
 
 signal insert_event_below_requested(event_row)
 signal insert_comment_below_requested(event_row)
@@ -32,9 +33,9 @@ var registry: Node
 var is_selected: bool = false
 
 # Preloads
-const CONDITION_ITEM_SCENE = preload("res://addons/flowkit/ui/workspace/condition_item.tscn")
-const ACTION_ITEM_SCENE = preload("res://addons/flowkit/ui/workspace/action_item.tscn")
-const BRANCH_ITEM_SCENE = preload("res://addons/flowkit/ui/workspace/branch_item.tscn")
+const CONDITION_ITEM_SCENE = preload("res://addons/flowkit/ui/workspace/condition_item_ui.tscn")
+const ACTION_ITEM_SCENE = preload("res://addons/flowkit/ui/workspace/action_item_ui.tscn")
+const BRANCH_ITEM_SCENE = preload("res://addons/flowkit/ui/workspace/branch_item_ui.tscn")
 
 # UI References
 var panel: PanelContainer
@@ -648,7 +649,7 @@ func _drop_data(at_position: Vector2, data) -> void:
 			if is_left_side:
 				var cond_data = data.get("data")
 				if cond_data:
-					# Allow same-row drops for reordering (handled by condition_item.gd)
+					# Allow same-row drops for reordering (handled by condition_item_ui.gd)
 					# Only handle cross-row drops here
 					if source_row != self:
 						condition_dropped.emit(source_row, cond_data, self)
@@ -656,7 +657,7 @@ func _drop_data(at_position: Vector2, data) -> void:
 			if not is_left_side:
 				var act_data = data.get("data")
 				if act_data:
-					# Allow same-row drops for reordering (handled by action_item.gd)
+					# Allow same-row drops for reordering (handled by action_item_ui.gd)
 					# Only handle cross-row drops here
 					if source_row != self:
 						action_dropped.emit(source_row, act_data, self)

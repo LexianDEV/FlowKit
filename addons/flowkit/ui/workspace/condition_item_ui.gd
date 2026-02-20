@@ -1,5 +1,6 @@
 @tool
 extends MarginContainer
+class_name ConditionItemUi
 
 signal selected(item)
 signal edit_requested(item)

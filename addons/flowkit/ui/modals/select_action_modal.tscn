@@ -1,16 +1,16 @@
-[gd_scene load_steps=2 format=3 uid="uid://crj5y8vh2m3qi"]
+[gd_scene format=3 uid="uid://c7j20avh3m4rj"]
 
-[ext_resource type="Script" path="res://addons/flowkit/ui/modals/select_event.gd" id="1_event"]
+[ext_resource type="Script" uid="uid://ckts6rjlmh4hr" path="res://addons/flowkit/ui/modals/select_action_modal.gd" id="1_action"]
 
-[node name="SelectEvent" type="PopupPanel"]
+[node name="SelectAction" type="PopupPanel"]
 oversampling_override = 1.0
-title = "Select an Event"
+title = "Select an Action"
 initial_position = 0
 size = Vector2i(900, 600)
 borderless = false
 keep_title_visible = true
 unresizable = false
-script = ExtResource("1_event")
+script = ExtResource("1_action")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="."]
 anchors_preset = 15
@@ -73,7 +73,7 @@ grow_vertical = 2
 
 [node name="AllLabel" type="Label" parent="VBoxContainer/HSplitContainer/MainPanel/MainVBox"]
 layout_mode = 2
-text = "All Events"
+text = "All Actions"
 theme_type_variations = ["header_small"]
 
 [node name="ItemList" type="ItemList" parent="VBoxContainer/HSplitContainer/MainPanel/MainVBox"]

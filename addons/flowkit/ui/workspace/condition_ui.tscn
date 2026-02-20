@@ -1,14 +1,14 @@
-[gd_scene load_steps=3 format=3 uid="uid://dl3kh1mn8jl71"]
+[gd_scene format=3 uid="uid://cct35451lta26"]
 
-[ext_resource type="Script" uid="uid://c8f8kxunihlmc" path="res://addons/flowkit/ui/workspace/action.gd" id="1_ekdkb"]
+[ext_resource type="Script" uid="uid://e5mnmf4ivyse" path="res://addons/flowkit/ui/workspace/condition_ui.gd" id="1_8pk2u"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_action"]
-bg_color = Color(0.2, 0.22, 0.28, 1)
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_condition"]
+bg_color = Color(0.25, 0.2, 0.18, 1)
 border_width_left = 4
 border_width_top = 1
 border_width_right = 1
 border_width_bottom = 1
-border_color = Color(0.4, 0.6, 0.95, 1)
+border_color = Color(1, 0.65, 0.2, 1)
 corner_radius_top_left = 6
 corner_radius_top_right = 6
 corner_radius_bottom_right = 6
@@ -17,15 +17,15 @@ shadow_color = Color(0, 0, 0, 0.3)
 shadow_size = 4
 shadow_offset = Vector2(0, 2)
 
-[node name="Action" type="MarginContainer"]
-theme_override_constants/margin_left = 48
+[node name="Condition" type="MarginContainer"]
+theme_override_constants/margin_left = 24
 theme_override_constants/margin_bottom = 2
-script = ExtResource("1_ekdkb")
+script = ExtResource("1_8pk2u")
 
 [node name="Panel" type="PanelContainer" parent="."]
 layout_mode = 2
 mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_action")
+theme_override_styles/panel = SubResource("StyleBoxFlat_condition")
 
 [node name="MarginContainer" type="MarginContainer" parent="Panel"]
 layout_mode = 2
@@ -42,27 +42,28 @@ theme_override_constants/separation = 8
 
 [node name="Icon" type="Label" parent="Panel/MarginContainer/HBoxContainer"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.4, 0.6, 0.95, 1)
+theme_override_colors/font_color = Color(1, 0.65, 0.2, 1)
 theme_override_font_sizes/font_size = 16
-text = "▸"
+text = "◆"
 
 [node name="Label" type="Label" parent="Panel/MarginContainer/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
-size_flags_vertical = 1
-theme_override_colors/font_color = Color(0.9, 0.92, 0.95, 1)
+theme_override_colors/font_color = Color(0.95, 0.9, 0.85, 1)
 theme_override_font_sizes/font_size = 13
-text = "Action"
+text = "Condition"
 
 [node name="ContextMenu" type="PopupMenu" parent="."]
 oversampling_override = 1.0
 size = Vector2i(200, 100)
-item_count = 4
-item_0/text = "Add Action Below"
+item_count = 5
+item_0/text = "Insert Condition Below"
 item_0/id = 0
-item_1/text = "Replace Action"
+item_1/text = "Replace Condition"
 item_1/id = 1
-item_2/text = "Edit Action"
+item_2/text = "Edit Condition"
 item_2/id = 2
-item_3/text = "Delete Action"
+item_3/text = "Delete Condition"
 item_3/id = 3
+item_4/text = "Negate"
+item_4/id = 4

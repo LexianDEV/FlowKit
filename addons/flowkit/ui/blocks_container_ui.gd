@@ -1,5 +1,6 @@
 @tool
 extends VBoxContainer
+class_name BlockContainerUi
 ## Container for event blocks, comments, and groups in the FlowKit editor.
 ##
 ## Handles drag-and-drop reordering of blocks and accepts drops from
@@ -28,7 +29,7 @@ func _notification(what: int) -> void:
 
 # === Block Management ===
 
-func _get_visible_blocks() -> Array:
+func _get_visible_blocks() -> Array[Control]:
 	"""Get all visible block children (excluding indicator and labels)."""
 	var blocks = []
 	for child in get_children():
@@ -72,7 +73,7 @@ func _hide_drop_indicator() -> void:
 
 # === Drag and Drop ===
 
-func _get_drag_node(data) -> Node:
+func _get_drag_node(data) -> Control:
 	"""Extract the dragged node from drag data."""
 	if data is Dictionary and data.has("node"):
 		var drag_type = data.get("type", "")
@@ -158,6 +159,7 @@ func _handle_external_drop(node: Node, visible_blocks: Array, target_idx: int) -
 	
 	# Defer block_moved to ensure all data is synced before save/reload
 	call_deferred("emit_signal", "block_moved")
+
 func _handle_internal_reorder(node: Node, visible_blocks: Array, target_idx: int) -> void:
 	"""Handle reordering within this container."""
 	var current_visual_idx = visible_blocks.find(node)

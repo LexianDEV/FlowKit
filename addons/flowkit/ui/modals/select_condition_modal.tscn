@@ -1,16 +1,16 @@
-[gd_scene load_steps=2 format=3 uid="uid://c7j20avh3m4rj"]
+[gd_scene format=3 uid="uid://cam4a1xj6n7ql"]
 
-[ext_resource type="Script" path="res://addons/flowkit/ui/modals/select_action.gd" id="1_action"]
+[ext_resource type="Script" uid="uid://bn7bags6twbx0" path="res://addons/flowkit/ui/modals/select_condition_modal.gd" id="1_condition"]
 
-[node name="SelectAction" type="PopupPanel"]
+[node name="SelectCondition" type="PopupPanel"]
 oversampling_override = 1.0
-title = "Select an Action"
+title = "Select a Condition"
 initial_position = 0
 size = Vector2i(900, 600)
 borderless = false
 keep_title_visible = true
 unresizable = false
-script = ExtResource("1_action")
+script = ExtResource("1_condition")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="."]
 anchors_preset = 15
@@ -73,7 +73,7 @@ grow_vertical = 2
 
 [node name="AllLabel" type="Label" parent="VBoxContainer/HSplitContainer/MainPanel/MainVBox"]
 layout_mode = 2
-text = "All Actions"
+text = "All Conditions"
 theme_type_variations = ["header_small"]
 
 [node name="ItemList" type="ItemList" parent="VBoxContainer/HSplitContainer/MainPanel/MainVBox"]

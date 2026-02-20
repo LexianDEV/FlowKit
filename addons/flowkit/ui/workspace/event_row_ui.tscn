@@ -1,7 +1,7 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene format=3 uid="uid://ciskc36xxy0e2"]
 
-[ext_resource type="Script" path="res://addons/flowkit/ui/workspace/event_row.gd" id="1_eventrow"]
-[ext_resource type="Script" path="res://addons/flowkit/ui/workspace/drop_zone.gd" id="2_dropzone"]
+[ext_resource type="Script" uid="uid://d3np8thjqdpfb" path="res://addons/flowkit/ui/workspace/event_row_ui.gd" id="1_eventrow"]
+[ext_resource type="Script" uid="uid://mop12yce25n1" path="res://addons/flowkit/ui/workspace/drop_zone_ui.gd" id="2_dropzone"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_row"]
 bg_color = Color(0.14, 0.15, 0.18, 1)
@@ -29,34 +29,33 @@ border_color = Color(0.25, 0.27, 0.32, 1)
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_actions"]
 bg_color = Color(0.13, 0.14, 0.17, 1)
 
-[node name="EventRow" type="MarginContainer"]
+[node name="EventRow" type="MarginContainer" unique_id=132421565]
 custom_minimum_size = Vector2(0, 60)
 theme_override_constants/margin_bottom = 2
 script = ExtResource("1_eventrow")
 
-[node name="Panel" type="PanelContainer" parent="."]
+[node name="Panel" type="PanelContainer" parent="." unique_id=853104603]
 layout_mode = 2
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_row")
 
-[node name="HBox" type="HBoxContainer" parent="Panel"]
+[node name="HBox" type="HBoxContainer" parent="Panel" unique_id=2065287931]
 layout_mode = 2
 mouse_filter = 2
 theme_override_constants/separation = 0
 
-[node name="ConditionsColumn" type="VBoxContainer" parent="Panel/HBox"]
+[node name="ConditionsColumn" type="VBoxContainer" parent="Panel/HBox" unique_id=1148917877]
 layout_mode = 2
-mouse_filter = 2
 size_flags_horizontal = 3
-size_flags_stretch_ratio = 1.0
+mouse_filter = 2
 theme_override_constants/separation = 0
 
-[node name="EventHeader" type="PanelContainer" parent="Panel/HBox/ConditionsColumn"]
+[node name="EventHeader" type="PanelContainer" parent="Panel/HBox/ConditionsColumn" unique_id=1540849777]
 layout_mode = 2
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_event_header")
 
-[node name="MarginContainer" type="MarginContainer" parent="Panel/HBox/ConditionsColumn/EventHeader"]
+[node name="MarginContainer" type="MarginContainer" parent="Panel/HBox/ConditionsColumn/EventHeader" unique_id=150134385]
 layout_mode = 2
 mouse_filter = 2
 theme_override_constants/margin_left = 10
@@ -64,94 +63,92 @@ theme_override_constants/margin_top = 6
 theme_override_constants/margin_right = 10
 theme_override_constants/margin_bottom = 6
 
-[node name="EventLabel" type="Label" parent="Panel/HBox/ConditionsColumn/EventHeader/MarginContainer"]
+[node name="EventLabel" type="Label" parent="Panel/HBox/ConditionsColumn/EventHeader/MarginContainer" unique_id=2092118304]
 layout_mode = 2
-mouse_filter = 2
 theme_override_colors/font_color = Color(0.4, 0.75, 1, 1)
 theme_override_font_sizes/font_size = 13
 text = "⚡ Event"
 
-[node name="ConditionsPanel" type="PanelContainer" parent="Panel/HBox/ConditionsColumn"]
+[node name="ConditionsPanel" type="PanelContainer" parent="Panel/HBox/ConditionsColumn" unique_id=193954794]
 layout_mode = 2
-mouse_filter = 2
 size_flags_vertical = 3
+mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_conditions")
 
-[node name="ConditionsMargin" type="MarginContainer" parent="Panel/HBox/ConditionsColumn/ConditionsPanel"]
+[node name="ConditionsMargin" type="MarginContainer" parent="Panel/HBox/ConditionsColumn/ConditionsPanel" unique_id=428021465]
 layout_mode = 2
-mouse_filter = 2
 size_flags_vertical = 3
+mouse_filter = 2
 theme_override_constants/margin_left = 4
 theme_override_constants/margin_top = 4
 theme_override_constants/margin_right = 4
 theme_override_constants/margin_bottom = 4
 
-[node name="ConditionsContainer" type="VBoxContainer" parent="Panel/HBox/ConditionsColumn/ConditionsPanel/ConditionsMargin"]
+[node name="ConditionsContainer" type="VBoxContainer" parent="Panel/HBox/ConditionsColumn/ConditionsPanel/ConditionsMargin" unique_id=398717590]
 layout_mode = 2
-mouse_filter = 2
 size_flags_vertical = 3
+mouse_filter = 2
 theme_override_constants/separation = 2
 
-[node name="ConditionDropZone" type="MarginContainer" parent="Panel/HBox/ConditionsColumn"]
+[node name="ConditionDropZone" type="MarginContainer" parent="Panel/HBox/ConditionsColumn" unique_id=322908351]
 layout_mode = 2
 mouse_filter = 0
 script = ExtResource("2_dropzone")
 accept_type = "condition_item"
 
-[node name="AddConditionLabel" type="Label" parent="Panel/HBox/ConditionsColumn/ConditionDropZone"]
+[node name="AddConditionLabel" type="Label" parent="Panel/HBox/ConditionsColumn/ConditionDropZone" unique_id=906333729]
 layout_mode = 2
 mouse_filter = 1
 theme_override_colors/font_color = Color(0.5, 0.55, 0.6, 1)
 theme_override_font_sizes/font_size = 11
 text = "Add condition"
 
-[node name="VSeparator" type="VSeparator" parent="Panel/HBox"]
+[node name="VSeparator" type="VSeparator" parent="Panel/HBox" unique_id=1630659284]
 layout_mode = 2
 mouse_filter = 2
 theme_override_constants/separation = 1
 
-[node name="ActionsColumn" type="VBoxContainer" parent="Panel/HBox"]
+[node name="ActionsColumn" type="VBoxContainer" parent="Panel/HBox" unique_id=1250856488]
 layout_mode = 2
-mouse_filter = 2
 size_flags_horizontal = 3
-size_flags_stretch_ratio = 1.0
+mouse_filter = 2
 theme_override_constants/separation = 0
 
-[node name="ActionsPanel" type="PanelContainer" parent="Panel/HBox/ActionsColumn"]
+[node name="ActionsPanel" type="PanelContainer" parent="Panel/HBox/ActionsColumn" unique_id=1835148446]
 layout_mode = 2
-mouse_filter = 2
 size_flags_vertical = 3
+mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_actions")
 
-[node name="ActionsMargin" type="MarginContainer" parent="Panel/HBox/ActionsColumn/ActionsPanel"]
+[node name="ActionsMargin" type="MarginContainer" parent="Panel/HBox/ActionsColumn/ActionsPanel" unique_id=649031800]
 layout_mode = 2
-mouse_filter = 2
 size_flags_vertical = 3
+mouse_filter = 2
 theme_override_constants/margin_left = 4
 theme_override_constants/margin_top = 4
 theme_override_constants/margin_right = 4
 theme_override_constants/margin_bottom = 4
 
-[node name="ActionsContainer" type="VBoxContainer" parent="Panel/HBox/ActionsColumn/ActionsPanel/ActionsMargin"]
+[node name="ActionsContainer" type="VBoxContainer" parent="Panel/HBox/ActionsColumn/ActionsPanel/ActionsMargin" unique_id=1772324905]
 layout_mode = 2
-mouse_filter = 2
 size_flags_vertical = 3
+mouse_filter = 2
 theme_override_constants/separation = 2
 
-[node name="ActionDropZone" type="MarginContainer" parent="Panel/HBox/ActionsColumn"]
+[node name="ActionDropZone" type="MarginContainer" parent="Panel/HBox/ActionsColumn" unique_id=1033156694]
 layout_mode = 2
 mouse_filter = 0
 script = ExtResource("2_dropzone")
 accept_type = "action_item"
 
-[node name="AddActionLabel" type="Label" parent="Panel/HBox/ActionsColumn/ActionDropZone"]
+[node name="AddActionLabel" type="Label" parent="Panel/HBox/ActionsColumn/ActionDropZone" unique_id=1602909442]
 layout_mode = 2
 mouse_filter = 1
 theme_override_colors/font_color = Color(0.5, 0.55, 0.6, 1)
 theme_override_font_sizes/font_size = 11
 text = "Add..."
 
-[node name="ContextMenu" type="PopupMenu" parent="."]
+[node name="ContextMenu" type="PopupMenu" parent="." unique_id=1510959905]
 size = Vector2i(200, 100)
 item_count = 4
 item_0/text = "Add Event Below"

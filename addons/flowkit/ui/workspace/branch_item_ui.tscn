@@ -1,6 +1,6 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene format=3]
 
-[ext_resource type="Script" path="res://addons/flowkit/ui/workspace/branch_item.gd" id="1_branchitem"]
+[ext_resource type="Script" uid="uid://dcwcx6tlw6xsx" path="res://addons/flowkit/ui/workspace/branch_item_ui.gd" id="1_branchitem"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_branch"]
 bg_color = Color(0.15, 0.17, 0.14, 1)

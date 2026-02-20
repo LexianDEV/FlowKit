@@ -1,5 +1,7 @@
 @tool
 extends MarginContainer
+class_name GroupBlockUi
+
 ## Collapsible group block for organizing events, comments, and nested groups.
 ##
 ## Groups can contain events, comments, and other groups.
@@ -35,8 +37,8 @@ signal branch_action_edit_requested(action_item, branch_item, row)  ## Emitted w
 signal nested_branch_add_requested(branch_item, row)  ## Emitted when adding nested IF branch
 
 # === Constants ===
-const EVENT_ROW_SCENE = preload("res://addons/flowkit/ui/workspace/event_row.tscn")
-const COMMENT_SCENE = preload("res://addons/flowkit/ui/workspace/comment.tscn")
+const EVENT_ROW_SCENE = preload("res://addons/flowkit/ui/workspace/event_row_ui.tscn")
+const COMMENT_SCENE = preload("res://addons/flowkit/ui/workspace/comment_ui.tscn")
 
 # === State ===
 var group_data: FKGroupBlock
@@ -288,7 +290,7 @@ func _instantiate_comment(data: FKCommentBlock) -> Control:
 
 func _instantiate_group(data: FKGroupBlock) -> Control:
 	"""Create a nested group UI node for the given data."""
-	var group_scene = load("res://addons/flowkit/ui/workspace/group.tscn")
+	var group_scene = load("res://addons/flowkit/ui/workspace/group_ui.tscn")
 	var nested = group_scene.instantiate()
 	nested.set_group_data(data)
 	nested.set_registry(registry)

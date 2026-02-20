@@ -1,5 +1,7 @@
 @tool
 extends VBoxContainer
+class_name GroupChildrenContainerUi
+
 ## Container for group children that handles drag-drop reordering.
 ## Handles both internal reordering and external drops from outside the group.
 

@@ -1,4 +1,5 @@
 extends Node
+class_name FKSystem
 
 ## The System object - a global singleton accessible in every scene
 ## Similar to Clickteam Fusion's System object

@@ -1,6 +1,6 @@
-[gd_scene load_steps=4 format=3 uid="uid://dgroup_block_fk"]
+[gd_scene format=3]
 
-[ext_resource type="Script" path="res://addons/flowkit/ui/workspace/group.gd" id="1_group"]
+[ext_resource type="Script" path="res://addons/flowkit/ui/workspace/group_ui.gd" id="1_group"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_focus"]
 
