@@ -44,8 +44,11 @@ var selected_item = null  # Currently selected condition/action item
 
 var undo_manager: FKUndoManager = FKUndoManager.new()
 var clipboard := FKClipboardManager.new()
+var input_manager: FKMainEditorInputHandler = FKMainEditorInputHandler.new()
 
 func _ready() -> void:
+	input_manager.initialize(self)
+	
 	_setup_ui()
 	# Connect block_moved signals for autosave and undo state on drag-and-drop reorder
 	blocks_container.before_block_moved.connect(_push_undo_state)
@@ -116,80 +119,22 @@ func _popup_centered_on_editor(popup: Window) -> void:
 	popup.popup()
 
 func _input(event: InputEvent) -> void:
-	# Handle mouse click to deselect when clicking outside selected elements
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		var mouse_pos = get_global_mouse_position()
+	input_manager.handle_input(event)
+	
+func has_valid_selection() -> bool:
+	return valid_selected_item or valid_selected_row
+
+var valid_selected_item: bool:
+	get:
+		return selected_item and is_instance_valid(selected_item)
 		
-		# Check if we have any selection (row or item)
-		if selected_row or selected_item:
-			# Deselect if click is outside all event rows
-			if not _is_click_on_event_row(mouse_pos):
-				_deselect_all()
-	
-	# Only handle key press (not echo/repeat)
-	if not (event is InputEventKey and event.pressed and not event.echo):
-		return
-	
-	# Handle Ctrl+Z (undo) and Ctrl+Shift+Z / Ctrl+Y (redo) when FlowKit panel is visible
-	# This allows undo/redo to work even when keyboard navigating or mouse is outside
-	if visible and (_is_mouse_in_editor_area() or _has_focus_in_subtree()):
-		if event.keycode == KEY_Z and event.ctrl_pressed:
-			if event.shift_pressed:
-				_redo()
-			else:
-				_undo()
-			get_viewport().set_input_as_handled()
-			return
-		elif event.keycode == KEY_Y and event.ctrl_pressed:
-			_redo()
-			get_viewport().set_input_as_handled()
-			return
-	
-	# Safety: Only act if mouse is within our blocks area for other shortcuts
-	if not _is_mouse_in_blocks_area():
-		return
-	
-	# Check if a text editing control has focus - if so, don't intercept copy/paste
-	var focused = get_viewport().gui_get_focus_owner()
-	var is_editing_text = focused is TextEdit or focused is LineEdit
-	
-	# Handle Delete key
-	if event.keycode == KEY_DELETE:
-		if selected_item and is_instance_valid(selected_item):
-			_delete_selected_item()
-			get_viewport().set_input_as_handled()
-		elif selected_row and is_instance_valid(selected_row):
-			_delete_selected_row()
-			get_viewport().set_input_as_handled()
-	# Handle Ctrl+C (copy) - only if not editing text
-	elif event.keycode == KEY_C and event.ctrl_pressed and not is_editing_text:
-		if selected_item and is_instance_valid(selected_item):
-			if selected_item and selected_item.has_method("get_action_data"):
-				clipboard.copy_action(selected_item.get_action_data())
-			elif selected_item and selected_item.has_method("get_condition_data"):
-				clipboard.copy_condition(selected_item.get_condition_data())
-	
-			get_viewport().set_input_as_handled()
-		elif selected_row and is_instance_valid(selected_row):
-			if selected_row and selected_row.has_method("get_event_data"):
-				clipboard.copy_event(selected_row.get_event_data())
-			elif selected_row and selected_row.has_method("get_group_data"):
-				clipboard.copy_group(selected_row.get_group_data())
-			get_viewport().set_input_as_handled()
-	# Handle Ctrl+V (paste) - only if not editing text
-	elif event.keycode == KEY_V and event.ctrl_pressed and not is_editing_text:
-		
-		match clipboard.get_clipboard_type():
-			"event":
-				_paste_events()
-			"action":
-				_paste_actions()
-			"condition":
-				_paste_conditions()
-			"group":
-				_paste_group()
-				
-		get_viewport().set_input_as_handled()
+var valid_selected_row: bool:
+	get:
+		return selected_row and is_instance_valid(selected_row)
+
+var viewport: Viewport:
+	get:
+		return get_viewport()
 
 func _paste_events() -> void:
 	var new_events = clipboard.paste_event()
@@ -334,30 +279,6 @@ func _paste_group() -> void:
 	_save_sheet()
 	_on_row_selected(group_node)
 	
-func _is_click_on_event_row(mouse_pos: Vector2) -> bool:
-	"""Check if the mouse position is over any event row."""
-	for block in _get_blocks():
-		if block.get_global_rect().has_point(mouse_pos):
-			return true
-	return false
-
-func _is_mouse_in_blocks_area() -> bool:
-	"""Check if mouse is hovering over the blocks container."""
-	var mouse_pos = get_global_mouse_position()
-	return blocks_container.get_global_rect().has_point(mouse_pos)
-
-func _is_mouse_in_editor_area() -> bool:
-	"""Check if mouse is hovering over the FlowKit editor panel."""
-	var mouse_pos = get_global_mouse_position()
-	return get_global_rect().has_point(mouse_pos)
-
-func _has_focus_in_subtree() -> bool:
-	"""Check if any child control has focus."""
-	var focused = get_viewport().gui_get_focus_owner()
-	if focused == null:
-		return false
-	return focused == self or is_ancestor_of(focused)
-
 # === Undo/Redo System ===
 
 func _capture_sheet_state() -> Array:
@@ -693,9 +614,13 @@ func _set_expression_interface(interface: EditorInterface) -> void:
 	if expression_modal:
 		expression_modal.set_editor_interface(interface)
 
+func undo(): _undo()
+func redo(): _redo()
+func deselect_all(): _deselect_all()
+
 func _process(delta: float) -> void:
 	# Handle drag spacers - add temporary space only when needed
-	if get_viewport().gui_is_dragging():
+	if viewport.gui_is_dragging():
 		if scroll_container and blocks_container:
 			var mouse_pos = scroll_container.get_local_mouse_position()
 			var scroll_rect = scroll_container.get_rect()
@@ -1124,7 +1049,7 @@ func _on_group_selected(node) -> void:
 	# It's a group (or nested group)
 	_deselect_item()
 	
-	if selected_row and is_instance_valid(selected_row) and selected_row.has_method("set_selected"):
+	if valid_selected_row and selected_row.has_method("set_selected"):
 		selected_row.set_selected(false)
 	
 	selected_row = node
@@ -1303,7 +1228,7 @@ func _on_row_selected(row) -> void:
 	_deselect_item()
 	
 	# Deselect previous row
-	if selected_row and is_instance_valid(selected_row) and selected_row.has_method("set_selected"):
+	if valid_selected_row and selected_row.has_method("set_selected"):
 		selected_row.set_selected(false)
 	
 	# Select new row
@@ -1315,7 +1240,7 @@ func _on_comment_selected(comment_node) -> void:
 	"""Handle comment block selection."""
 	_deselect_item()
 	
-	if selected_row and is_instance_valid(selected_row) and selected_row.has_method("set_selected"):
+	if valid_selected_row and selected_row.has_method("set_selected"):
 		selected_row.set_selected(false)
 	
 	selected_row = comment_node
@@ -1375,7 +1300,7 @@ func _insert_comment_relative_to(target_block, offset: int) -> void:
 func _on_condition_selected_in_row(condition_node) -> void:
 	"""Handle condition item selection."""
 	# Deselect previous row
-	if selected_row and is_instance_valid(selected_row) and selected_row.has_method("set_selected"):
+	if valid_selected_row and selected_row.has_method("set_selected"):
 		selected_row.set_selected(false)
 	selected_row = null
 	
@@ -1390,7 +1315,7 @@ func _on_condition_selected_in_row(condition_node) -> void:
 func _on_action_selected_in_row(action_node) -> void:
 	"""Handle action item selection."""
 	# Deselect previous row
-	if selected_row and is_instance_valid(selected_row) and selected_row.has_method("set_selected"):
+	if valid_selected_row and selected_row.has_method("set_selected"):
 		selected_row.set_selected(false)
 	selected_row = null
 	
@@ -1404,13 +1329,13 @@ func _on_action_selected_in_row(action_node) -> void:
 
 func _deselect_item() -> void:
 	"""Deselect current condition/action item."""
-	if selected_item and is_instance_valid(selected_item) and selected_item.has_method("set_selected"):
+	if valid_selected_item and selected_item.has_method("set_selected"):
 		selected_item.set_selected(false)
 	selected_item = null
 
 func _deselect_all() -> void:
 	"""Deselect all rows and items."""
-	if selected_row and is_instance_valid(selected_row) and selected_row.has_method("set_selected"):
+	if valid_selected_row and selected_row.has_method("set_selected"):
 		selected_row.set_selected(false)
 	selected_row = null
 	_deselect_item()
