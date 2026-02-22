@@ -38,8 +38,10 @@ static func _emit_text_change_signal_as_needed(new_text: String, prev_text: Stri
 	var node_class = target_node.get_class()
 	var we_should_signal = !auto_signals_own_text_changes.has(node_class)
 	if we_should_signal:
-		var globals = FlowKitSystem.global_signals
-		globals.text_changed.emit(prev_text, new_text, target_node)
+		var system = target_node.get_tree().root.get_node_or_null("/root/FlowKitSystem")
+		if system:
+			var globals = system.global_signals
+			globals.text_changed.emit(prev_text, new_text, target_node)
 	pass
 
 static var auto_signals_own_text_changes: Array = ["LineEdit"]
