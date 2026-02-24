@@ -1,31 +1,23 @@
 [gd_scene format=3 uid="uid://dl3kh1mn8jl71"]
 
 [ext_resource type="Script" uid="uid://c8f8kxunihlmc" path="res://addons/flowkit/ui/workspace/action_ui.gd" id="1_cfrs7"]
+[ext_resource type="StyleBox" uid="uid://cbs66s4v17q0r" path="res://addons/flowkit/editor/styles/action_ui_normal_style_box.tres" id="2_a3b5y"]
+[ext_resource type="StyleBox" uid="uid://dngrnj04ray72" path="res://addons/flowkit/editor/styles/action_ui_selected_style.tres" id="3_w5cwp"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_action"]
-bg_color = Color(0.2, 0.22, 0.28, 1)
-border_width_left = 4
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.4, 0.6, 0.95, 1)
-corner_radius_top_left = 6
-corner_radius_top_right = 6
-corner_radius_bottom_right = 6
-corner_radius_bottom_left = 6
-shadow_color = Color(0, 0, 0, 0.3)
-shadow_size = 4
-shadow_offset = Vector2(0, 2)
-
-[node name="Action" type="MarginContainer" unique_id=1132662520]
+[node name="Action" type="MarginContainer" unique_id=1132662520 node_paths=PackedStringArray("context_menu", "label", "panel")]
 theme_override_constants/margin_left = 48
 theme_override_constants/margin_bottom = 2
 script = ExtResource("1_cfrs7")
+normal_stylebox = ExtResource("2_a3b5y")
+context_menu = NodePath("ContextMenu")
+label = NodePath("Panel/MarginContainer/HBoxContainer/Label")
+panel = NodePath("Panel")
+selected_stylebox = ExtResource("3_w5cwp")
 
 [node name="Panel" type="PanelContainer" parent="." unique_id=707018358]
 layout_mode = 2
 mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_action")
+theme_override_styles/panel = ExtResource("2_a3b5y")
 
 [node name="MarginContainer" type="MarginContainer" parent="Panel" unique_id=417407034]
 layout_mode = 2

@@ -27,55 +27,60 @@ var parent_branch = null  # Reference to parent branch_item for nested branches
 const ACTION_ITEM_SCENE = preload("res://addons/flowkit/ui/workspace/action_item_ui.tscn")
 
 # UI References
-var panel: PanelContainer
-var type_label: Label
-var condition_label: Label
-var icon_label: Label
-var actions_container: VBoxContainer
-var add_action_label: Label
-var context_menu: PopupMenu
-var add_action_context_menu: PopupMenu
-var normal_stylebox: StyleBox
-var selected_stylebox: StyleBox
+@export_category("UI Elements")
+@export var panel: PanelContainer
+@export var actions_container: VBoxContainer
+@export var body_node: PanelContainer = null  # Reference to Body panel for highlight
+
+@export_category("Labels")
+@export var type_label: Label
+@export var condition_label: Label
+@export var icon_label: Label
+@export var add_action_label: Label
+
+@export_category("Menus")
+@export var context_menu: PopupMenu
+@export var add_action_context_menu: PopupMenu
+
+@export_category("Styling")
+@export var normal_stylebox: StyleBox
+@export var selected_stylebox: StyleBox
+@export var body_base_stylebox: StyleBoxFlat
+@export var body_highlighted_stylebox: StyleBoxFlat
 
 # Drop indicator
 var drop_indicator: ColorRect
 var is_drop_target: bool = false
 var drop_above: bool = true
 var is_body_drop: bool = false  # True when drop target is the body (insert into branch)
-var body_node: PanelContainer = null  # Reference to Body panel for highlight
+
 var body_original_stylebox: StyleBox = null
 var body_highlight_stylebox: StyleBox = null
 
 func _ready() -> void:
-	_setup_references()
-	_setup_styles()
 	_setup_drop_indicator()
 	gui_input.connect(_on_gui_input)
 	call_deferred("_setup_context_menu")
 	call_deferred("_setup_add_action_label")
 
-func _setup_references() -> void:
-	panel = get_node_or_null("Panel")
-	type_label = get_node_or_null("Panel/VBox/Header/HeaderMargin/HBox/TypeLabel")
-	condition_label = get_node_or_null("Panel/VBox/Header/HeaderMargin/HBox/ConditionLabel")
-	icon_label = get_node_or_null("Panel/VBox/Header/HeaderMargin/HBox/Icon")
-	actions_container = get_node_or_null("Panel/VBox/Body/BodyMargin/BodyVBox/ActionsContainer")
-	add_action_label = get_node_or_null("Panel/VBox/Body/BodyMargin/BodyVBox/AddActionLabel")
-	context_menu = get_node_or_null("ContextMenu")
-	add_action_context_menu = get_node_or_null("AddActionContextMenu")
+func _setup_drop_indicator() -> void:
+	drop_indicator = ColorRect.new()
+	drop_indicator.color = Color(0.3, 0.8, 0.5, 0.8)
+	drop_indicator.custom_minimum_size = Vector2(0, 2)
+	drop_indicator.visible = false
+	drop_indicator.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(drop_indicator)
+	# Setup body highlight for "drop into" visual feedback
+	body_original_stylebox = body_node.get_theme_stylebox("panel")
+	if body_original_stylebox:
+		body_highlight_stylebox = body_original_stylebox.duplicate()
+		if body_highlight_stylebox is StyleBoxFlat:
+			body_highlight_stylebox.border_width_left = 2
+			body_highlight_stylebox.border_width_top = 1
+			body_highlight_stylebox.border_width_right = 1
+			body_highlight_stylebox.border_width_bottom = 1
+			body_highlight_stylebox.border_color = Color(0.3, 0.8, 0.5, 0.8)
 
-func _setup_styles() -> void:
-	if panel:
-		normal_stylebox = panel.get_theme_stylebox("panel")
-		if normal_stylebox:
-			selected_stylebox = normal_stylebox.duplicate()
-			if selected_stylebox is StyleBoxFlat:
-				selected_stylebox.border_color = Color(0.4, 0.9, 0.6, 1.0)
-				selected_stylebox.border_width_left = 2
-				selected_stylebox.border_width_top = 1
-				selected_stylebox.border_width_right = 1
-				selected_stylebox.border_width_bottom = 1
 
 func _setup_context_menu() -> void:
 	if context_menu:
@@ -387,25 +392,6 @@ func set_selected(value: bool) -> void:
 		else:
 			panel.add_theme_stylebox_override("panel", normal_stylebox)
 
-func _setup_drop_indicator() -> void:
-	drop_indicator = ColorRect.new()
-	drop_indicator.color = Color(0.3, 0.8, 0.5, 0.8)
-	drop_indicator.custom_minimum_size = Vector2(0, 2)
-	drop_indicator.visible = false
-	drop_indicator.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(drop_indicator)
-	# Setup body highlight for "drop into" visual feedback
-	body_node = get_node_or_null("Panel/VBox/Body")
-	if body_node:
-		body_original_stylebox = body_node.get_theme_stylebox("panel")
-		if body_original_stylebox:
-			body_highlight_stylebox = body_original_stylebox.duplicate()
-			if body_highlight_stylebox is StyleBoxFlat:
-				body_highlight_stylebox.border_width_left = 2
-				body_highlight_stylebox.border_width_top = 1
-				body_highlight_stylebox.border_width_right = 1
-				body_highlight_stylebox.border_width_bottom = 1
-				body_highlight_stylebox.border_color = Color(0.3, 0.8, 0.5, 0.8)
 
 func _show_drop_indicator(above: bool) -> void:
 	if not drop_indicator:

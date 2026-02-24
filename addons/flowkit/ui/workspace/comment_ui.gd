@@ -14,12 +14,12 @@ var comment_data: FKCommentBlock
 var is_selected: bool = false
 var is_editing: bool = false
 
-@onready var text_edit: TextEdit = $Panel/MarginContainer/TextEdit
-@onready var display_label: Label = $Panel/MarginContainer/DisplayLabel
-@onready var panel: PanelContainer = $Panel
+@export var text_edit: TextEdit
+@export var display_label: Label
+@export var panel: PanelContainer
+@export var normal_style: StyleBoxFlat
+@export var selected_style: StyleBoxFlat
 
-const SELECTED_BORDER_COLOR = Color(0.95, 0.85, 0.35, 1.0)
-const NORMAL_BORDER_COLOR = Color(0.72, 0.64, 0.3, 1.0)
 const SOLID_YELLOW_BG = Color(0.9, 0.8, 0.4, 1.0)
 const EDITING_BG = Color(0.55, 0.5, 0.25, 1.0)
 
@@ -27,28 +27,25 @@ func _ready() -> void:
 	# Ensure we receive mouse events
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	
-	# Initialize text_edit with comment_data if available
-	if text_edit and comment_data:
+	if comment_data:
 		text_edit.text = comment_data.text
-	
-	if text_edit:
-		text_edit.text_changed.connect(_on_text_changed)
+	text_edit.text_changed.connect(_on_text_changed)
 	
 	_set_display_mode()
 
 func _input(event: InputEvent) -> void:
 	# Exit edit mode when clicking anywhere outside this comment
-	if is_editing and event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+	var left_click = event is InputEventMouseButton and event.pressed and \
+	event.button_index == MOUSE_BUTTON_LEFT
+	if is_editing and left_click:
 		var mouse_pos = get_global_mouse_position()
 		if not get_global_rect().has_point(mouse_pos):
 			_set_display_mode()
 
 func set_comment_data(data: FKCommentBlock) -> void:
 	comment_data = data
-	if text_edit:
-		text_edit.text = data.text
-	if display_label:
-		display_label.text = data.text if data.text != "" else "Add comment..."
+	text_edit.text = data.text
+	display_label.text = data.text if data.text != "" else "Add comment..."
 
 func get_comment_data() -> FKCommentBlock:
 	return comment_data
@@ -62,58 +59,50 @@ func _set_display_mode() -> void:
 	is_editing = false
 	
 	# Update comment data and emit signal when exiting edit mode
-	if text_edit and comment_data:
+	if comment_data:
 		var new_text = text_edit.text
 		if comment_data.text != new_text:
 			comment_data.text = new_text
 			data_changed.emit()
 	
-	if text_edit:
-		text_edit.visible = false
-	if display_label:
-		display_label.visible = true
-		if comment_data:
-			display_label.text = comment_data.text if comment_data.text != "" else "Add comment..."
+	text_edit.visible = false
+	display_label.visible = true
+	if comment_data:
+		display_label.text = comment_data.text if comment_data.text != "" else "Add comment..."
 	_update_style()
 
 func _set_edit_mode() -> void:
 	"""Switch to edit mode (dark bg, editable)."""
 	is_editing = true
-	if display_label:
-		display_label.visible = false
-	if text_edit:
-		text_edit.visible = true
-		text_edit.grab_focus()
-		text_edit.set_caret_line(text_edit.get_line_count() - 1)
-		text_edit.set_caret_column(text_edit.get_line(text_edit.get_line_count() - 1).length())
+	display_label.visible = false
+	text_edit.visible = true
+	text_edit.grab_focus()
+	text_edit.set_caret_line(text_edit.get_line_count() - 1)
+	text_edit.set_caret_column(text_edit.get_line(text_edit.get_line_count() - 1).length())
 	_update_style()
 
 func _update_style() -> void:
-	if not panel:
-		return
-	var style = panel.get_theme_stylebox("panel").duplicate()
-	if style is StyleBoxFlat:
-		if is_editing:
-			style.bg_color = EDITING_BG
-		else:
-			style.bg_color = SOLID_YELLOW_BG
+	var style: StyleBox = panel.get_theme_stylebox("panel").duplicate()
+	
+	if is_editing:
+		style.bg_color = EDITING_BG
+	else:
+		style.bg_color = SOLID_YELLOW_BG
+	
+	if is_selected:
+		_set_border_props(selected_style, style)
+	else:
+		_set_border_props(normal_style, style)
 		
-		# Thicker border when selected
-		if is_selected:
-			style.border_color = SELECTED_BORDER_COLOR
-			style.border_width_left = 4
-			style.border_width_top = 2
-			style.border_width_right = 2
-			style.border_width_bottom = 2
-		else:
-			style.border_color = NORMAL_BORDER_COLOR
-			style.border_width_left = 3
-			style.border_width_top = 1
-			style.border_width_right = 1
-			style.border_width_bottom = 1
-		
-		panel.add_theme_stylebox_override("panel", style)
+	panel.add_theme_stylebox_override("panel", style)
 
+func _set_border_props(from: StyleBoxFlat, to: StyleBoxFlat):
+	to.border_color = from.border_color
+	to.border_width_left = from.border_width_left
+	to.border_width_top = from.border_width_top
+	to.border_width_right = from.border_width_right
+	to.border_width_bottom = from.border_width_bottom
+	
 func _on_text_changed() -> void:
 	# Update display label preview but don't save yet
 	# Saving happens when edit mode is exited (_set_display_mode)

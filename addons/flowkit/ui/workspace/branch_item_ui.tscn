@@ -1,6 +1,10 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://bjt2ok3qegg82"]
 
 [ext_resource type="Script" uid="uid://dcwcx6tlw6xsx" path="res://addons/flowkit/ui/workspace/branch_item_ui.gd" id="1_branchitem"]
+[ext_resource type="StyleBox" uid="uid://cp5uvyyrwkdoa" path="res://addons/flowkit/editor/styles/branch_ui_non_selected_style.tres" id="2_fej8y"]
+[ext_resource type="StyleBox" uid="uid://s5fgccqjsvrn" path="res://addons/flowkit/editor/styles/branch_ui_body_base_style.tres" id="2_h0m12"]
+[ext_resource type="StyleBox" uid="uid://bv4qtmf413f3s" path="res://addons/flowkit/editor/styles/branch_ui_body_highlighted_style.tres" id="3_jcluo"]
+[ext_resource type="StyleBox" uid="uid://bt4pka60c673g" path="res://addons/flowkit/editor/styles/branch_ui_selected_style.tres" id="3_o6n0w"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_branch"]
 bg_color = Color(0.15, 0.17, 0.14, 1)
@@ -18,88 +22,95 @@ border_color = Color(0.3, 0.8, 0.5, 0.3)
 corner_radius_top_left = 3
 corner_radius_top_right = 3
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_body"]
-bg_color = Color(0.12, 0.14, 0.13, 1)
-corner_radius_bottom_left = 3
-corner_radius_bottom_right = 3
-
-[node name="BranchItem" type="MarginContainer"]
+[node name="BranchItem" type="MarginContainer" unique_id=1274430805 node_paths=PackedStringArray("panel", "actions_container", "body_node", "type_label", "condition_label", "icon_label", "add_action_label", "context_menu", "add_action_context_menu")]
 custom_minimum_size = Vector2(0, 32)
 script = ExtResource("1_branchitem")
+panel = NodePath("Panel")
+actions_container = NodePath("Panel/VBox/Body/BodyMargin/BodyVBox/ActionsContainer")
+body_node = NodePath("Panel/VBox/Body")
+type_label = NodePath("Panel/VBox/Header/HeaderMargin/HBox/TypeLabel")
+condition_label = NodePath("Panel/VBox/Header/HeaderMargin/HBox/ConditionLabel")
+icon_label = NodePath("Panel/VBox/Header/HeaderMargin/HBox/Icon")
+add_action_label = NodePath("Panel/VBox/Body/BodyMargin/BodyVBox/AddActionLabel")
+context_menu = NodePath("ContextMenu")
+add_action_context_menu = NodePath("AddActionContextMenu")
+normal_stylebox = ExtResource("2_fej8y")
+selected_stylebox = ExtResource("3_o6n0w")
+body_base_stylebox = ExtResource("2_h0m12")
+body_highlighted_stylebox = ExtResource("3_jcluo")
 
-[node name="Panel" type="PanelContainer" parent="."]
+[node name="Panel" type="PanelContainer" parent="." unique_id=692190000]
 layout_mode = 2
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_branch")
 
-[node name="VBox" type="VBoxContainer" parent="Panel"]
+[node name="VBox" type="VBoxContainer" parent="Panel" unique_id=1280583985]
 layout_mode = 2
 theme_override_constants/separation = 0
 
-[node name="Header" type="PanelContainer" parent="Panel/VBox"]
+[node name="Header" type="PanelContainer" parent="Panel/VBox" unique_id=2119127125]
 layout_mode = 2
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_header")
 
-[node name="HeaderMargin" type="MarginContainer" parent="Panel/VBox/Header"]
+[node name="HeaderMargin" type="MarginContainer" parent="Panel/VBox/Header" unique_id=672735362]
 layout_mode = 2
 theme_override_constants/margin_left = 6
 theme_override_constants/margin_top = 3
 theme_override_constants/margin_right = 6
 theme_override_constants/margin_bottom = 3
 
-[node name="HBox" type="HBoxContainer" parent="Panel/VBox/Header/HeaderMargin"]
+[node name="HBox" type="HBoxContainer" parent="Panel/VBox/Header/HeaderMargin" unique_id=1334411246]
 layout_mode = 2
 theme_override_constants/separation = 6
 
-[node name="Icon" type="Label" parent="Panel/VBox/Header/HeaderMargin/HBox"]
+[node name="Icon" type="Label" parent="Panel/VBox/Header/HeaderMargin/HBox" unique_id=1231149960]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.3, 0.8, 0.5, 1)
 theme_override_font_sizes/font_size = 11
 text = "🔀"
 
-[node name="TypeLabel" type="Label" parent="Panel/VBox/Header/HeaderMargin/HBox"]
+[node name="TypeLabel" type="Label" parent="Panel/VBox/Header/HeaderMargin/HBox" unique_id=66457947]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.3, 0.8, 0.5, 1)
 theme_override_font_sizes/font_size = 11
 text = "IF"
 
-[node name="ConditionLabel" type="Label" parent="Panel/VBox/Header/HeaderMargin/HBox"]
+[node name="ConditionLabel" type="Label" parent="Panel/VBox/Header/HeaderMargin/HBox" unique_id=1619627389]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.85, 0.88, 0.82, 1)
 theme_override_font_sizes/font_size = 11
-text = ""
 text_overrun_behavior = 3
 
-[node name="Body" type="PanelContainer" parent="Panel/VBox"]
+[node name="Body" type="PanelContainer" parent="Panel/VBox" unique_id=89992382]
 layout_mode = 2
 mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_body")
+theme_override_styles/panel = ExtResource("2_h0m12")
 
-[node name="BodyMargin" type="MarginContainer" parent="Panel/VBox/Body"]
+[node name="BodyMargin" type="MarginContainer" parent="Panel/VBox/Body" unique_id=1559003740]
 layout_mode = 2
 theme_override_constants/margin_left = 16
 theme_override_constants/margin_top = 4
 theme_override_constants/margin_right = 4
 theme_override_constants/margin_bottom = 4
 
-[node name="BodyVBox" type="VBoxContainer" parent="Panel/VBox/Body/BodyMargin"]
+[node name="BodyVBox" type="VBoxContainer" parent="Panel/VBox/Body/BodyMargin" unique_id=262337839]
 layout_mode = 2
 theme_override_constants/separation = 2
 
-[node name="ActionsContainer" type="VBoxContainer" parent="Panel/VBox/Body/BodyMargin/BodyVBox"]
+[node name="ActionsContainer" type="VBoxContainer" parent="Panel/VBox/Body/BodyMargin/BodyVBox" unique_id=1355147788]
 layout_mode = 2
 theme_override_constants/separation = 2
 
-[node name="AddActionLabel" type="Label" parent="Panel/VBox/Body/BodyMargin/BodyVBox"]
+[node name="AddActionLabel" type="Label" parent="Panel/VBox/Body/BodyMargin/BodyVBox" unique_id=1033744093]
 layout_mode = 2
 mouse_filter = 1
 theme_override_colors/font_color = Color(0.4, 0.45, 0.42, 1)
 theme_override_font_sizes/font_size = 10
 text = "Add..."
 
-[node name="ContextMenu" type="PopupMenu" parent="."]
+[node name="ContextMenu" type="PopupMenu" parent="." unique_id=1545532023]
 size = Vector2i(160, 100)
 item_count = 4
 item_0/text = "Edit Condition"
@@ -111,12 +122,11 @@ item_2/id = 2
 item_3/text = "Delete Branch"
 item_3/id = 3
 
-[node name="AddActionContextMenu" type="PopupMenu" parent="."]
+[node name="AddActionContextMenu" type="PopupMenu" parent="." unique_id=220420003]
 size = Vector2i(140, 60)
 item_count = 3
 item_0/text = "Add Action"
 item_0/id = 0
-item_1/text = ""
 item_1/id = -1
 item_1/separator = true
 item_2/text = "Add If Branch"
