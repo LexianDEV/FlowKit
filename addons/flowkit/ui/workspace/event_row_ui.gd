@@ -37,103 +37,143 @@ const CONDITION_ITEM_SCENE = preload("res://addons/flowkit/ui/workspace/conditio
 const ACTION_ITEM_SCENE = preload("res://addons/flowkit/ui/workspace/action_item_ui.tscn")
 const BRANCH_ITEM_SCENE = preload("res://addons/flowkit/ui/workspace/branch_item_ui.tscn")
 
-# UI References
-var panel: PanelContainer
-var event_header_label: Label
-var conditions_container: VBoxContainer
-var actions_container: VBoxContainer
-var add_condition_label: Label
-var add_action_label: Label
-var condition_drop_zone: Control
-var action_drop_zone: Control
-var context_menu: PopupMenu
-var normal_stylebox: StyleBox
-var selected_stylebox: StyleBox
+@export_category("Controls")
+@export var panel: PanelContainer
+@export var context_menu: PopupMenu
 
-func _ready() -> void:
-	_setup_references()
-	_setup_styles()
-	_setup_signals()
+@export_category("Containers")
+@export var conditions_container: VBoxContainer
+@export var actions_container: VBoxContainer
 
-func _setup_references() -> void:
-	panel = get_node_or_null("Panel")
-	event_header_label = get_node_or_null("Panel/HBox/ConditionsColumn/EventHeader/MarginContainer/EventLabel")
-	conditions_container = get_node_or_null("Panel/HBox/ConditionsColumn/ConditionsPanel/ConditionsMargin/ConditionsContainer")
-	actions_container = get_node_or_null("Panel/HBox/ActionsColumn/ActionsPanel/ActionsMargin/ActionsContainer")
-	condition_drop_zone = get_node_or_null("Panel/HBox/ConditionsColumn/ConditionDropZone")
-	action_drop_zone = get_node_or_null("Panel/HBox/ActionsColumn/ActionDropZone")
-	add_condition_label = get_node_or_null("Panel/HBox/ConditionsColumn/ConditionDropZone/AddConditionLabel")
-	add_action_label = get_node_or_null("Panel/HBox/ActionsColumn/ActionDropZone/AddActionLabel")
-	context_menu = get_node_or_null("ContextMenu")
+@export_category("Labels")
+@export var event_header_label: Label
+@export var add_condition_label: Label
+@export var add_action_label: Label
 
-func _setup_styles() -> void:
-	if panel:
-		normal_stylebox = panel.get_theme_stylebox("panel")
-		if normal_stylebox:
-			selected_stylebox = normal_stylebox.duplicate()
-			if selected_stylebox is StyleBoxFlat:
-				selected_stylebox.border_color = Color(1.0, 1.0, 1.0, 1.0)
-				selected_stylebox.border_width_left = 2
-				selected_stylebox.border_width_top = 1
-				selected_stylebox.border_width_right = 1
-				selected_stylebox.border_width_bottom = 1
+@export_category("Drop Zones")
+@export var condition_drop_zone: Control
+@export var action_drop_zone: Control
 
-func _setup_signals() -> void:
-	gui_input.connect(_on_gui_input)
-	call_deferred("_setup_context_menu")
-	call_deferred("_setup_add_labels")
+@export_category("Styles")
+@export var normal_stylebox: StyleBox
+@export var selected_stylebox: StyleBox
 
-func _setup_context_menu() -> void:
-	if context_menu:
+func _enter_tree() -> void:
+	_toggle_subs(true)
+
+# Not the only sub-toggler in this class, given the way we need things wired
+func _toggle_subs(on: bool):
+	if on:
+		gui_input.connect(_on_gui_input)
 		context_menu.id_pressed.connect(_on_context_menu_id_pressed)
+	else:
+		gui_input.disconnect(_on_gui_input)
+		context_menu.id_pressed.disconnect(_on_context_menu_id_pressed)
+			
+	_toggle_label_subs(on)
+	_toggle_drop_zone_signals(on)
 
-func _setup_add_labels() -> void:
-	if add_condition_label:
+func _on_gui_input(event: InputEvent) -> void:
+	var mouse_click: bool = event is InputEventMouseButton and event.pressed
+	if not mouse_click:
+		return
+	
+	if event.button_index == MOUSE_BUTTON_LEFT:
+		selected.emit(self)
+	elif event.button_index == MOUSE_BUTTON_RIGHT:
+		selected.emit(self)
+		_prep_then_show_context_menu()
+		
+func _prep_then_show_context_menu():
+	context_menu.clear()
+	context_menu.add_item("Add Event Below", 0)
+	context_menu.add_item("Add Comment Below", 4)
+	context_menu.add_separator()
+	context_menu.add_item("Replace Event", 1)
+	context_menu.add_item("Edit Event", 2)
+	context_menu.add_separator()
+	context_menu.add_item("Delete Event", 3)
+	context_menu.position = DisplayServer.mouse_get_position()
+	context_menu.popup()
+
+func _on_context_menu_id_pressed(id: int) -> void:
+	match id:
+		0: # Add Event Below
+			insert_event_below_requested.emit(self)
+		1: # Replace Event
+			replace_event_requested.emit(self)
+		2: # Edit Event
+			edit_event_requested.emit(self)
+		3: # Delete Event
+			delete_event_requested.emit(self)
+		4: # Add Comment Below
+			insert_comment_below_requested.emit(self)
+
+func _toggle_label_subs(on: bool) -> void:
+	if on:
 		add_condition_label.gui_input.connect(_on_add_condition_input)
 		add_condition_label.mouse_entered.connect(_on_add_condition_hover.bind(true))
 		add_condition_label.mouse_exited.connect(_on_add_condition_hover.bind(false))
-	if add_action_label:
+		
 		add_action_label.gui_input.connect(_on_add_action_input)
 		add_action_label.mouse_entered.connect(_on_add_action_hover.bind(true))
 		add_action_label.mouse_exited.connect(_on_add_action_hover.bind(false))
-	# Connect drop zone signals
-	if condition_drop_zone and condition_drop_zone.has_signal("item_dropped"):
-		condition_drop_zone.item_dropped.connect(_on_condition_drop_zone_dropped)
-	if action_drop_zone and action_drop_zone.has_signal("item_dropped"):
-		action_drop_zone.item_dropped.connect(_on_action_drop_zone_dropped)
-
-func _on_gui_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.pressed:
-		if event.button_index == MOUSE_BUTTON_LEFT:
-			selected.emit(self)
-		elif event.button_index == MOUSE_BUTTON_RIGHT:
-			selected.emit(self)
-			if context_menu:
-				context_menu.clear()
-				context_menu.add_item("Add Event Below", 0)
-				context_menu.add_item("Add Comment Below", 4)
-				context_menu.add_separator()
-				context_menu.add_item("Replace Event", 1)
-				context_menu.add_item("Edit Event", 2)
-				context_menu.add_separator()
-				context_menu.add_item("Delete Event", 3)
-				context_menu.position = DisplayServer.mouse_get_position()
-				context_menu.popup()
-
+	else:
+		add_condition_label.gui_input.disconnect(_on_add_condition_input)
+		add_condition_label.mouse_entered.disconnect(_on_add_condition_hover.bind(true))
+		add_condition_label.mouse_exited.disconnect(_on_add_condition_hover.bind(false))
+		
+		add_action_label.gui_input.disconnect(_on_add_action_input)
+		add_action_label.mouse_entered.disconnect(_on_add_action_hover.bind(true))
+		add_action_label.mouse_exited.disconnect(_on_add_action_hover.bind(false))
+				
+func _toggle_drop_zone_signals(on: bool):
+	if on:
+		if condition_drop_zone.has_signal("item_dropped"):
+			condition_drop_zone.item_dropped.connect(_on_condition_drop_zone_dropped)
+		if action_drop_zone.has_signal("item_dropped"):
+			action_drop_zone.item_dropped.connect(_on_action_drop_zone_dropped)
+	else:
+		if condition_drop_zone.has_signal("item_dropped"):
+			condition_drop_zone.item_dropped.disconnect(_on_condition_drop_zone_dropped)
+		if action_drop_zone.has_signal("item_dropped"):
+			action_drop_zone.item_dropped.disconnect(_on_action_drop_zone_dropped)
+		
 func _on_add_condition_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		if event.pressed:
-			_flash_label(add_condition_label)
-			add_condition_requested.emit(self)
+	var left_click: bool = event is InputEventMouseButton and \
+	event.button_index == MOUSE_BUTTON_LEFT and event.pressed
+	if not left_click:
+		return
+		
+	_flash_label(add_condition_label)
+	add_condition_requested.emit(self)
 
+func _flash_label(label: Label) -> void:
+	# Change color to light blue on click
+	label.add_theme_color_override("font_color", Color(0.6, 0.85, 1.0, 1))
+	# Restore color after a short delay
+	var tween = create_tween()
+	tween.tween_interval(0.15)
+	tween.tween_callback(func():
+		if is_instance_valid(label):
+			label.add_theme_color_override("font_color", Color(0.5, 0.55, 0.6, 1))
+	)
+
+func _on_add_condition_hover(is_hovering: bool) -> void:
+	if is_hovering:
+		add_condition_label.add_theme_color_override("font_color", Color(0.7, 0.75, 0.8, 1))
+	else:
+		add_condition_label.add_theme_color_override("font_color", Color(0.5, 0.55, 0.6, 1))
+		
 func _on_add_action_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		if event.pressed:
-			_flash_label(add_action_label)
-			_show_add_action_context_menu()
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT:
-		if event.pressed:
-			_show_add_action_context_menu()
+	var mouse_input_pressed = event is InputEventMouseButton and event.pressed
+	if not mouse_input_pressed:
+		return
+		
+	if event.button_index == MOUSE_BUTTON_LEFT:
+		_flash_label(add_action_label)
+		
+	_show_add_action_context_menu()
 
 func _show_add_action_context_menu() -> void:
 	var popup := PopupMenu.new()
@@ -150,45 +190,11 @@ func _show_add_action_context_menu() -> void:
 	popup.position = DisplayServer.mouse_get_position()
 	popup.popup()
 
-func _on_add_condition_hover(is_hovering: bool) -> void:
-	if add_condition_label:
-		if is_hovering:
-			add_condition_label.add_theme_color_override("font_color", Color(0.7, 0.75, 0.8, 1))
-		else:
-			add_condition_label.add_theme_color_override("font_color", Color(0.5, 0.55, 0.6, 1))
-
 func _on_add_action_hover(is_hovering: bool) -> void:
-	if add_action_label:
-		if is_hovering:
-			add_action_label.add_theme_color_override("font_color", Color(0.7, 0.75, 0.8, 1))
-		else:
-			add_action_label.add_theme_color_override("font_color", Color(0.5, 0.55, 0.6, 1))
-
-func _flash_label(label: Label) -> void:
-	if not label:
-		return
-	# Change color to light blue on click
-	label.add_theme_color_override("font_color", Color(0.6, 0.85, 1.0, 1))
-	# Restore color after a short delay
-	var tween = create_tween()
-	tween.tween_interval(0.15)
-	tween.tween_callback(func():
-		if is_instance_valid(label):
-			label.add_theme_color_override("font_color", Color(0.5, 0.55, 0.6, 1))
-	)
-
-func _on_context_menu_id_pressed(id: int) -> void:
-	match id:
-		0: # Add Event Below
-			insert_event_below_requested.emit(self)
-		1: # Replace Event
-			replace_event_requested.emit(self)
-		2: # Edit Event
-			edit_event_requested.emit(self)
-		3: # Delete Event
-			delete_event_requested.emit(self)
-		4: # Add Comment Below
-			insert_comment_below_requested.emit(self)
+	if is_hovering:
+		add_action_label.add_theme_color_override("font_color", Color(0.7, 0.75, 0.8, 1))
+	else:
+		add_action_label.add_theme_color_override("font_color", Color(0.5, 0.55, 0.6, 1))
 
 func set_event_data(data: FKEventBlock) -> void:
 	event_data = data
@@ -207,34 +213,48 @@ func _update_display() -> void:
 	_update_actions()
 
 func _update_event_header() -> void:
-	if not event_header_label:
-		event_header_label = get_node_or_null("Panel/HBox/ConditionsColumn/EventHeader/MarginContainer/EventLabel")
+	if not event_data:
+		return
+		
+	var display_name = _get_event_header_display_name()
+	var params_text = _get_params_text()
 	
-	if event_header_label and event_data:
-		var display_name = event_data.event_id
+	var node_name = String(event_data.target_node).get_file()
+	event_header_label.text = _header_label_format % [display_name, node_name, params_text]
+
+func _get_event_header_display_name() -> String:
+	var result: String = event_data.event_id
+	var from_registry := _provider_name_from_registry()
+	if from_registry.length() > 0:
+		result = from_registry
 		
-		if registry:
-			for provider in registry.event_providers:
-				if provider.has_method("get_id") and provider.get_id() == event_data.event_id:
-					if provider.has_method("get_name"):
-						display_name = provider.get_name()
-					break
+	return result
+
+func _provider_name_from_registry() -> String:
+	var result: String = ""
+	if registry:
+		for provider in registry.event_providers:
+			if provider.has_method("get_id") and provider.get_id() == event_data.event_id:
+				if provider.has_method("get_name"):
+					result = provider.get_name()
+				break
+	return result
+	
+func _get_params_text() -> String:
+	var params_text = ""
+	
+	if not event_data.inputs.is_empty():
+		var param_pairs = []
+		for key in event_data.inputs:
+			param_pairs.append("%s" % [event_data.inputs[key]])
+		params_text = " (" + ", ".join(param_pairs) + ")"
 		
-		var params_text = ""
-		if not event_data.inputs.is_empty():
-			var param_pairs = []
-			for key in event_data.inputs:
-				param_pairs.append("%s" % [event_data.inputs[key]])
-			params_text = " (" + ", ".join(param_pairs) + ")"
-		
-		var node_name = String(event_data.target_node).get_file()
-		event_header_label.text = "⚡ %s (%s)%s" % [display_name, node_name, params_text]
+	return params_text
+
+var _header_label_format: String = "⚡ %s (%s)%s"
 
 func _update_conditions() -> void:
-	if not conditions_container:
-		conditions_container = get_node_or_null("Panel/HBox/ConditionsColumn/ConditionsPanel/ConditionsMargin/ConditionsContainer")
-	
-	if not conditions_container or not event_data:
+	if not event_data:
 		return
 	
 	# Clear existing condition items
@@ -251,10 +271,7 @@ func _update_conditions() -> void:
 		conditions_container.add_child(item)
 
 func _update_actions() -> void:
-	if not actions_container:
-		actions_container = get_node_or_null("Panel/HBox/ActionsColumn/ActionsPanel/ActionsMargin/ActionsContainer")
-	
-	if not actions_container or not event_data:
+	if not event_data:
 		return
 	
 	# Clear existing action items
@@ -562,13 +579,23 @@ func update_display() -> void:
 
 func set_selected(value: bool) -> void:
 	is_selected = value
-	if panel and normal_stylebox and selected_stylebox:
-		if is_selected:
-			panel.add_theme_stylebox_override("panel", selected_stylebox)
-		else:
-			panel.add_theme_stylebox_override("panel", normal_stylebox)
+	var style = normal_stylebox
+	if is_selected:
+		style = selected_stylebox
+		
+	panel.add_theme_stylebox_override("panel", style)
 
 func _get_drag_data(at_position: Vector2):
+	var drag_preview := _create_drag_preview()
+	set_drag_preview(drag_preview)
+	
+	return \
+	{
+		"type": "event_row",
+		"node": self
+	}
+
+func _create_drag_preview() -> Control:
 	var preview_label := Label.new()
 	preview_label.text = event_header_label.text if event_header_label else "Event"
 	preview_label.add_theme_color_override("font_color", Color(0.9, 0.95, 0.9, 0.7))
@@ -579,14 +606,8 @@ func _get_drag_data(at_position: Vector2):
 	preview_margin.add_theme_constant_override("margin_right", 8)
 	preview_margin.add_theme_constant_override("margin_bottom", 4)
 	preview_margin.add_child(preview_label)
+	return preview_margin
 	
-	set_drag_preview(preview_margin)
-	
-	return {
-		"type": "event_row",
-		"node": self
-	}
-
 func _can_drop_data(at_position: Vector2, data) -> bool:
 	if not data is Dictionary:
 		return false
@@ -698,3 +719,6 @@ func _on_action_drop_zone_dropped(drag_data: Dictionary) -> void:
 	var act_data = drag_data.get("data")
 	if act_data:
 		action_dropped.emit(source_row, act_data, self)
+
+func _exit_tree():
+	_toggle_subs(false)

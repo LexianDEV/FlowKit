@@ -2,18 +2,8 @@
 
 [ext_resource type="Script" uid="uid://d3np8thjqdpfb" path="res://addons/flowkit/ui/workspace/event_row_ui.gd" id="1_eventrow"]
 [ext_resource type="Script" uid="uid://mop12yce25n1" path="res://addons/flowkit/ui/workspace/drop_zone_ui.gd" id="2_dropzone"]
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_row"]
-bg_color = Color(0.14, 0.15, 0.18, 1)
-border_width_left = 2
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.25, 0.27, 0.32, 1)
-corner_radius_top_left = 4
-corner_radius_top_right = 4
-corner_radius_bottom_right = 4
-corner_radius_bottom_left = 4
+[ext_resource type="StyleBox" uid="uid://cg02h3tr6m3th" path="res://addons/flowkit/editor/styles/event_row_ui_normal_style.tres" id="2_mjvbo"]
+[ext_resource type="StyleBox" uid="uid://cdduiwjwkh1b" path="res://addons/flowkit/editor/styles/event_row_ui_selected_style.tres" id="3_33qn0"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_event_header"]
 bg_color = Color(0.18, 0.22, 0.28, 1)
@@ -29,15 +19,26 @@ border_color = Color(0.25, 0.27, 0.32, 1)
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_actions"]
 bg_color = Color(0.13, 0.14, 0.17, 1)
 
-[node name="EventRow" type="MarginContainer" unique_id=132421565]
+[node name="EventRow" type="MarginContainer" unique_id=132421565 node_paths=PackedStringArray("panel", "context_menu", "conditions_container", "actions_container", "event_header_label", "add_condition_label", "add_action_label", "condition_drop_zone", "action_drop_zone")]
 custom_minimum_size = Vector2(0, 60)
 theme_override_constants/margin_bottom = 2
 script = ExtResource("1_eventrow")
+panel = NodePath("Panel")
+context_menu = NodePath("ContextMenu")
+conditions_container = NodePath("Panel/HBox/ConditionsColumn/ConditionsPanel/ConditionsMargin/ConditionsContainer")
+actions_container = NodePath("Panel/HBox/ActionsColumn/ActionsPanel/ActionsMargin/ActionsContainer")
+event_header_label = NodePath("Panel/HBox/ConditionsColumn/EventHeader/MarginContainer/EventLabel")
+add_condition_label = NodePath("Panel/HBox/ConditionsColumn/ConditionDropZone/AddConditionLabel")
+add_action_label = NodePath("Panel/HBox/ActionsColumn/ActionDropZone/AddActionLabel")
+condition_drop_zone = NodePath("Panel/HBox/ConditionsColumn/ConditionDropZone")
+action_drop_zone = NodePath("Panel/HBox/ActionsColumn/ActionDropZone")
+normal_stylebox = ExtResource("2_mjvbo")
+selected_stylebox = ExtResource("3_33qn0")
 
 [node name="Panel" type="PanelContainer" parent="." unique_id=853104603]
 layout_mode = 2
 mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_row")
+theme_override_styles/panel = ExtResource("2_mjvbo")
 
 [node name="HBox" type="HBoxContainer" parent="Panel" unique_id=2065287931]
 layout_mode = 2

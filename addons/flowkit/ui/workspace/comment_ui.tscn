@@ -3,14 +3,7 @@
 [ext_resource type="Script" uid="uid://dptild6s7dopo" path="res://addons/flowkit/ui/workspace/comment_ui.gd" id="1_uyxcp"]
 [ext_resource type="StyleBox" uid="uid://dqdt42faraxag" path="res://addons/flowkit/editor/styles/comment_ui_normal_main_style.tres" id="2_q42v8"]
 [ext_resource type="StyleBox" uid="uid://bt5uomtpuokqf" path="res://addons/flowkit/editor/styles/comment_ui_selected_style.tres" id="3_rfnr0"]
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_pwnld"]
-bg_color = Color(0.9019608, 0.8, 0.4, 1)
-border_width_left = 3
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.8666667, 0.81960785, 0.58431375, 1)
+[ext_resource type="StyleBox" uid="uid://oi4qlt1ln1v4" path="res://addons/flowkit/editor/styles/comment_ui_normal_panel_style.tres" id="4_q42v8"]
 
 [node name="Comment" type="MarginContainer" unique_id=288445031 node_paths=PackedStringArray("text_edit", "display_label", "panel")]
 offset_right = 320.0
@@ -27,7 +20,7 @@ selected_style = ExtResource("3_rfnr0")
 [node name="Panel" type="PanelContainer" parent="." unique_id=2047112118]
 layout_mode = 2
 mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_pwnld")
+theme_override_styles/panel = ExtResource("4_q42v8")
 
 [node name="MarginContainer" type="MarginContainer" parent="Panel" unique_id=624550564]
 layout_mode = 2

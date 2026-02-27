@@ -27,10 +27,12 @@ var parent_branch = null  # Reference to parent branch_item for nested branches
 const ACTION_ITEM_SCENE = preload("res://addons/flowkit/ui/workspace/action_item_ui.tscn")
 
 # UI References
-@export_category("UI Elements")
+@export_category("Controls")
 @export var panel: PanelContainer
+@export var header: Control
 @export var actions_container: VBoxContainer
 @export var body_node: PanelContainer = null  # Reference to Body panel for highlight
+@export var drop_indicator: ColorRect
 
 @export_category("Labels")
 @export var type_label: Label
@@ -46,78 +48,68 @@ const ACTION_ITEM_SCENE = preload("res://addons/flowkit/ui/workspace/action_item
 @export var normal_stylebox: StyleBox
 @export var selected_stylebox: StyleBox
 @export var body_base_stylebox: StyleBoxFlat
-@export var body_highlighted_stylebox: StyleBoxFlat
+@export var body_highlight_stylebox: StyleBoxFlat
 
-# Drop indicator
-var drop_indicator: ColorRect
 var is_drop_target: bool = false
 var drop_above: bool = true
 var is_body_drop: bool = false  # True when drop target is the body (insert into branch)
 
-var body_original_stylebox: StyleBox = null
-var body_highlight_stylebox: StyleBox = null
+func _enter_tree() -> void:
+	_toggle_subs(true)
 
-func _ready() -> void:
-	_setup_drop_indicator()
-	gui_input.connect(_on_gui_input)
-	call_deferred("_setup_context_menu")
-	call_deferred("_setup_add_action_label")
-
-func _setup_drop_indicator() -> void:
-	drop_indicator = ColorRect.new()
-	drop_indicator.color = Color(0.3, 0.8, 0.5, 0.8)
-	drop_indicator.custom_minimum_size = Vector2(0, 2)
-	drop_indicator.visible = false
-	drop_indicator.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(drop_indicator)
-	# Setup body highlight for "drop into" visual feedback
-	body_original_stylebox = body_node.get_theme_stylebox("panel")
-	if body_original_stylebox:
-		body_highlight_stylebox = body_original_stylebox.duplicate()
-		if body_highlight_stylebox is StyleBoxFlat:
-			body_highlight_stylebox.border_width_left = 2
-			body_highlight_stylebox.border_width_top = 1
-			body_highlight_stylebox.border_width_right = 1
-			body_highlight_stylebox.border_width_bottom = 1
-			body_highlight_stylebox.border_color = Color(0.3, 0.8, 0.5, 0.8)
-
-
-func _setup_context_menu() -> void:
-	if context_menu:
+func _toggle_subs(on: bool):
+	if on:
+		gui_input.connect(_on_gui_input)
 		context_menu.id_pressed.connect(_on_context_menu_id_pressed)
-
-func _setup_add_action_label() -> void:
-	if add_action_label:
+		
 		add_action_label.gui_input.connect(_on_add_action_input)
 		add_action_label.mouse_entered.connect(_on_add_action_hover.bind(true))
 		add_action_label.mouse_exited.connect(_on_add_action_hover.bind(false))
-	if add_action_context_menu:
+
 		add_action_context_menu.id_pressed.connect(_on_add_action_context_menu_id_pressed)
+		
+		mouse_exited.connect(_on_mouse_exited)
+	else:
+		gui_input.disconnect(_on_gui_input)
+		context_menu.id_pressed.disconnect(_on_context_menu_id_pressed)
+		
+		add_action_label.gui_input.disconnect(_on_add_action_input)
+		add_action_label.mouse_entered.disconnect(_on_add_action_hover.bind(true))
+		add_action_label.mouse_exited.disconnect(_on_add_action_hover.bind(false))
 
+		add_action_context_menu.id_pressed.disconnect(_on_add_action_context_menu_id_pressed)
+		
+		mouse_exited.disconnect(_on_mouse_exited)
+		
+	pass
+	
 func _on_gui_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.pressed:
-		if event.button_index == MOUSE_BUTTON_LEFT:
-			if event.double_click:
-				if action_data and action_data.branch_type != "else":
-					edit_condition_requested.emit(self)
-			else:
-				selected.emit(self)
-			get_viewport().set_input_as_handled()
-		elif event.button_index == MOUSE_BUTTON_RIGHT:
-			selected.emit(self)
-			_show_context_menu()
-			get_viewport().set_input_as_handled()
-
-func _show_context_menu() -> void:
-	if not context_menu:
+	var mouse_click: bool = event is InputEventMouseButton and event.pressed
+	if not mouse_click:
 		return
+		
+	if event.button_index == MOUSE_BUTTON_LEFT:
+		if event.double_click:
+			if action_data and action_data.branch_type != "else":
+				edit_condition_requested.emit(self)
+		else:
+			selected.emit(self)
+		get_viewport().set_input_as_handled()
+	elif event.button_index == MOUSE_BUTTON_RIGHT:
+		selected.emit(self)
+		_prep_and_show_context_menu()
+		get_viewport().set_input_as_handled()
+
+func _prep_and_show_context_menu() -> void:
 	context_menu.clear()
+	
 	if action_data and action_data.branch_type != "else":
 		context_menu.add_item("Edit Condition", 0)
 		var is_negated = action_data.branch_condition and action_data.branch_condition.negated
 		var negate_text = "Set to True (remove negation)" if is_negated else "Set to False (negate)"
 		context_menu.add_item(negate_text, 4)
 		context_menu.add_separator()
+		
 	context_menu.add_item("Add Else If Below", 1)
 	context_menu.add_item("Add Else Below", 2)
 	context_menu.add_separator()
@@ -146,19 +138,31 @@ func _toggle_negate() -> void:
 		data_changed.emit()
 
 func _on_add_action_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		if event.pressed:
-			_flash_label(add_action_label)
-			_show_add_action_context_menu()
-			accept_event()
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT:
-		if event.pressed:
-			_show_add_action_context_menu()
-			accept_event()
-
-func _show_add_action_context_menu() -> void:
-	if not add_action_context_menu:
+	var mouse_click: bool = event is InputEventMouseButton and event.pressed
+	if not mouse_click:
 		return
+		
+	if event.button_index == MOUSE_BUTTON_LEFT:
+		_flash_label(add_action_label)
+		
+	var left_or_right_click: bool = event.button_index == MOUSE_BUTTON_LEFT or \
+	event.button_index == MOUSE_BUTTON_RIGHT
+	if left_or_right_click:
+		_show_add_action_context_menu()
+		accept_event()
+
+func _flash_label(lbl: Label) -> void:
+	if not lbl:
+		return
+	lbl.add_theme_color_override("font_color", Color(0.5, 0.9, 0.65, 1))
+	var tween = create_tween()
+	tween.tween_interval(0.15)
+	tween.tween_callback(func():
+		if is_instance_valid(lbl):
+			lbl.add_theme_color_override("font_color", Color(0.4, 0.45, 0.42, 1))
+	)
+	
+func _show_add_action_context_menu() -> void:
 	add_action_context_menu.position = DisplayServer.mouse_get_position()
 	add_action_context_menu.popup()
 
@@ -173,17 +177,6 @@ func _on_add_action_hover(is_hovering: bool) -> void:
 			add_action_label.add_theme_color_override("font_color", Color(0.6, 0.65, 0.62, 1))
 		else:
 			add_action_label.add_theme_color_override("font_color", Color(0.4, 0.45, 0.42, 1))
-
-func _flash_label(lbl: Label) -> void:
-	if not lbl:
-		return
-	lbl.add_theme_color_override("font_color", Color(0.5, 0.9, 0.65, 1))
-	var tween = create_tween()
-	tween.tween_interval(0.15)
-	tween.tween_callback(func():
-		if is_instance_valid(lbl):
-			lbl.add_theme_color_override("font_color", Color(0.4, 0.45, 0.42, 1))
-	)
 
 func set_action_data(data: FKEventAction) -> void:
 	action_data = data
@@ -204,19 +197,22 @@ func _update_header() -> void:
 	if not action_data:
 		return
 
-	# Update type label
-	if type_label:
-		match action_data.branch_type:
-			"if":
-				type_label.text = "IF"
-			"elseif":
-				type_label.text = "ELSE IF"
-			"else":
-				type_label.text = "ELSE"
-			_:
-				type_label.text = "IF"
+	_update_type_label()
+	_update_colors()
+	_update_condition_desc()
+	
+func _update_type_label():
+	match action_data.branch_type:
+		"if":
+			type_label.text = "IF"
+		"elseif":
+			type_label.text = "ELSE IF"
+		"else":
+			type_label.text = "ELSE"
+		_:
+			type_label.text = "IF"
 
-	# Update colors based on branch type
+func _update_colors():
 	var branch_color: Color
 	match action_data.branch_type:
 		"else":
@@ -224,43 +220,37 @@ func _update_header() -> void:
 		_:
 			branch_color = Color(0.3, 0.8, 0.5, 1)  # Green for if/elseif
 
-	if type_label:
-		type_label.add_theme_color_override("font_color", branch_color)
-	if icon_label:
-		icon_label.add_theme_color_override("font_color", branch_color)
+	type_label.add_theme_color_override("font_color", branch_color)
+	icon_label.add_theme_color_override("font_color", branch_color)
+	
+func _update_condition_desc():
+	if action_data.branch_type == "else":
+		condition_label.text = ""
+	elif action_data.branch_condition:
+		var cond = action_data.branch_condition
+		var display_name = cond.condition_id
+		if registry:
+			for provider in registry.condition_providers:
+				if provider.has_method("get_id") and provider.get_id() == cond.condition_id:
+					if provider.has_method("get_name"):
+						display_name = provider.get_name()
+					break
 
-	# Update condition description
-	if condition_label:
-		if action_data.branch_type == "else":
-			condition_label.text = ""
-		elif action_data.branch_condition:
-			var cond = action_data.branch_condition
-			var display_name = cond.condition_id
-			if registry:
-				for provider in registry.condition_providers:
-					if provider.has_method("get_id") and provider.get_id() == cond.condition_id:
-						if provider.has_method("get_name"):
-							display_name = provider.get_name()
-						break
+		var negated_prefix = "NOT " if cond.negated else ""
+		var node_name = String(cond.target_node).get_file()
+		var params_text = ""
+		if not cond.inputs.is_empty():
+			var param_pairs = []
+			for key in cond.inputs:
+				param_pairs.append(str(cond.inputs[key]))
+			params_text = ": " + ", ".join(param_pairs)
 
-			var negated_prefix = "NOT " if cond.negated else ""
-			var node_name = String(cond.target_node).get_file()
-			var params_text = ""
-			if not cond.inputs.is_empty():
-				var param_pairs = []
-				for key in cond.inputs:
-					param_pairs.append(str(cond.inputs[key]))
-				params_text = ": " + ", ".join(param_pairs)
-
-			condition_label.text = "%s%s (%s)%s" % [negated_prefix, display_name, node_name, params_text]
-		else:
-			condition_label.text = "(no condition set)"
-
+		condition_label.text = "%s%s (%s)%s" % [negated_prefix, display_name, node_name, params_text]
+	else:
+		condition_label.text = "(no condition set)"
+	
 func _update_branch_actions() -> void:
-	if not actions_container:
-		actions_container = get_node_or_null("Panel/VBox/Body/BodyMargin/BodyVBox/ActionsContainer")
-
-	if not actions_container or not action_data:
+	if not action_data:
 		return
 
 	# Clear existing action items
@@ -363,7 +353,6 @@ func _on_sub_action_reorder(source_item, target_item, is_drop_above: bool) -> vo
 		return
 
 	before_data_changed.emit()
-
 	action_data.branch_actions.remove_at(source_idx)
 
 	if source_idx < target_idx:
@@ -386,34 +375,47 @@ func update_display() -> void:
 
 func set_selected(value: bool) -> void:
 	is_selected = value
-	if panel and normal_stylebox and selected_stylebox:
-		if is_selected:
-			panel.add_theme_stylebox_override("panel", selected_stylebox)
-		else:
-			panel.add_theme_stylebox_override("panel", normal_stylebox)
+	_update_panel_style()
 
-
+func _update_panel_style():
+	var theme = normal_stylebox
+	if is_selected:
+		theme = selected_stylebox
+		
+	panel.add_theme_stylebox_override("panel", theme)
+	
 func _show_drop_indicator(above: bool) -> void:
-	if not drop_indicator:
-		return
 	drop_above = above
 	is_drop_target = true
 	drop_indicator.visible = true
 	drop_indicator.size = Vector2(size.x, 2)
-	if above:
+	_place_drop_indicator()
+
+func _place_drop_indicator():
+	if drop_above:
 		drop_indicator.position = Vector2(0, 0)
 	else:
 		drop_indicator.position = Vector2(0, size.y - 2)
-
+	
 func _hide_drop_indicator() -> void:
-	if drop_indicator:
-		drop_indicator.visible = false
+	drop_indicator.visible = false
 	is_drop_target = false
 
 func _get_drag_data(at_position: Vector2):
 	if not action_data:
 		return null
 
+	var drag_preview := _create_drag_preview()
+	set_drag_preview(drag_preview)
+
+	return \
+	{
+		"type": "action_item",
+		"node": self,
+		"data": action_data
+	}
+
+func _create_drag_preview() -> Control:
 	var preview_label := Label.new()
 	var type_text = action_data.branch_type.to_upper() if action_data else "IF"
 	preview_label.text = "%s Branch" % type_text
@@ -425,39 +427,24 @@ func _get_drag_data(at_position: Vector2):
 	preview_margin.add_theme_constant_override("margin_right", 8)
 	preview_margin.add_theme_constant_override("margin_bottom", 4)
 	preview_margin.add_child(preview_label)
-
-	set_drag_preview(preview_margin)
-
-	return {
-		"type": "action_item",
-		"node": self,
-		"data": action_data
-	}
-
+	
+	return preview_margin
+	
 func _is_drop_in_body_area(at_position: Vector2) -> bool:
 	"""Check if the drop position is within the body area of the branch."""
-	var header = get_node_or_null("Panel/VBox/Header")
-	if not header or not panel:
-		return false
 	# Convert at_position (local to this MarginContainer) to check against body area
 	var global_pos = global_position + at_position
-	var body = get_node_or_null("Panel/VBox/Body")
-	if body:
-		return body.get_global_rect().has_point(global_pos)
-	return false
+	return body_node.get_global_rect().has_point(global_pos)
 
 func _show_body_highlight() -> void:
-	"""Show visual feedback that item will be dropped INTO the branch."""
-	_hide_drop_indicator()  # Hide the above/below indicator
+	"""Show visual feedback that the item will be dropped INTO the branch."""
+	_hide_drop_indicator()
 	is_body_drop = true
-	if body_node and body_highlight_stylebox:
-		body_node.add_theme_stylebox_override("panel", body_highlight_stylebox)
+	body_node.add_theme_stylebox_override("panel", body_highlight_stylebox)
 
 func _hide_body_highlight() -> void:
-	"""Remove the body drop highlight."""
 	is_body_drop = false
-	if body_node and body_original_stylebox:
-		body_node.add_theme_stylebox_override("panel", body_original_stylebox)
+	body_node.add_theme_stylebox_override("panel", body_base_stylebox)
 
 func _can_drop_data(at_position: Vector2, data) -> bool:
 	if not data is Dictionary:
@@ -527,5 +514,14 @@ func _drop_data(at_position: Vector2, data) -> void:
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_DRAG_END:
-		_hide_drop_indicator()
-		_hide_body_highlight()
+		_on_drag_end()
+		
+func _on_drag_end():
+	_hide_drop_indicator()
+	_hide_body_highlight()
+	
+func _on_mouse_exited():
+	_on_drag_end()
+	
+func _exit_tree():
+	_toggle_subs(false)

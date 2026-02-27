@@ -12,49 +12,42 @@ var condition_data: FKEventCondition
 var registry: Node
 var is_selected: bool = false
 
-var label: Label
-var icon_label: Label
-var panel: PanelContainer
-var context_menu: PopupMenu
-var normal_stylebox: StyleBox
-var selected_stylebox: StyleBox
+@export_category("Controls")
+@export var panel: PanelContainer
+@export var label: Label
+@export var icon_label: Label
+@export var context_menu: PopupMenu
+@export var drop_indicator: ColorRect
+
+@export_category("Styles")
+@export var normal_stylebox: StyleBox
+@export var selected_stylebox: StyleBox
 
 # Drop indicator
-var drop_indicator: ColorRect
+
 var is_drop_target: bool = false
 var drop_above: bool = true
 
 func _ready() -> void:
-	_setup_references()
-	_setup_styles()
-	_setup_drop_indicator()
-	gui_input.connect(_on_gui_input)
+	_toggle_subs(true)
 	call_deferred("_setup_context_menu")
 
-func _setup_references() -> void:
-	panel = get_node_or_null("Panel")
-	label = get_node_or_null("Panel/Margin/HBox/Label")
-	icon_label = get_node_or_null("Panel/Margin/HBox/Icon")
-	context_menu = get_node_or_null("ContextMenu")
-
-func _setup_styles() -> void:
-	if panel:
-		normal_stylebox = panel.get_theme_stylebox("panel")
-		if normal_stylebox:
-			selected_stylebox = normal_stylebox.duplicate()
-			if selected_stylebox is StyleBoxFlat:
-				selected_stylebox.border_color = Color(1.0, 0.8, 0.4, 1.0)
-				selected_stylebox.border_width_left = 2
-				selected_stylebox.border_width_top = 1
-				selected_stylebox.border_width_right = 1
-				selected_stylebox.border_width_bottom = 1
-
+func _toggle_subs(on: bool):
+	if on:
+		gui_input.connect(_on_gui_input)
+		mouse_exited.connect(_on_mouse_exited)
+	else:
+		gui_input.disconnect(_on_gui_input)
+		mouse_exited.disconnect(_on_mouse_exited)
+		
+func _on_mouse_exited():
+	_hide_drop_indicator()
+	
 func _setup_context_menu() -> void:
-	if context_menu:
-		context_menu.id_pressed.connect(_on_context_menu_id_pressed)
-		context_menu.set_item_as_checkable(2, true)
-		if condition_data:
-			context_menu.set_item_checked(2, condition_data.negated)
+	context_menu.id_pressed.connect(_on_context_menu_id_pressed)
+	context_menu.set_item_as_checkable(2, true)
+	if condition_data:
+		context_menu.set_item_checked(2, condition_data.negated)
 
 func _on_gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed:
@@ -136,14 +129,6 @@ func set_selected(value: bool) -> void:
 			panel.add_theme_stylebox_override("panel", selected_stylebox)
 		else:
 			panel.add_theme_stylebox_override("panel", normal_stylebox)
-
-func _setup_drop_indicator() -> void:
-	drop_indicator = ColorRect.new()
-	drop_indicator.color = Color(1.0, 0.8, 0.4, 0.8)
-	drop_indicator.custom_minimum_size = Vector2(0, 2)
-	drop_indicator.visible = false
-	drop_indicator.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(drop_indicator)
 
 func _show_drop_indicator(above: bool) -> void:
 	if not drop_indicator:
@@ -256,3 +241,6 @@ func _drop_data(at_position: Vector2, data) -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_DRAG_END:
 		_hide_drop_indicator()
+
+func _exit_tree() -> void:
+	_toggle_subs(false)

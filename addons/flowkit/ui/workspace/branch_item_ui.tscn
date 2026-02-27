@@ -22,12 +22,14 @@ border_color = Color(0.3, 0.8, 0.5, 0.3)
 corner_radius_top_left = 3
 corner_radius_top_right = 3
 
-[node name="BranchItem" type="MarginContainer" unique_id=1274430805 node_paths=PackedStringArray("panel", "actions_container", "body_node", "type_label", "condition_label", "icon_label", "add_action_label", "context_menu", "add_action_context_menu")]
+[node name="BranchItem" type="MarginContainer" unique_id=1274430805 node_paths=PackedStringArray("panel", "header", "actions_container", "body_node", "drop_indicator", "type_label", "condition_label", "icon_label", "add_action_label", "context_menu", "add_action_context_menu")]
 custom_minimum_size = Vector2(0, 32)
 script = ExtResource("1_branchitem")
 panel = NodePath("Panel")
+header = NodePath("Panel/VBox/Header")
 actions_container = NodePath("Panel/VBox/Body/BodyMargin/BodyVBox/ActionsContainer")
 body_node = NodePath("Panel/VBox/Body")
+drop_indicator = NodePath("DropIndicator")
 type_label = NodePath("Panel/VBox/Header/HeaderMargin/HBox/TypeLabel")
 condition_label = NodePath("Panel/VBox/Header/HeaderMargin/HBox/ConditionLabel")
 icon_label = NodePath("Panel/VBox/Header/HeaderMargin/HBox/Icon")
@@ -37,7 +39,7 @@ add_action_context_menu = NodePath("AddActionContextMenu")
 normal_stylebox = ExtResource("2_fej8y")
 selected_stylebox = ExtResource("3_o6n0w")
 body_base_stylebox = ExtResource("2_h0m12")
-body_highlighted_stylebox = ExtResource("3_jcluo")
+body_highlight_stylebox = ExtResource("3_jcluo")
 
 [node name="Panel" type="PanelContainer" parent="." unique_id=692190000]
 layout_mode = 2
@@ -131,3 +133,10 @@ item_1/id = -1
 item_1/separator = true
 item_2/text = "Add If Branch"
 item_2/id = 1
+
+[node name="DropIndicator" type="ColorRect" parent="." unique_id=1319583416]
+visible = false
+custom_minimum_size = Vector2(0, 2)
+layout_mode = 2
+mouse_filter = 2
+color = Color(0.3, 0.8, 0.5, 0.8)

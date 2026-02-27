@@ -1,43 +1,43 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://bq2bh4kpb2p1o"]
 
 [ext_resource type="Script" uid="uid://c3ro3i6s632hp" path="res://addons/flowkit/ui/workspace/condition_item_ui.gd" id="1_conditem"]
+[ext_resource type="StyleBox" uid="uid://6e66gtkstkn6" path="res://addons/flowkit/editor/styles/condition_item_normal_style.tres" id="2_plvwl"]
+[ext_resource type="StyleBox" uid="uid://dpepvi04lsus7" path="res://addons/flowkit/editor/styles/condition_item_selected_style.tres" id="3_1u7ry"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_item"]
-bg_color = Color(0.16, 0.15, 0.14, 1)
-border_width_left = 2
-border_color = Color(1.0, 0.7, 0.3, 1)
-corner_radius_top_left = 3
-corner_radius_top_right = 3
-corner_radius_bottom_right = 3
-corner_radius_bottom_left = 3
-
-[node name="ConditionItem" type="MarginContainer"]
+[node name="ConditionItem" type="MarginContainer" unique_id=1144577479 node_paths=PackedStringArray("panel", "label", "icon_label", "context_menu", "drop_indicator")]
 custom_minimum_size = Vector2(0, 24)
 script = ExtResource("1_conditem")
+panel = NodePath("Panel")
+label = NodePath("Panel/Margin/HBox/Label")
+icon_label = NodePath("Panel/Margin/HBox/Icon")
+context_menu = NodePath("ContextMenu")
+drop_indicator = NodePath("DropIndicator")
+normal_stylebox = ExtResource("2_plvwl")
+selected_stylebox = ExtResource("3_1u7ry")
 
-[node name="Panel" type="PanelContainer" parent="."]
+[node name="Panel" type="PanelContainer" parent="." unique_id=2043112314]
 layout_mode = 2
 mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_item")
+theme_override_styles/panel = ExtResource("2_plvwl")
 
-[node name="Margin" type="MarginContainer" parent="Panel"]
+[node name="Margin" type="MarginContainer" parent="Panel" unique_id=707250253]
 layout_mode = 2
 theme_override_constants/margin_left = 6
 theme_override_constants/margin_top = 2
 theme_override_constants/margin_right = 6
 theme_override_constants/margin_bottom = 2
 
-[node name="HBox" type="HBoxContainer" parent="Panel/Margin"]
+[node name="HBox" type="HBoxContainer" parent="Panel/Margin" unique_id=1072024775]
 layout_mode = 2
 theme_override_constants/separation = 6
 
-[node name="Icon" type="Label" parent="Panel/Margin/HBox"]
+[node name="Icon" type="Label" parent="Panel/Margin/HBox" unique_id=1415610]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.7, 0.3, 1)
 theme_override_font_sizes/font_size = 11
 text = "◆"
 
-[node name="Label" type="Label" parent="Panel/Margin/HBox"]
+[node name="Label" type="Label" parent="Panel/Margin/HBox" unique_id=1643073528]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.9, 0.88, 0.85, 1)
@@ -45,7 +45,7 @@ theme_override_font_sizes/font_size = 11
 text = "Condition"
 text_overrun_behavior = 3
 
-[node name="ContextMenu" type="PopupMenu" parent="."]
+[node name="ContextMenu" type="PopupMenu" parent="." unique_id=375781539]
 size = Vector2i(120, 100)
 item_count = 3
 item_0/text = "Edit"
@@ -53,4 +53,12 @@ item_0/id = 0
 item_1/text = "Delete"
 item_1/id = 1
 item_2/text = "Negate"
+item_2/checkable = 1
 item_2/id = 2
+
+[node name="DropIndicator" type="ColorRect" parent="." unique_id=559503594]
+visible = false
+custom_minimum_size = Vector2(0, 2)
+layout_mode = 2
+mouse_filter = 2
+color = Color(1, 0.8, 0.4, 0.8)

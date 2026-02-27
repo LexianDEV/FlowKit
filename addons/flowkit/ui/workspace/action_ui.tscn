@@ -8,10 +8,10 @@
 theme_override_constants/margin_left = 48
 theme_override_constants/margin_bottom = 2
 script = ExtResource("1_cfrs7")
-normal_stylebox = ExtResource("2_a3b5y")
 context_menu = NodePath("ContextMenu")
 label = NodePath("Panel/MarginContainer/HBoxContainer/Label")
 panel = NodePath("Panel")
+normal_stylebox = ExtResource("2_a3b5y")
 selected_stylebox = ExtResource("3_w5cwp")
 
 [node name="Panel" type="PanelContainer" parent="." unique_id=707018358]

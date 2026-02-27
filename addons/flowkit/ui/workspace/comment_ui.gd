@@ -14,9 +14,12 @@ var comment_data: FKCommentBlock
 var is_selected: bool = false
 var is_editing: bool = false
 
+@export_category("Controls")
 @export var text_edit: TextEdit
 @export var display_label: Label
 @export var panel: PanelContainer
+
+@export_category("Styles")
 @export var normal_style: StyleBoxFlat
 @export var selected_style: StyleBoxFlat
 
@@ -31,7 +34,7 @@ func _ready() -> void:
 		text_edit.text = comment_data.text
 	text_edit.text_changed.connect(_on_text_changed)
 	
-	_set_display_mode()
+	call_deferred("_set_display_mode")
 
 func _input(event: InputEvent) -> void:
 	# Exit edit mode when clicking anywhere outside this comment
@@ -39,7 +42,8 @@ func _input(event: InputEvent) -> void:
 	event.button_index == MOUSE_BUTTON_LEFT
 	if is_editing and left_click:
 		var mouse_pos = get_global_mouse_position()
-		if not get_global_rect().has_point(mouse_pos):
+		var clicked_within_this_comment = get_global_rect().has_point(mouse_pos)
+		if not clicked_within_this_comment:
 			_set_display_mode()
 
 func set_comment_data(data: FKCommentBlock) -> void:

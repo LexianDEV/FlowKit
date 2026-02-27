@@ -31,7 +31,7 @@ func _notification(what: int) -> void:
 
 func _get_visible_blocks() -> Array[Control]:
 	"""Get all visible block children (excluding indicator and labels)."""
-	var blocks = []
+	var blocks: Array[Control] = []
 	for child in get_children():
 		if DropIndicatorManager.is_indicator(child):
 			continue
