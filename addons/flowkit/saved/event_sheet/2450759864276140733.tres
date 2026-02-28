@@ -8,41 +8,70 @@
 [ext_resource type="Script" uid="uid://bumsyiqkp46l1" path="res://addons/flowkit/resources/event_sheet.gd" id="6_0vfw8"]
 
 [sub_resource type="Resource" id="Resource_xv5k1"]
-script = ExtResource("4_ko5ym")
-condition_id = "compare_node_variable"
-target_node = NodePath(".")
+script = ExtResource("3_7puo2")
+action_id = "set_variable"
+target_node = NodePath("System")
 inputs = {
-"Comparison": "",
-"Property": "",
-"Value": ""
+"Name": "times",
+"Value": "1"
 }
 
 [sub_resource type="Resource" id="Resource_o0xcg"]
 script = ExtResource("3_7puo2")
-is_branch = true
-branch_type = "if"
-branch_id = "if_branch"
-branch_condition = SubResource("Resource_xv5k1")
+action_id = "Print Message"
+target_node = NodePath(".")
+inputs = {
+"color": "red",
+"message": "\"Counting from 1 to 10\""
+}
 
 [sub_resource type="Resource" id="Resource_7puo2"]
+script = ExtResource("3_7puo2")
+action_id = "Print Message"
+target_node = NodePath(".")
+inputs = {
+"color": "blue",
+"message": "system.get_var(\"times\")"
+}
+
+[sub_resource type="Resource" id="Resource_ko5ym"]
+script = ExtResource("3_7puo2")
+action_id = "set_variable"
+target_node = NodePath("System")
+inputs = {
+"Name": "times",
+"Value": "system.get_var(\"times\")+1"
+}
+
+[sub_resource type="Resource" id="Resource_3014d"]
 script = ExtResource("3_7puo2")
 is_branch = true
 branch_type = "if"
 branch_id = "repeat"
 branch_inputs = {
-"times": "5"
+"times": "10"
+}
+branch_actions = Array[ExtResource("3_7puo2")]([SubResource("Resource_7puo2"), SubResource("Resource_ko5ym")])
+
+[sub_resource type="Resource" id="Resource_0vfw8"]
+script = ExtResource("3_7puo2")
+action_id = "Print Message"
+target_node = NodePath(".")
+inputs = {
+"color": "red",
+"message": "Done!"
 }
 
-[sub_resource type="Resource" id="Resource_ko5ym"]
+[sub_resource type="Resource" id="Resource_v5tg8"]
 script = ExtResource("2_o0xcg")
 block_id = "event_1771972259_1225162116"
 event_id = "on_ready"
 target_node = NodePath(".")
-actions = Array[ExtResource("3_7puo2")]([SubResource("Resource_o0xcg"), SubResource("Resource_7puo2")])
+actions = Array[ExtResource("3_7puo2")]([SubResource("Resource_xv5k1"), SubResource("Resource_o0xcg"), SubResource("Resource_3014d"), SubResource("Resource_0vfw8")])
 
 [resource]
 script = ExtResource("6_0vfw8")
-events = Array[ExtResource("2_o0xcg")]([SubResource("Resource_ko5ym")])
+events = Array[ExtResource("2_o0xcg")]([SubResource("Resource_v5tg8")])
 item_order = Array[Dictionary]([{
 "index": 0,
 "type": "event"
