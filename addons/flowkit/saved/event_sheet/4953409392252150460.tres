@@ -178,7 +178,7 @@ children = [{
 
 [sub_resource type="Resource" id="Resource_fwgt7"]
 script = ExtResource("2_e5301")
-action_id = "gen_set_flip_h"
+action_id = "set_flip_h"
 target_node = NodePath("AnimatedSprite2D")
 inputs = {
 "Value": "true"
@@ -204,7 +204,7 @@ actions = Array[ExtResource("2_e5301")]([SubResource("Resource_fwgt7")])
 
 [sub_resource type="Resource" id="Resource_i8xgt"]
 script = ExtResource("2_e5301")
-action_id = "gen_set_flip_h"
+action_id = "set_flip_h"
 target_node = NodePath("AnimatedSprite2D")
 inputs = {
 "Value": "false"
@@ -247,7 +247,7 @@ text = "Player is not moving"
 
 [sub_resource type="Resource" id="Resource_y2uhx"]
 script = ExtResource("2_e5301")
-action_id = "gen_play"
+action_id = "animatedsprite2d_play"
 target_node = NodePath("AnimatedSprite2D")
 inputs = {
 "Custom Speed": "1",
@@ -284,7 +284,7 @@ text = "Player is moving"
 
 [sub_resource type="Resource" id="Resource_hklvi"]
 script = ExtResource("2_e5301")
-action_id = "gen_play"
+action_id = "animatedsprite2d_play"
 target_node = NodePath("AnimatedSprite2D")
 inputs = {
 "Custom Speed": "1",
