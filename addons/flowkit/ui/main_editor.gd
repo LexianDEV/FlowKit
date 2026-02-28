@@ -882,6 +882,7 @@ func _copy_action(act: FKEventAction) -> FKEventAction:
 		cond_copy.condition_id = act.branch_condition.condition_id
 		cond_copy.target_node = act.branch_condition.target_node
 		cond_copy.inputs = act.branch_condition.inputs.duplicate()
+		cond_copy.negated = act.branch_condition.negated
 		act_copy.branch_condition = cond_copy
 	
 	act_copy.branch_actions = [] as Array[FKEventAction]
