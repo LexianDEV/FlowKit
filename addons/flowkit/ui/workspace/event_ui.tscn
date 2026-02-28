@@ -1,30 +1,22 @@
 [gd_scene format=3 uid="uid://bh6btjhk8rtay"]
 
 [ext_resource type="Script" uid="uid://c8hkx3u260w7f" path="res://addons/flowkit/ui/workspace/event_ui.gd" id="1_dlcxj"]
+[ext_resource type="StyleBox" uid="uid://e1ij0p6vitpy" path="res://addons/flowkit/editor/styles/event_ui_normal_style.tres" id="2_y6dnp"]
+[ext_resource type="StyleBox" uid="uid://b30ndro2i6cr8" path="res://addons/flowkit/editor/styles/event_ui_selected_style.tres" id="3_ahi84"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_event"]
-bg_color = Color(0.18, 0.26, 0.2, 1)
-border_width_left = 4
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.2, 0.8, 0.3, 1)
-corner_radius_top_left = 6
-corner_radius_top_right = 6
-corner_radius_bottom_right = 6
-corner_radius_bottom_left = 6
-shadow_color = Color(0, 0, 0, 0.3)
-shadow_size = 4
-shadow_offset = Vector2(0, 2)
-
-[node name="Event" type="MarginContainer" unique_id=997405827]
+[node name="Event" type="MarginContainer" unique_id=997405827 node_paths=PackedStringArray("context_menu", "label", "panel")]
 theme_override_constants/margin_bottom = 2
 script = ExtResource("1_dlcxj")
+context_menu = NodePath("ContextMenu")
+label = NodePath("Panel/MarginContainer/HBoxContainer/Label")
+panel = NodePath("Panel")
+normal_stylebox = ExtResource("2_y6dnp")
+selected_stylebox = ExtResource("3_ahi84")
 
 [node name="Panel" type="PanelContainer" parent="." unique_id=1979644392]
 layout_mode = 2
 mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_event")
+theme_override_styles/panel = ExtResource("2_y6dnp")
 
 [node name="MarginContainer" type="MarginContainer" parent="Panel" unique_id=962048655]
 layout_mode = 2

@@ -51,76 +51,77 @@ var _drag_start_pos: Vector2 = Vector2.ZERO
 var _is_potential_drag: bool = false
 const DRAG_THRESHOLD: float = 8.0
 
-# === Node References ===
-@onready var panel: PanelContainer = $Panel
-@onready var collapse_btn: Label = $Panel/VBox/Header/CollapseButton
-@onready var title_label: Label = $Panel/VBox/Header/TitleLabel
-@onready var title_edit: LineEdit = $Panel/VBox/Header/TitleEdit
-@onready var children_container: VBoxContainer = $Panel/VBox/ChildrenMargin/ChildrenContainer
-@onready var drop_hint: Label = $Panel/VBox/ChildrenMargin/ChildrenContainer/DropHint
-@onready var context_menu: PopupMenu = $ContextMenu
+@export_category("Controls")
+@export var panel: PanelContainer
+@export var title_edit: LineEdit
+@export var children_container: VBoxContainer
+@export var context_menu: PopupMenu
+@export var header: BoxContainer
+@export var children_margin: MarginContainer
 
-# === Style ===
-var normal_stylebox: StyleBox
-var selected_stylebox: StyleBox
+@export_category("Labels")
+@export var collapse_btn: Label
+@export var title_label: Label
+@export var drop_hint: Label
+
+@export_category("Styles")
+@export var normal_stylebox: StyleBox
+@export var selected_stylebox: StyleBox
 
 # === Lifecycle ===
 
-func _ready() -> void:
-	_setup_styles()
-	_setup_signal_connections()
+func _enter_tree() -> void:
+	_toggle_subs(true)
+	children_container.set_meta("_parent_group", self)
+
+func _toggle_subs(on: bool):
+	if on:
+		gui_input.connect(_on_gui_input)
 	
-	# Setup children_container drag-drop by setting script methods
-	if children_container:
-		children_container.set_meta("_parent_group", self)
-		# Override drag-drop methods
-		children_container.set_script(preload("res://addons/flowkit/ui/workspace/group_children_container.gd"))
-
-
+		collapse_btn.gui_input.connect(_on_collapse_btn_input)
+		
+		collapse_btn.mouse_entered.connect(_on_collapse_btn_mouse_entered)
+		collapse_btn.mouse_exited.connect(_on_collapse_btn_mouse_exited)
+		
+		title_label.gui_input.connect(_on_title_input)
+		
+		title_edit.text_submitted.connect(_on_title_submitted)
+		title_edit.focus_exited.connect(_on_title_focus_lost)
+		
+		context_menu.id_pressed.connect(_on_context_menu_id_pressed)
+		
+		header.gui_input.connect(_on_header_gui_input)
+	else:
+		gui_input.disconnect(_on_gui_input)
+	
+		collapse_btn.gui_input.disconnect(_on_collapse_btn_input)
+		
+		collapse_btn.mouse_entered.disconnect(_on_collapse_btn_mouse_entered)
+		collapse_btn.mouse_exited.disconnect(_on_collapse_btn_mouse_exited)
+		
+		title_label.gui_input.disconnect(_on_title_input)
+		
+		title_edit.text_submitted.disconnect(_on_title_submitted)
+		title_edit.focus_exited.disconnect(_on_title_focus_lost)
+		
+		context_menu.id_pressed.disconnect(_on_context_menu_id_pressed)
+		
+		header.gui_input.disconnect(_on_header_gui_input)
+	
 func _input(event: InputEvent) -> void:
 	"""Cancel title edit when clicking outside."""
-	if title_edit and title_edit.visible:
-		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-			if not title_edit.get_global_rect().has_point(event.global_position):
-				_finish_title_edit(title_edit.text)
-
+	var left_click: bool = event is InputEventMouseButton and event.pressed and \
+	event.button_index == MOUSE_BUTTON_LEFT
+	if not left_click or not title_edit.visible:
+		return
+		
+	var clicked_title_edit: bool = title_edit.get_global_rect().has_point(event.global_position)
+	if not clicked_title_edit:
+		_finish_title_edit(title_edit.text)
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_DRAG_END:
 		DropIndicatorManager.hide_indicator()
-
-# === Setup ===
-
-func _setup_styles() -> void:
-	"""Initialize styleboxes."""
-	if panel:
-		normal_stylebox = panel.get_theme_stylebox("panel")
-		if normal_stylebox:
-			selected_stylebox = normal_stylebox.duplicate()
-			if selected_stylebox is StyleBoxFlat:
-				selected_stylebox.border_color = Color.WHITE
-				selected_stylebox.border_width_left = 2
-				selected_stylebox.border_width_top = 1
-				selected_stylebox.border_width_right = 1
-				selected_stylebox.border_width_bottom = 1
-
-
-func _setup_signal_connections() -> void:
-	"""Connect UI signals."""
-	if collapse_btn:
-		collapse_btn.gui_input.connect(_on_collapse_btn_input)
-		collapse_btn.mouse_entered.connect(_on_collapse_btn_mouse_entered)
-		collapse_btn.mouse_exited.connect(_on_collapse_btn_mouse_exited)
-	if title_label:
-		title_label.gui_input.connect(_on_title_input)
-	if title_edit:
-		title_edit.text_submitted.connect(_on_title_submitted)
-		title_edit.focus_exited.connect(_on_title_focus_lost)
-	if context_menu:
-		context_menu.id_pressed.connect(_on_context_menu_id_pressed)
-	if $Panel/VBox/Header:
-		$Panel/VBox/Header.gui_input.connect(_on_header_gui_input)
-	gui_input.connect(_on_gui_input)
 
 # === Data Management ===
 
@@ -155,52 +156,38 @@ func _refresh_display() -> void:
 
 func _update_title_display() -> void:
 	"""Update title label from data."""
-	if title_label:
-		title_label.text = group_data.title
+	title_label.text = group_data.title
 
 
 func _update_collapse_display() -> void:
 	"""Update collapse button and visibility."""
-	if collapse_btn:
-		collapse_btn.text = "▶" if group_data.collapsed else "▼"
-	
-	var children_margin = get_node_or_null("Panel/VBox/ChildrenMargin")
-	if children_margin:
-		children_margin.visible = not group_data.collapsed
-	
+	collapse_btn.text = "▶" if group_data.collapsed else "▼"
+	children_margin.visible = not group_data.collapsed
 	custom_minimum_size.y = 32 if group_data.collapsed else 60
 
 
 func _update_color_display() -> void:
 	"""Update panel color from data."""
-	if not panel or not group_data:
+	if not group_data:
 		return
 	
-	var style = panel.get_theme_stylebox("panel")
-	if style:
-		style = style.duplicate()
-		if style is StyleBoxFlat:
-			style.bg_color = group_data.color
-			style.border_color = group_data.color.lightened(0.3)
-			style.border_width_left = 3
-			style.border_width_top = 1
-			style.border_width_right = 1
-			style.border_width_bottom = 1
-		panel.add_theme_stylebox_override("panel", style)
-		normal_stylebox = style
+	# We'll need to dynamically alter the normal and selected styles based on
+	# the group data we're working with. As we don't want to change the assets
+	# on disk through code, we'll assign both style boxes to copies.
+	normal_stylebox = normal_stylebox.duplicate()
+	if normal_stylebox is StyleBoxFlat:
+		normal_stylebox.bg_color = group_data.color
+		normal_stylebox.border_color = group_data.color.lightened(0.3)
 		
-		selected_stylebox = style.duplicate()
-		if selected_stylebox is StyleBoxFlat:
-			selected_stylebox.border_color = Color.WHITE
-			selected_stylebox.border_width_left = 3
-			selected_stylebox.border_width_top = 2
-			selected_stylebox.border_width_right = 2
-			selected_stylebox.border_width_bottom = 2
-
+	panel.add_theme_stylebox_override("panel", normal_stylebox)
+	
+	selected_stylebox = selected_stylebox.duplicate()
+	if selected_stylebox is StyleBoxFlat:
+		selected_stylebox.bg_color = group_data.color
 
 func _rebuild_child_nodes() -> void:
 	"""Rebuild child UI nodes from group_data.children."""
-	if not children_container or not group_data:
+	if not group_data:
 		return
 	
 	# Remove old children (except drop_hint)
@@ -428,14 +415,12 @@ func _on_collapse_btn_input(event: InputEvent) -> void:
 
 func _on_collapse_btn_mouse_entered() -> void:
 	"""Highlight the collapse button on hover."""
-	if collapse_btn:
-		collapse_btn.add_theme_color_override("font_color", Color.WHITE)
+	collapse_btn.add_theme_color_override("font_color", Color.WHITE)
 
 
 func _on_collapse_btn_mouse_exited() -> void:
 	"""Restore the collapse button on hover exit."""
-	if collapse_btn:
-		collapse_btn.remove_theme_color_override("font_color")
+	collapse_btn.remove_theme_color_override("font_color")
 
 
 func _toggle_collapse() -> void:
@@ -487,12 +472,11 @@ func _start_title_edit() -> void:
 	"""Enter title edit mode."""
 	_is_potential_drag = false
 	
-	if title_label and title_edit:
-		title_label.visible = false
-		title_edit.visible = true
-		title_edit.text = group_data.title if group_data else "Group"
-		title_edit.grab_focus()
-		title_edit.select_all()
+	title_label.visible = false
+	title_edit.visible = true
+	title_edit.text = group_data.title if group_data else "Group"
+	title_edit.grab_focus()
+	title_edit.select_all()
 
 
 func _on_title_submitted(new_text: String) -> void:
@@ -502,36 +486,34 @@ func _on_title_submitted(new_text: String) -> void:
 
 func _on_title_focus_lost() -> void:
 	"""Handle title edit focus loss."""
-	if title_edit and title_edit.visible:
+	if title_edit.visible:
 		_finish_title_edit(title_edit.text)
 
 
 func _finish_title_edit(new_text: String) -> void:
 	"""Exit title edit mode."""
-	if title_label and title_edit:
-		before_data_changed.emit()
-		title_edit.visible = false
-		title_label.visible = true
-		if group_data:
-			group_data.title = new_text if new_text != "" else "Group"
-			title_label.text = group_data.title
-			data_changed.emit()
+	before_data_changed.emit()
+	title_edit.visible = false
+	title_label.visible = true
+	if group_data:
+		group_data.title = new_text if new_text != "" else "Group"
+		title_label.text = group_data.title
+		data_changed.emit()
 
 # === Context Menu ===
 
 func _show_context_menu(pos: Vector2) -> void:
 	"""Show context menu."""
-	if context_menu:
-		context_menu.clear()
-		context_menu.add_item("Add Event", 10)
-		context_menu.add_item("Add Comment", 11)
-		context_menu.add_separator()
-		context_menu.add_item("Rename Group", 0)
-		context_menu.add_item("Change Color", 1)
-		context_menu.add_separator()
-		context_menu.add_item("Delete Group", 2)
-		context_menu.position = Vector2i(pos)
-		context_menu.popup()
+	context_menu.clear()
+	context_menu.add_item("Add Event", 10)
+	context_menu.add_item("Add Comment", 11)
+	context_menu.add_separator()
+	context_menu.add_item("Rename Group", 0)
+	context_menu.add_item("Change Color", 1)
+	context_menu.add_separator()
+	context_menu.add_item("Delete Group", 2)
+	context_menu.position = Vector2i(pos)
+	context_menu.popup()
 
 
 func _on_context_menu_id_pressed(id: int) -> void:
@@ -618,8 +600,7 @@ func _show_color_picker() -> void:
 func _on_gui_input(event: InputEvent) -> void:
 	"""Handle general input."""
 	if event is InputEventMouseButton and event.pressed:
-		var children_margin = get_node_or_null("Panel/VBox/ChildrenMargin")
-		if children_margin and children_margin.visible:
+		if children_margin.visible:
 			var local_pos = children_margin.get_local_mouse_position()
 			if children_margin.get_rect().has_point(local_pos + children_margin.position):
 				return
@@ -633,7 +614,7 @@ func _on_gui_input(event: InputEvent) -> void:
 
 func _on_header_gui_input(event: InputEvent) -> void:
 	"""Handle header input."""
-	if title_edit and title_edit.visible:
+	if title_edit.visible:
 		_is_potential_drag = false
 		return
 	
@@ -659,12 +640,14 @@ func _on_header_gui_input(event: InputEvent) -> void:
 func set_selected(value: bool) -> void:
 	"""Set selection state."""
 	is_selected = value
-	if panel and normal_stylebox and selected_stylebox:
-		if is_selected:
-			panel.add_theme_stylebox_override("panel", selected_stylebox)
-		else:
-			panel.add_theme_stylebox_override("panel", normal_stylebox)
+	_update_panel_style_based_on_selection()
 
+func _update_panel_style_based_on_selection():
+	var style := normal_stylebox
+	if is_selected:
+		style = selected_stylebox
+	panel.add_theme_stylebox_override("panel", style)
+		
 # === Drag and Drop ===
 
 func _get_drag_data(_at_position: Vector2):
@@ -724,8 +707,7 @@ func _drop_data(at_position: Vector2, data) -> void:
 	if not drag_node or not is_instance_valid(drag_node):
 		return
 	
-	var children_margin = get_node_or_null("Panel/VBox/ChildrenMargin")
-	if not (children_margin and children_margin.visible):
+	if not children_margin.visible:
 		return
 	
 	var local_pos = children_margin.get_local_mouse_position()
@@ -917,3 +899,6 @@ func _show_drop_indicator(at_position: Vector2, dragged_node: Node) -> void:
 	DropIndicatorManager.show_indicator(
 		children_container, result["y_position"], children_container.size.x - 20
 	)
+
+func _exit_tree() -> void:
+	_toggle_subs(false)

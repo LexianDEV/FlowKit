@@ -23,8 +23,6 @@ var is_selected: bool = false
 @export var normal_stylebox: StyleBox
 @export var selected_stylebox: StyleBox
 
-# Drop indicator
-
 var is_drop_target: bool = false
 var drop_above: bool = true
 
