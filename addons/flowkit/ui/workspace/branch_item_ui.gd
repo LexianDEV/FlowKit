@@ -534,8 +534,13 @@ func _can_drop_data(at_position: Vector2, data) -> bool:
 		_hide_body_highlight()
 		return false
 
+	# If the source is a direct child of this branch, don't capture body drops.
+	# Show a reorder indicator instead so it can be dragged out of the branch.
+	var source_data_check = data.get("data")
+	var is_direct_child: bool = source_data_check and action_data and action_data.branch_actions.has(source_data_check)
+
 	# Check if dropping on body area (insert into branch) vs header area (reorder)
-	if _is_drop_in_body_area(at_position):
+	if not is_direct_child and _is_drop_in_body_area(at_position):
 		_show_body_highlight()
 		return true
 

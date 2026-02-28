@@ -575,6 +575,19 @@ func _on_action_reorder(source_item, target_item, drop_above: bool) -> void:
 	_update_actions()
 	data_changed.emit()
 
+func _pull_action_to_top_level(act_data) -> void:
+	"""Remove an action/branch from inside a nested branch and append it to top-level actions."""
+	if not event_data:
+		return
+	# Only act if it's actually nested (not already top-level)
+	if event_data.actions.has(act_data):
+		return
+	before_data_changed.emit()
+	if _recursive_remove_action(event_data.actions, act_data):
+		event_data.actions.append(act_data)
+		_update_actions()
+		data_changed.emit()
+
 func add_condition(condition_data: FKEventCondition) -> void:
 	if event_data:
 		event_data.conditions.append(condition_data)
@@ -689,10 +702,11 @@ func _drop_data(at_position: Vector2, data) -> void:
 			if not is_left_side:
 				var act_data = data.get("data")
 				if act_data:
-					# Allow same-row drops for reordering (handled by action_item_ui.gd)
-					# Only handle cross-row drops here
 					if source_row != self:
 						action_dropped.emit(source_row, act_data, self)
+					else:
+						# Same-row: source is inside a branch — pull it out to top level
+						_pull_action_to_top_level(act_data)
 
 func _find_parent_event_row(node: Node):
 	"""Find the event_row that contains this node."""
@@ -724,12 +738,16 @@ func _on_action_drop_zone_dropped(drag_data: Dictionary) -> void:
 		return
 	
 	var source_row = _find_parent_event_row(source_node)
-	if not source_row or source_row == self:
+	if not source_row:
 		return
 	
 	var act_data = drag_data.get("data")
 	if act_data:
-		action_dropped.emit(source_row, act_data, self)
+		if source_row == self:
+			# Same row — pull nested item to top level
+			_pull_action_to_top_level(act_data)
+		else:
+			action_dropped.emit(source_row, act_data, self)
 
 func _exit_tree():
 	_toggle_subs(false)
