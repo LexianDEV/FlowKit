@@ -17,3 +17,6 @@ class_name FKProviderManifest
 
 ## Preloaded behavior provider scripts
 @export var behavior_scripts: Array[GDScript] = []
+
+## Preloaded branch provider scripts
+@export var branch_scripts: Array[GDScript] = []

@@ -39,6 +39,7 @@ var pending_target_row = null  # The event row being modified
 var pending_target_item = null  # The specific condition/action item being edited
 var pending_target_group = null  # The group to add content to (for event_in_group workflow)
 var pending_target_branch = null  # The branch item for branch sub-action workflows
+var pending_branch_id: String = ""  # The branch provider ID for the current workflow
 var selected_row = null  # Currently selected event row
 var selected_item = null  # Currently selected condition/action item
 
@@ -342,7 +343,9 @@ func _serialize_action(act: FKEventAction) -> Dictionary:
 		"target_node": str(act.target_node),
 		"inputs": act.inputs.duplicate(),
 		"is_branch": act.is_branch,
-		"branch_type": act.branch_type
+		"branch_type": act.branch_type,
+		"branch_id": act.branch_id,
+		"branch_inputs": act.branch_inputs.duplicate()
 	}
 	if act.is_branch:
 		if act.branch_condition:
@@ -479,6 +482,8 @@ func _deserialize_action(act_dict: Dictionary) -> FKEventAction:
 	act.inputs = act_dict.get("inputs", {}).duplicate()
 	act.is_branch = act_dict.get("is_branch", false)
 	act.branch_type = act_dict.get("branch_type", "")
+	act.branch_id = act_dict.get("branch_id", "")
+	act.branch_inputs = act_dict.get("branch_inputs", {}).duplicate()
 	if act.is_branch:
 		var cond_dict = act_dict.get("branch_condition", null)
 		if cond_dict:
@@ -870,14 +875,13 @@ func _copy_action(act: FKEventAction) -> FKEventAction:
 	act_copy.inputs = act.inputs.duplicate()
 	act_copy.is_branch = act.is_branch
 	act_copy.branch_type = act.branch_type
-	
+	act_copy.branch_id = act.branch_id
+	act_copy.branch_inputs = act.branch_inputs.duplicate()
 	if act.branch_condition:
 		var cond_copy = FKEventCondition.new()
 		cond_copy.condition_id = act.branch_condition.condition_id
 		cond_copy.target_node = act.branch_condition.target_node
 		cond_copy.inputs = act.branch_condition.inputs.duplicate()
-		cond_copy.negated = act.branch_condition.negated
-		cond_copy.actions = [] as Array[FKEventAction]
 		act_copy.branch_condition = cond_copy
 	
 	act_copy.branch_actions = [] as Array[FKEventAction]
@@ -1002,7 +1006,7 @@ func _connect_group_signals(group) -> void:
 	group.action_dropped.connect(_on_action_dropped)
 	# Branch signals from groups
 	if group.has_signal("add_branch_requested"):
-		group.add_branch_requested.connect(func(row): _on_row_add_branch(row, row))
+		group.add_branch_requested.connect(func(row, bid): _on_row_add_branch(row, bid, row))
 	if group.has_signal("add_elseif_requested"):
 		group.add_elseif_requested.connect(_on_branch_add_elseif)
 	if group.has_signal("add_else_requested"):
@@ -1466,6 +1470,12 @@ func _on_expressions_confirmed(_node_path: String, _id: String, expressions: Dic
 			_finalize_elseif_creation(expressions)
 		"branch_action":
 			_finalize_branch_action_creation(expressions)
+		"branch_evaluation":
+			_finalize_branch_evaluation_creation(expressions)
+		"branch_evaluation_edit":
+			_update_branch_evaluation(expressions)
+		"elseif_evaluation":
+			_finalize_elseif_evaluation_creation(expressions)
 
 func _finalize_event_creation(inputs: Dictionary) -> void:
 	"""Create and add event row (GDevelop-style)."""
@@ -1683,6 +1693,7 @@ func _reset_workflow() -> void:
 	pending_target_item = null
 	pending_target_group = null
 	pending_target_branch = null
+	pending_branch_id = ""
 
 # === Event Row Handlers ===
 
@@ -1758,23 +1769,42 @@ func _on_row_add_action(signal_row, bound_row) -> void:
 
 # === Branch Handlers ===
 
-func _on_row_add_branch(signal_row, bound_row) -> void:
-	"""Start adding an IF branch to the event row."""
+func _on_row_add_branch(signal_row, branch_id, bound_row) -> void:
+	"""Start adding a branch to the event row."""
 	pending_target_row = bound_row
 	pending_target_branch = null  # Ensure no stale branch target from previous workflow
-	_start_add_workflow("branch_condition", bound_row)
+	pending_branch_id = branch_id
+	_start_branch_workflow(branch_id, bound_row)
 
 func _on_branch_add_elseif(branch_item, event_row) -> void:
 	"""Add an Else If branch below an existing branch."""
 	pending_target_row = event_row
 	pending_target_branch = branch_item
-	_start_add_workflow("elseif_condition", event_row)
 
-func _on_nested_branch_add(branch_item, event_row) -> void:
-	"""Start adding a nested IF branch inside a branch."""
+	# Determine the branch provider to pick the right workflow
+	var act_data = branch_item.get_action_data()
+	var bid: String = registry.resolve_branch_id(act_data.branch_id if act_data else "", act_data.branch_type if act_data else "")
+	pending_branch_id = bid
+	var branch_provider = registry.get_branch_provider(bid) if registry else null
+	var input_type: String = branch_provider.get_input_type() if branch_provider and branch_provider.has_method("get_input_type") else "condition"
+
+	if input_type == "condition":
+		_start_add_workflow("elseif_condition", event_row)
+	else:
+		var branch_inputs_def = branch_provider.get_inputs() if branch_provider and branch_provider.has_method("get_inputs") else []
+		pending_block_type = "elseif_evaluation"
+		if branch_inputs_def.size() > 0:
+			expression_modal.populate_inputs("", bid, branch_inputs_def)
+			_popup_centered_on_editor(expression_modal)
+		else:
+			_finalize_elseif_evaluation_creation({})
+
+func _on_nested_branch_add(branch_item, branch_id, event_row) -> void:
+	"""Start adding a nested branch inside a branch."""
 	pending_target_row = event_row
 	pending_target_branch = branch_item
-	_start_add_workflow("branch_condition", event_row)
+	pending_branch_id = branch_id
+	_start_branch_workflow(branch_id, event_row)
 
 func _on_branch_add_else(branch_item, event_row) -> void:
 	"""Add an Else branch below an existing branch."""
@@ -1788,6 +1818,7 @@ func _on_branch_add_else(branch_item, event_row) -> void:
 	var else_data = FKEventAction.new()
 	else_data.is_branch = true
 	else_data.branch_type = "else"
+	else_data.branch_id = registry.resolve_branch_id(branch_data.branch_id, branch_data.branch_type)
 	else_data.branch_condition = null
 	else_data.branch_actions = [] as Array[FKEventAction]
 
@@ -1812,32 +1843,51 @@ func _on_branch_add_else(branch_item, event_row) -> void:
 	_save_sheet()
 
 func _on_branch_condition_edit(branch_item, event_row) -> void:
-	"""Edit the condition of a branch."""
+	"""Edit the condition or inputs of a branch."""
 	var act_data = branch_item.get_action_data()
-	if not act_data or not act_data.branch_condition:
+	if not act_data:
 		return
 
-	var cond = act_data.branch_condition
-	var provider_inputs = []
-	if registry:
-		for provider in registry.condition_providers:
-			if provider.has_method("get_id") and provider.get_id() == cond.condition_id:
-				if provider.has_method("get_inputs"):
-					provider_inputs = provider.get_inputs()
-				break
+	# Determine the branch provider and input type
+	var bid: String = registry.resolve_branch_id(act_data.branch_id, act_data.branch_type)
+	var branch_provider = registry.get_branch_provider(bid)
+	var input_type: String = branch_provider.get_input_type() if branch_provider and branch_provider.has_method("get_input_type") else "condition"
 
 	pending_target_row = event_row
 	pending_target_branch = branch_item
-	pending_block_type = "branch_condition_edit"
-	pending_id = cond.condition_id
-	pending_node_path = str(cond.target_node)
+	pending_branch_id = bid
 
-	if provider_inputs.size() > 0:
-		expression_modal.populate_inputs(str(cond.target_node), cond.condition_id, provider_inputs, cond.inputs)
-		_popup_centered_on_editor(expression_modal)
+	if input_type == "condition":
+		if not act_data.branch_condition:
+			return
+		var cond = act_data.branch_condition
+		var provider_inputs = []
+		if registry:
+			for provider in registry.condition_providers:
+				if provider.has_method("get_id") and provider.get_id() == cond.condition_id:
+					if provider.has_method("get_inputs"):
+						provider_inputs = provider.get_inputs()
+					break
+
+		pending_block_type = "branch_condition_edit"
+		pending_id = cond.condition_id
+		pending_node_path = str(cond.target_node)
+
+		if provider_inputs.size() > 0:
+			expression_modal.populate_inputs(str(cond.target_node), cond.condition_id, provider_inputs, cond.inputs)
+			_popup_centered_on_editor(expression_modal)
+		else:
+			# No inputs but user wants to change condition type - open node selector
+			_start_add_workflow("branch_condition_edit", event_row)
 	else:
-		# No inputs but user wants to change condition type - open node selector
-		_start_add_workflow("branch_condition_edit", event_row)
+		# Evaluation type — open expression modal with the branch's inputs
+		var branch_inputs_def = branch_provider.get_inputs() if branch_provider and branch_provider.has_method("get_inputs") else []
+		pending_block_type = "branch_evaluation_edit"
+		if branch_inputs_def.size() > 0:
+			expression_modal.populate_inputs("", bid, branch_inputs_def, act_data.branch_inputs)
+			_popup_centered_on_editor(expression_modal)
+		else:
+			_update_branch_evaluation({})
 
 func _on_branch_action_add(branch_item, event_row) -> void:
 	"""Add an action inside a branch."""
@@ -1873,7 +1923,7 @@ func _on_branch_action_edit(action_item, branch_item, event_row) -> void:
 		print("Action has no inputs to edit")
 
 func _finalize_branch_creation(inputs: Dictionary) -> void:
-	"""Create an IF branch and add it to the target's actions."""
+	"""Create a condition-type branch and add it to the target's actions."""
 	_push_undo_state()
 
 	var cond = FKEventCondition.new()
@@ -1885,6 +1935,7 @@ func _finalize_branch_creation(inputs: Dictionary) -> void:
 	var branch_data = FKEventAction.new()
 	branch_data.is_branch = true
 	branch_data.branch_type = "if"
+	branch_data.branch_id = pending_branch_id
 	branch_data.branch_condition = cond
 	branch_data.branch_actions = [] as Array[FKEventAction]
 
@@ -1911,6 +1962,10 @@ func _finalize_elseif_creation(inputs: Dictionary) -> void:
 	var elseif_data = FKEventAction.new()
 	elseif_data.is_branch = true
 	elseif_data.branch_type = "elseif"
+	elseif_data.branch_id = registry.resolve_branch_id(
+		pending_target_branch.get_action_data().branch_id if pending_target_branch else "",
+		pending_target_branch.get_action_data().branch_type if pending_target_branch else ""
+	)
 	elseif_data.branch_condition = cond
 	elseif_data.branch_actions = [] as Array[FKEventAction]
 
@@ -1944,8 +1999,14 @@ func _update_branch_condition(expressions: Dictionary) -> void:
 
 	if pending_target_branch:
 		var act_data = pending_target_branch.get_action_data()
-		if act_data and act_data.branch_condition:
-			act_data.branch_condition.inputs = expressions
+		if act_data:
+			# Check input type to update the right field
+			var bid: String = registry.resolve_branch_id(act_data.branch_id, act_data.branch_type)
+			var branch_provider = registry.get_branch_provider(bid)
+			var input_type: String = branch_provider.get_input_type() if branch_provider and branch_provider.has_method("get_input_type") else "condition"
+			
+			if input_type == "condition" and act_data.branch_condition:
+				act_data.branch_condition.inputs = expressions
 			pending_target_branch.update_display()
 
 	_reset_workflow()
@@ -1962,6 +2023,95 @@ func _finalize_branch_action_creation(inputs: Dictionary) -> void:
 
 	if pending_target_branch and pending_target_branch.has_method("add_branch_action"):
 		pending_target_branch.add_branch_action(data)
+
+	_show_content_state()
+	_reset_workflow()
+	_save_sheet()
+
+## Start the correct workflow for a branch provider (condition or evaluation).
+func _start_branch_workflow(branch_id: String, target_row) -> void:
+	var branch_provider = registry.get_branch_provider(branch_id) if registry else null
+	if not branch_provider:
+		return
+
+	var input_type: String = branch_provider.get_input_type() if branch_provider.has_method("get_input_type") else "condition"
+
+	if input_type == "condition":
+		_start_add_workflow("branch_condition", target_row)
+	else:
+		# Evaluation type — skip node selector, go directly to expression modal
+		var branch_inputs_def = branch_provider.get_inputs() if branch_provider.has_method("get_inputs") else []
+		pending_block_type = "branch_evaluation"
+		pending_target_row = target_row
+		if branch_inputs_def.size() > 0:
+			expression_modal.populate_inputs("", branch_id, branch_inputs_def)
+			_popup_centered_on_editor(expression_modal)
+		else:
+			_finalize_branch_evaluation_creation({})
+
+## Create an evaluation-type branch (e.g., Repeat).
+func _finalize_branch_evaluation_creation(inputs: Dictionary) -> void:
+	_push_undo_state()
+
+	var branch_data = FKEventAction.new()
+	branch_data.is_branch = true
+	branch_data.branch_type = "if"
+	branch_data.branch_id = pending_branch_id
+	branch_data.branch_inputs = inputs
+	branch_data.branch_actions = [] as Array[FKEventAction]
+
+	# If pending_target_branch is set, add as nested branch
+	if pending_target_branch and pending_target_branch.has_method("add_branch_action"):
+		pending_target_branch.add_branch_action(branch_data)
+	elif pending_target_row and pending_target_row.has_method("add_action"):
+		pending_target_row.add_action(branch_data)
+
+	_show_content_state()
+	_reset_workflow()
+	_save_sheet()
+
+## Update evaluation inputs on an existing branch.
+func _update_branch_evaluation(expressions: Dictionary) -> void:
+	_push_undo_state()
+
+	if pending_target_branch:
+		var act_data = pending_target_branch.get_action_data()
+		if act_data:
+			act_data.branch_inputs = expressions
+			pending_target_branch.update_display()
+
+	_reset_workflow()
+	_save_sheet()
+
+## Create an ELSE IF for an evaluation-type branch chain.
+func _finalize_elseif_evaluation_creation(expressions: Dictionary) -> void:
+	_push_undo_state()
+
+	var elseif_data = FKEventAction.new()
+	elseif_data.is_branch = true
+	elseif_data.branch_type = "elseif"
+	elseif_data.branch_id = pending_branch_id
+	elseif_data.branch_inputs = expressions
+	elseif_data.branch_actions = [] as Array[FKEventAction]
+
+	if pending_target_branch and pending_target_row:
+		var branch_act_data = pending_target_branch.get_action_data()
+		var actions_array: Array
+		if pending_target_branch.parent_branch:
+			actions_array = pending_target_branch.parent_branch.get_action_data().branch_actions
+		else:
+			var event_data = pending_target_row.get_event_data()
+			if not event_data:
+				_reset_workflow()
+				return
+			actions_array = event_data.actions
+		if branch_act_data:
+			var idx = actions_array.find(branch_act_data)
+			if idx >= 0:
+				actions_array.insert(idx + 1, elseif_data)
+			else:
+				actions_array.append(elseif_data)
+			pending_target_row.update_display()
 
 	_show_content_state()
 	_reset_workflow()

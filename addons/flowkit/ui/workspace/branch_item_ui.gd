@@ -17,7 +17,7 @@ signal action_cross_reorder_requested(source_data, target_data, is_drop_above: b
 signal action_dropped_into_branch(source_item, target_branch_item)
 signal data_changed()
 signal before_data_changed()
-signal add_nested_branch_requested(branch_item)  # User wants to add a nested IF
+signal add_nested_branch_requested(branch_item, branch_id)  # User wants to add a nested branch
 
 var action_data: FKEventAction  # The FKEventAction with is_branch = true
 var registry: Node
@@ -103,16 +103,27 @@ func _on_gui_input(event: InputEvent) -> void:
 func _prep_and_show_context_menu() -> void:
 	context_menu.clear()
 	
+	# Get the branch provider to decide context menu options
+	var branch_provider = _get_branch_provider()
+	var input_type: String = branch_provider.get_input_type() if branch_provider and branch_provider.has_method("get_input_type") else "condition"
+	
 	if action_data and action_data.branch_type != "else":
-		context_menu.add_item("Edit Condition", 0)
-		var is_negated = action_data.branch_condition and action_data.branch_condition.negated
-		var negate_text = "Set to True (remove negation)" if is_negated else "Set to False (negate)"
-		context_menu.add_item(negate_text, 4)
+		if input_type == "condition":
+			context_menu.add_item("Edit Condition", 0)
+			var is_negated = action_data.branch_condition and action_data.branch_condition.negated
+			var negate_text = "Set to True (remove negation)" if is_negated else "Set to False (negate)"
+			context_menu.add_item(negate_text, 4)
+		else:
+			context_menu.add_item("Edit Inputs", 0)
 		context_menu.add_separator()
-		
-	context_menu.add_item("Add Else If Below", 1)
-	context_menu.add_item("Add Else Below", 2)
-	context_menu.add_separator()
+	
+	# Only show chain options if the branch provider supports it
+	var is_chain: bool = branch_provider.get_type() == "chain" if branch_provider and branch_provider.has_method("get_type") else false
+	if is_chain:
+		context_menu.add_item("Add Else %s Below" % (branch_provider.get_name() if branch_provider else "If"), 1)
+		context_menu.add_item("Add Else Below", 2)
+		context_menu.add_separator()
+	
 	context_menu.add_item("Delete Branch", 3)
 	context_menu.position = DisplayServer.mouse_get_position()
 	context_menu.popup()
@@ -163,13 +174,29 @@ func _flash_label(lbl: Label) -> void:
 	)
 	
 func _show_add_action_context_menu() -> void:
+	add_action_context_menu.clear()
+	add_action_context_menu.add_item("Add Action", 0)
+	add_action_context_menu.add_separator()
+	# Dynamically list branch providers from registry
+	var branches: Array = []
+	if registry:
+		branches = registry.branch_providers
+	for i in range(branches.size()):
+		var branch_provider = branches[i]
+		if branch_provider.has_method("get_name"):
+			add_action_context_menu.add_item("Add %s" % branch_provider.get_name(), 100 + i)
 	add_action_context_menu.position = DisplayServer.mouse_get_position()
 	add_action_context_menu.popup()
 
 func _on_add_action_context_menu_id_pressed(id: int) -> void:
-	match id:
-		0: add_branch_action_requested.emit(self)
-		1: add_nested_branch_requested.emit(self)
+	if id == 0:
+		add_branch_action_requested.emit(self)
+	elif id >= 100:
+		var branches: Array = registry.branch_providers if registry else []
+		var branch_idx = id - 100
+		if branch_idx < branches.size():
+			var bid = branches[branch_idx].get_id()
+			add_nested_branch_requested.emit(self, bid)
 
 func _on_add_action_hover(is_hovering: bool) -> void:
 	if add_action_label:
@@ -202,23 +229,33 @@ func _update_header() -> void:
 	_update_condition_desc()
 	
 func _update_type_label():
+	# Use the branch provider name when available
+	var branch_provider = _get_branch_provider()
+	var provider_name: String = ""
+	if branch_provider and branch_provider.has_method("get_name"):
+		provider_name = branch_provider.get_name().to_upper()
+	
 	match action_data.branch_type:
 		"if":
-			type_label.text = "IF"
+			type_label.text = provider_name if not provider_name.is_empty() else "IF"
 		"elseif":
-			type_label.text = "ELSE IF"
+			var name_part = provider_name if not provider_name.is_empty() else "IF"
+			type_label.text = "ELSE %s" % name_part
 		"else":
 			type_label.text = "ELSE"
 		_:
-			type_label.text = "IF"
+			type_label.text = provider_name if not provider_name.is_empty() else "IF"
 
 func _update_colors():
+	var branch_provider = _get_branch_provider()
 	var branch_color: Color
 	match action_data.branch_type:
 		"else":
-			branch_color = Color(0.85, 0.65, 0.3, 1)  # Orange for else
+			var provider_color: Color = branch_provider.get_color() if branch_provider and branch_provider.has_method("get_color") else Color(0.3, 0.8, 0.5, 1)
+			# Desaturated / muted variant for else
+			branch_color = provider_color.lerp(Color(0.85, 0.65, 0.3, 1), 0.7)
 		_:
-			branch_color = Color(0.3, 0.8, 0.5, 1)  # Green for if/elseif
+			branch_color = branch_provider.get_color() if branch_provider and branch_provider.has_method("get_color") else Color(0.3, 0.8, 0.5, 1)
 
 	type_label.add_theme_color_override("font_color", branch_color)
 	icon_label.add_theme_color_override("font_color", branch_color)
@@ -226,28 +263,51 @@ func _update_colors():
 func _update_condition_desc():
 	if action_data.branch_type == "else":
 		condition_label.text = ""
-	elif action_data.branch_condition:
-		var cond = action_data.branch_condition
-		var display_name = cond.condition_id
-		if registry:
-			for provider in registry.condition_providers:
-				if provider.has_method("get_id") and provider.get_id() == cond.condition_id:
-					if provider.has_method("get_name"):
-						display_name = provider.get_name()
-					break
-
-		var negated_prefix = "NOT " if cond.negated else ""
-		var node_name = String(cond.target_node).get_file()
-		var params_text = ""
-		if not cond.inputs.is_empty():
-			var param_pairs = []
-			for key in cond.inputs:
-				param_pairs.append(str(cond.inputs[key]))
-			params_text = ": " + ", ".join(param_pairs)
-
-		condition_label.text = "%s%s (%s)%s" % [negated_prefix, display_name, node_name, params_text]
 	else:
-		condition_label.text = "(no condition set)"
+		# Determine input type from the branch provider
+		var branch_provider = _get_branch_provider()
+		var input_type: String = branch_provider.get_input_type() if branch_provider and branch_provider.has_method("get_input_type") else "condition"
+		
+		if input_type == "condition" and action_data.branch_condition:
+			var cond = action_data.branch_condition
+			var display_name = cond.condition_id
+			if registry:
+				for provider in registry.condition_providers:
+					if provider.has_method("get_id") and provider.get_id() == cond.condition_id:
+						if provider.has_method("get_name"):
+							display_name = provider.get_name()
+						break
+
+			var negated_prefix = "NOT " if cond.negated else ""
+			var node_name = String(cond.target_node).get_file()
+			var params_text = ""
+			if not cond.inputs.is_empty():
+				var param_pairs = []
+				for key in cond.inputs:
+					param_pairs.append(str(cond.inputs[key]))
+				params_text = ": " + ", ".join(param_pairs)
+
+			condition_label.text = "%s%s (%s)%s" % [negated_prefix, display_name, node_name, params_text]
+		elif input_type == "evaluation" and not action_data.branch_inputs.is_empty():
+			var param_pairs = []
+			for key in action_data.branch_inputs:
+				param_pairs.append("%s: %s" % [key, str(action_data.branch_inputs[key])])
+			condition_label.text = ", ".join(param_pairs)
+		else:
+			condition_label.text = "(no inputs set)"
+
+func _get_branch_provider() -> Variant:
+	"""Look up the branch provider for the current action data."""
+	if not action_data or not registry:
+		return null
+	var bid: String = ""
+	if action_data.branch_id and not action_data.branch_id.is_empty():
+		bid = action_data.branch_id
+	elif action_data.branch_type in ["if", "elseif", "else"]:
+		bid = "if_branch"  # Legacy compatibility
+	if bid.is_empty():
+		return null
+	return registry.get_branch_provider(bid)
 	
 func _update_branch_actions() -> void:
 	if not action_data:
@@ -304,7 +364,7 @@ func _connect_nested_branch_signals(nested) -> void:
 	if nested.has_signal("branch_action_selected"):
 		nested.branch_action_selected.connect(func(node): branch_action_selected.emit(node))
 	if nested.has_signal("add_nested_branch_requested"):
-		nested.add_nested_branch_requested.connect(func(item): add_nested_branch_requested.emit(item))
+		nested.add_nested_branch_requested.connect(func(item, bid): add_nested_branch_requested.emit(item, bid))
 	if nested.has_signal("reorder_requested"):
 		nested.reorder_requested.connect(_on_sub_action_reorder)
 	if nested.has_signal("action_cross_reorder_requested"):
@@ -418,8 +478,12 @@ func _get_drag_data(at_position: Vector2):
 func _create_drag_preview() -> Control:
 	var preview_label := Label.new()
 	var type_text = action_data.branch_type.to_upper() if action_data else "IF"
-	preview_label.text = "%s Branch" % type_text
-	preview_label.add_theme_color_override("font_color", Color(0.3, 0.8, 0.5, 0.9))
+	var branch_provider = _get_branch_provider()
+	var provider_name = branch_provider.get_name() if branch_provider and branch_provider.has_method("get_name") else type_text
+	preview_label.text = "%s Branch" % provider_name
+	var preview_color = branch_provider.get_color() if branch_provider and branch_provider.has_method("get_color") else Color(0.3, 0.8, 0.5, 0.9)
+	preview_color.a = 0.9
+	preview_label.add_theme_color_override("font_color", preview_color)
 
 	var preview_margin := MarginContainer.new()
 	preview_margin.add_theme_constant_override("margin_left", 8)

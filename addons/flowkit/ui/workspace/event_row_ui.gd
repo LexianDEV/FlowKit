@@ -19,13 +19,13 @@ signal condition_dropped(source_row, condition_data, target_row)
 signal action_dropped(source_row, action_data, target_row)
 signal before_data_changed()  # Emitted before any data modification for undo state capture
 # Branch signals
-signal add_branch_requested(event_row)  # User wants to add an IF branch
+signal add_branch_requested(event_row, branch_id)  # User wants to add a branch
 signal add_elseif_requested(branch_item, event_row)  # Add elseif after a branch
 signal add_else_requested(branch_item, event_row)  # Add else after a branch
-signal branch_condition_edit_requested(branch_item, event_row)  # Edit branch condition
+signal branch_condition_edit_requested(branch_item, event_row)  # Edit branch condition/inputs
 signal branch_action_add_requested(branch_item, event_row)  # Add action inside a branch
 signal branch_action_edit_requested(action_item, branch_item, event_row)  # Edit action inside branch
-signal nested_branch_add_requested(branch_item, event_row)  # Add nested IF branch inside a branch
+signal nested_branch_add_requested(branch_item, branch_id, event_row)  # Add nested branch inside a branch
 
 # Data
 var event_data: FKEventBlock
@@ -179,11 +179,22 @@ func _show_add_action_context_menu() -> void:
 	var popup := PopupMenu.new()
 	popup.add_item("Add Action", 0)
 	popup.add_separator()
-	popup.add_item("Add If Branch", 1)
+	# Dynamically list branch providers from registry
+	var branches: Array = []
+	if registry:
+		branches = registry.branch_providers
+	for i in range(branches.size()):
+		var branch_provider = branches[i]
+		if branch_provider.has_method("get_name"):
+			popup.add_item("Add %s" % branch_provider.get_name(), 100 + i)
 	popup.id_pressed.connect(func(id):
-		match id:
-			0: add_action_requested.emit(self)
-			1: add_branch_requested.emit(self)
+		if id == 0:
+			add_action_requested.emit(self)
+		elif id >= 100:
+			var branch_idx = id - 100
+			if branch_idx < branches.size():
+				var bid = branches[branch_idx].get_id()
+				add_branch_requested.emit(self, bid)
 		popup.queue_free()
 	)
 	add_child(popup)
@@ -344,7 +355,7 @@ func _connect_branch_item_signals(branch) -> void:
 	if branch.has_signal("before_data_changed"):
 		branch.before_data_changed.connect(func(): before_data_changed.emit())
 	if branch.has_signal("add_nested_branch_requested"):
-		branch.add_nested_branch_requested.connect(func(item): nested_branch_add_requested.emit(item, self))
+		branch.add_nested_branch_requested.connect(func(item, bid): nested_branch_add_requested.emit(item, bid, self))
 
 func _on_branch_item_delete(item) -> void:
 	before_data_changed.emit()

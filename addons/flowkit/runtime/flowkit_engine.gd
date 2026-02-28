@@ -367,7 +367,27 @@ func _evaluate_branch_condition(act: FKEventAction, current_root: Node, block_id
 
 	return registry.check_condition(cond.condition_id, cnode, cond.inputs, cond.negated, current_root, block_id)
 
-## Execute a list of actions, handling if/elseif/else branch chains recursively.
+## Determine whether a branch should execute, delegating to the branch provider.
+## Handles both condition-type and evaluation-type branches.
+func _check_branch_should_execute(act: FKEventAction, provider: Variant, current_root: Node, block_id: String) -> bool:
+	if not provider:
+		return false
+
+	var input_type: String = provider.get_input_type() if provider.has_method("get_input_type") else "condition"
+
+	if input_type == "condition":
+		var cond_result: bool = _evaluate_branch_condition(act, current_root, block_id)
+		return provider.should_execute(cond_result, {}, block_id)
+	else:
+		# Evaluation type: evaluate branch_inputs and let the provider decide
+		var evaluated_inputs: Dictionary = registry.evaluate_branch_inputs(act.branch_inputs, current_root)
+		return provider.should_execute(false, evaluated_inputs, block_id)
+
+## Get evaluated branch inputs for execution-count queries.
+func _get_evaluated_branch_inputs(act: FKEventAction, current_root: Node) -> Dictionary:
+	return registry.evaluate_branch_inputs(act.branch_inputs, current_root)
+
+## Execute a list of actions, handling branch chains via providers.
 ## Used by both _execute_block (top-level actions) and nested branches.
 func _execute_actions_list(actions: Array, current_root: Node, block_id: String) -> void:
 	var branch_taken: bool = false
@@ -375,25 +395,48 @@ func _execute_actions_list(actions: Array, current_root: Node, block_id: String)
 
 	for act in actions:
 		if act.is_branch:
+			var branch_id: String = registry.resolve_branch_id(act.branch_id, act.branch_type)
+			var provider = registry.get_branch_provider(branch_id)
+
+			if not provider:
+				# Unknown branch provider — skip
+				continue
+
 			match act.branch_type:
 				"if":
 					branch_taken = false
-					in_branch_chain = true
-					var cond_passed = _evaluate_branch_condition(act, current_root, block_id)
-					if cond_passed:
+					in_branch_chain = provider.get_type() == "chain" if provider.has_method("get_type") else false
+					var should_exec = _check_branch_should_execute(act, provider, current_root, block_id)
+					if should_exec:
 						branch_taken = true
-						await _execute_actions_list(act.branch_actions, current_root, block_id)
+						var evaluated = _get_evaluated_branch_inputs(act, current_root)
+						var count: int = provider.get_execution_count(evaluated, block_id) if provider.has_method("get_execution_count") else 1
+						for i in count:
+							await _execute_actions_list(act.branch_actions, current_root, block_id)
 				"elseif":
 					if in_branch_chain and not branch_taken:
-						var cond_passed = _evaluate_branch_condition(act, current_root, block_id)
-						if cond_passed:
+						var should_exec = _check_branch_should_execute(act, provider, current_root, block_id)
+						if should_exec:
 							branch_taken = true
-							await _execute_actions_list(act.branch_actions, current_root, block_id)
+							var evaluated = _get_evaluated_branch_inputs(act, current_root)
+							var count: int = provider.get_execution_count(evaluated, block_id) if provider.has_method("get_execution_count") else 1
+							for i in count:
+								await _execute_actions_list(act.branch_actions, current_root, block_id)
 				"else":
 					if in_branch_chain and not branch_taken:
 						branch_taken = true
 						await _execute_actions_list(act.branch_actions, current_root, block_id)
 					in_branch_chain = false
+				_:
+					# Standalone branch (no chain position) — treat like "if"
+					var should_exec = _check_branch_should_execute(act, provider, current_root, block_id)
+					if should_exec:
+						var evaluated = _get_evaluated_branch_inputs(act, current_root)
+						var count: int = provider.get_execution_count(evaluated, block_id) if provider.has_method("get_execution_count") else 1
+						for i in count:
+							await _execute_actions_list(act.branch_actions, current_root, block_id)
+					in_branch_chain = false
+					branch_taken = false
 		else:
 			in_branch_chain = false
 			branch_taken = false

@@ -11,15 +11,17 @@ var action_providers: Array = []
 var condition_providers: Array = []
 var event_providers: Array = []
 var behavior_providers: Array = []
+var branch_providers: Array = []
 
 func load_all() -> void:
 	# Try to load from manifest first (required for exported builds)
 	if _load_from_manifest():
-		print("[FlowKit Registry] Loaded providers from manifest: %d actions, %d conditions, %d events, %d behaviors" % [
+		print("[FlowKit Registry] Loaded providers from manifest: %d actions, %d conditions, %d events, %d behaviors, %d branches" % [
 			action_providers.size(),
 			condition_providers.size(),
 			event_providers.size(),
-			behavior_providers.size()
+			behavior_providers.size(),
+			branch_providers.size()
 		])
 		return
 	
@@ -30,12 +32,14 @@ func load_all() -> void:
 		_load_folder("conditions", condition_providers)
 		_load_folder("events", event_providers)
 		_load_folder("behaviors", behavior_providers)
+		_load_folder("branches", branch_providers)
 		
-		print("[FlowKit Registry] Loaded providers from directories: %d actions, %d conditions, %d events, %d behaviors" % [
+		print("[FlowKit Registry] Loaded providers from directories: %d actions, %d conditions, %d events, %d behaviors, %d branches" % [
 			action_providers.size(),
 			condition_providers.size(),
 			event_providers.size(),
-			behavior_providers.size()
+			behavior_providers.size(),
+			branch_providers.size()
 		])
 	else:
 		push_error("[FlowKit Registry] No provider manifest found and directory scanning is not available in exported builds. Generate the manifest in the editor.")
@@ -75,7 +79,12 @@ func _load_from_manifest() -> bool:
 			if script:
 				behavior_providers.append(script.new())
 	
-	var has_providers = action_providers.size() + condition_providers.size() + event_providers.size() + behavior_providers.size() > 0
+	if manifest.get("branch_scripts"):
+		for script: GDScript in manifest.branch_scripts:
+			if script:
+				branch_providers.append(script.new())
+	
+	var has_providers = action_providers.size() + condition_providers.size() + event_providers.size() + behavior_providers.size() + branch_providers.size() > 0
 	return has_providers
 
 ## Directory scanning for editor/development use only.
@@ -217,3 +226,29 @@ func remove_behavior(behavior_id: String, node: Node) -> void:
 	var behavior: Variant = get_behavior(behavior_id)
 	if behavior and behavior.has_method("remove"):
 		behavior.remove(node)
+
+# --- Branch providers -------------------------------------------------------
+
+func get_branch_provider(branch_id: String) -> Variant:
+	for provider in branch_providers:
+		if provider.has_method("get_id") and provider.get_id() == branch_id:
+			return provider
+	return null
+
+## Resolve the branch provider ID for a branch action.
+## Provides backward compatibility: legacy sheets stored "if"/"elseif"/"else"
+## in branch_type without a separate branch_id field.
+func resolve_branch_id(act_branch_id: String, act_branch_type: String) -> String:
+	if act_branch_id and not act_branch_id.is_empty():
+		return act_branch_id
+	# Legacy compatibility
+	if act_branch_type in ["if", "elseif", "else"]:
+		return "if_branch"
+	return ""
+
+## Evaluate branch inputs through the expression evaluator.
+func evaluate_branch_inputs(inputs: Dictionary, scene_root: Node) -> Dictionary:
+	if inputs.is_empty():
+		return {}
+	var context = scene_root if scene_root else null
+	return FKExpressionEvaluator.evaluate_inputs(inputs, context, scene_root)

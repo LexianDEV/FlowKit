@@ -6,6 +6,7 @@ const ACTIONS_DIR = "res://addons/flowkit/actions/"
 const CONDITIONS_DIR = "res://addons/flowkit/conditions/"
 const EVENTS_DIR = "res://addons/flowkit/events/"
 const BEHAVIORS_DIR = "res://addons/flowkit/behaviors/"
+const BRANCHES_DIR = "res://addons/flowkit/branches/"
 const MANIFEST_PATH = "res://addons/flowkit/saved/provider_manifest.tres"
 const PROVIDER_MANIFEST_SCRIPT = "res://addons/flowkit/resources/provider_manifest.gd"
 
@@ -675,6 +676,7 @@ func generate_manifest() -> Dictionary:
 		"conditions": 0,
 		"events": 0,
 		"behaviors": 0,
+		"branches": 0,
 		"errors": []
 	}
 	
@@ -689,22 +691,26 @@ func generate_manifest() -> Dictionary:
 	var condition_scripts: Array[GDScript] = []
 	var event_scripts: Array[GDScript] = []
 	var behavior_scripts: Array[GDScript] = []
+	var branch_scripts: Array[GDScript] = []
 	
 	_collect_scripts_recursive(ACTIONS_DIR, action_scripts)
 	_collect_scripts_recursive(CONDITIONS_DIR, condition_scripts)
 	_collect_scripts_recursive(EVENTS_DIR, event_scripts)
 	_collect_scripts_recursive(BEHAVIORS_DIR, behavior_scripts)
+	_collect_scripts_recursive(BRANCHES_DIR, branch_scripts)
 	
 	result.actions = action_scripts.size()
 	result.conditions = condition_scripts.size()
 	result.events = event_scripts.size()
 	result.behaviors = behavior_scripts.size()
+	result.branches = branch_scripts.size()
 	
 	# Set the arrays on the manifest
 	manifest.set("action_scripts", action_scripts)
 	manifest.set("condition_scripts", condition_scripts)
 	manifest.set("event_scripts", event_scripts)
 	manifest.set("behavior_scripts", behavior_scripts)
+	manifest.set("branch_scripts", branch_scripts)
 	
 	# Save the manifest
 	var error = ResourceSaver.save(manifest, MANIFEST_PATH)
@@ -713,8 +719,8 @@ func generate_manifest() -> Dictionary:
 		push_error("[FlowKit Generator] Failed to save manifest: " + str(error))
 	else:
 		print("[FlowKit Generator] Manifest saved to: ", MANIFEST_PATH)
-		print("[FlowKit Generator] Total providers: %d actions, %d conditions, %d events, %d behaviors" % [
-			result.actions, result.conditions, result.events, result.behaviors
+		print("[FlowKit Generator] Total providers: %d actions, %d conditions, %d events, %d behaviors, %d branches" % [
+			result.actions, result.conditions, result.events, result.behaviors, result.branches
 		])
 	
 	return result
