@@ -137,19 +137,19 @@ func _hide_drop_indicator() -> void:
 	drop_indicator.visible = false
 	is_drop_target = false
 
-func _get_drag_data(at_position: Vector2):
+func _get_drag_data(at_position: Vector2) -> FKDragData:
 	if not action_data:
 		return null
 	
 	var preview_margin := _create_drag_preview()
 	set_drag_preview(preview_margin)
 	
-	return \
-	{
-		"type": "action_item",
-		"node": self,
-		"data": action_data
-	}
+	var drag_data := FKDragData.new()
+	drag_data.type = DragTargetType.action_item
+	drag_data.node = self
+	drag_data.data = action_data
+	
+	return drag_data
 
 func _create_drag_preview() -> Control:
 	var result := MarginContainer.new()
@@ -168,16 +168,16 @@ func _create_drag_preview() -> Control:
 func _can_drop_data(at_position: Vector2, data) -> bool:
 	# This func gets executed every frame during drag when the pointer is within
 	# the panel's rect
-	if not data is Dictionary:
+	if not data is FKDragData:
 		_hide_drop_indicator()
 		return false
 	
-	var drag_type = data.get("type", "")
-	if drag_type != "action_item":
+	var drag_data := data as FKDragData
+	if drag_data.type != DragTargetType.action_item:
 		_hide_drop_indicator()
 		return false
 	
-	var source_node = data.get("node")
+	var source_node := drag_data.node
 	if source_node == self:
 		_hide_drop_indicator()
 		return false
@@ -235,14 +235,14 @@ func _is_adjacent_to_source(source_node: Node, drop_above: bool) -> bool:
 func _drop_data(at_position: Vector2, data) -> void:
 	_hide_drop_indicator()
 	
-	if not data is Dictionary:
+	if not data is FKDragData:
+		return
+		
+	var drag_data := data as FKDragData
+	if drag_data.type != DragTargetType.action_item:
 		return
 	
-	var drag_type = data.get("type", "")
-	if drag_type != "action_item":
-		return
-	
-	var source_node = data.get("node")
+	var source_node = drag_data.node
 	if not source_node or source_node == self:
 		return
 	
