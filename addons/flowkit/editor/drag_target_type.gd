@@ -4,8 +4,9 @@ class_name DragTargetType
 
 const none = 0
 const action_item = 1
-const action = 1.5
-const branch_item = 2
-const condition = 3
-const event_item = 4
-const group = 5
+const action = 2
+const comment = 3
+const condition = 4
+const condition_item = 5
+const event_item = 6
+const group = 7

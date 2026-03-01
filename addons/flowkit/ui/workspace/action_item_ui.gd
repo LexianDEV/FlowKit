@@ -144,11 +144,7 @@ func _get_drag_data(at_position: Vector2) -> FKDragData:
 	var preview_margin := _create_drag_preview()
 	set_drag_preview(preview_margin)
 	
-	var drag_data := FKDragData.new()
-	drag_data.type = DragTargetType.action_item
-	drag_data.node = self
-	drag_data.data = action_data
-	
+	var drag_data := FKDragData.new(DragTargetType.action_item, self, action_data)
 	return drag_data
 
 func _create_drag_preview() -> Control:

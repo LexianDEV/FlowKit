@@ -106,8 +106,6 @@ func get_action_data() -> FKEventAction:
 	"""Return the internal action data."""
 	return action_data
 
-
-
 func update_display() -> void:
 	"""Refresh the label display."""
 	_update_label()
@@ -128,9 +126,7 @@ func _get_drag_data(at_position: Vector2) -> FKDragData:
 	var preview_margin := _create_drag_preview()
 	set_drag_preview(preview_margin)
 	
-	var drag_data := FKDragData.new()
-	drag_data.type = DragTargetType.action
-	drag_data.node = self
+	var drag_data := FKDragData.new(DragTargetType.action, self)
 	return drag_data
 
 func _create_drag_preview() -> Control:

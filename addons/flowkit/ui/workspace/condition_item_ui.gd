@@ -145,10 +145,17 @@ func _hide_drop_indicator() -> void:
 		drop_indicator.visible = false
 	is_drop_target = false
 
-func _get_drag_data(at_position: Vector2):
+func _get_drag_data(at_position: Vector2) -> FKDragData:
 	if not condition_data:
 		return null
 	
+	var drag_preview := _create_drag_preview()
+	set_drag_preview(drag_preview)
+	
+	var drag_data: FKDragData = FKDragData.new(DragTargetType.condition_item, self, condition_data)
+	return drag_data
+
+func _create_drag_preview() -> Control:
 	var preview_label := Label.new()
 	preview_label.text = label.text if label else "Condition"
 	preview_label.add_theme_color_override("font_color", Color(1.0, 0.8, 0.4, 0.9))
@@ -159,27 +166,23 @@ func _get_drag_data(at_position: Vector2):
 	preview_margin.add_theme_constant_override("margin_right", 8)
 	preview_margin.add_theme_constant_override("margin_bottom", 4)
 	preview_margin.add_child(preview_label)
+	return preview_margin
 	
-	set_drag_preview(preview_margin)
-	
-	return {
-		"type": "condition_item",
-		"node": self,
-		"data": condition_data
-	}
-
 func _can_drop_data(at_position: Vector2, data) -> bool:
-	if not data is Dictionary:
+	var drag_data = data as FKDragData
+	if not drag_data:
+		print("Not drag data")
 		_hide_drop_indicator()
 		return false
 	
-	var drag_type = data.get("type", "")
-	if drag_type != "condition_item":
+	if drag_data.type != DragTargetType.condition_item:
+		print("Not cond item")
 		_hide_drop_indicator()
 		return false
 	
-	var source_node = data.get("node")
+	var source_node = drag_data.node
 	if source_node == self:
+		print("Source is self")
 		_hide_drop_indicator()
 		return false
 	
@@ -221,15 +224,14 @@ func _is_adjacent_to_source(source_node: Node, drop_above: bool) -> bool:
 
 func _drop_data(at_position: Vector2, data) -> void:
 	_hide_drop_indicator()
-	
-	if not data is Dictionary:
+	var drag_data = data as FKDragData
+	if not drag_data:
 		return
 	
-	var drag_type = data.get("type", "")
-	if drag_type != "condition_item":
+	if drag_data.type != DragTargetType.condition_item:
 		return
 	
-	var source_node = data.get("node")
+	var source_node = drag_data.node
 	if not source_node or source_node == self:
 		return
 	
