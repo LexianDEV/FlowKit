@@ -124,16 +124,14 @@ func _update_panel_style():
 	
 	panel.add_theme_stylebox_override("panel", theme)
 	
-func _get_drag_data(at_position: Vector2):
+func _get_drag_data(at_position: Vector2) -> FKDragData:
 	var preview_margin := _create_drag_preview()
 	set_drag_preview(preview_margin)
 	
-	# Return drag data with type information
-	return \
-	{
-		"type": "action",
-		"node": self
-	}
+	var drag_data := FKDragData.new()
+	drag_data.type = DragTargetType.action
+	drag_data.node = self
+	return drag_data
 
 func _create_drag_preview() -> Control:
 	var preview_label := Label.new()
