@@ -59,33 +59,47 @@ func _load_from_manifest() -> bool:
 		return false
 	
 	# Instantiate providers from the manifest scripts
+	# Base classes (no get_id) may be in the manifest to satisfy inheritance
+	# but should not be instantiated as providers.
 	if manifest.get("action_scripts"):
 		for script: GDScript in manifest.action_scripts:
-			if script:
-				action_providers.append(script.new())
-	
+			_try_instantiate_provider(script, action_providers)
+
 	if manifest.get("condition_scripts"):
 		for script: GDScript in manifest.condition_scripts:
-			if script:
-				condition_providers.append(script.new())
-	
+			_try_instantiate_provider(script, condition_providers)
+
 	if manifest.get("event_scripts"):
 		for script: GDScript in manifest.event_scripts:
-			if script:
-				event_providers.append(script.new())
-	
+			_try_instantiate_provider(script, event_providers)
+
 	if manifest.get("behavior_scripts"):
 		for script: GDScript in manifest.behavior_scripts:
-			if script:
-				behavior_providers.append(script.new())
-	
+			_try_instantiate_provider(script, behavior_providers)
+
 	if manifest.get("branch_scripts"):
 		for script: GDScript in manifest.branch_scripts:
-			if script:
-				branch_providers.append(script.new())
+			_try_instantiate_provider(script, branch_providers)
 	
 	var has_providers = action_providers.size() + condition_providers.size() + event_providers.size() + behavior_providers.size() + branch_providers.size() > 0
 	return has_providers
+
+
+## Safely instantiate a provider from a script.
+## Skips base classes (no get_id) and scripts that fail to load.
+func _try_instantiate_provider(script: GDScript, array: Array) -> void:
+	if not script:
+		return
+	# can_instantiate() returns false if the script has parse errors
+	if not script.can_instantiate():
+		push_warning("[FlowKit Registry] Skipping script that cannot be instantiated: %s" % script.resource_path)
+		return
+	var instance = script.new()
+	# Base/utility classes included for inheritance won't have get_id — skip them
+	if not instance.has_method("get_id"):
+		return
+	array.append(instance)
+
 
 ## Directory scanning for editor/development use only.
 ## This will NOT work in exported builds.

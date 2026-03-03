@@ -667,9 +667,11 @@ func _write_file(path: String, content: String) -> void:
 # MANIFEST GENERATION
 # ============================================================================
 
-## Generates the provider manifest resource for exported builds.
-## This scans all provider directories and creates a manifest with
-## preloaded script references that can be used at runtime.
+const EVENT_SHEET_DIR = "res://addons/flowkit/saved/event_sheet/"
+
+## Generates an optimized provider manifest resource for exported builds.
+## Only includes providers that are actively used in the project's event sheets,
+## dramatically reducing the build size.
 func generate_manifest() -> Dictionary:
 	var result = {
 		"actions": 0,
@@ -677,66 +679,311 @@ func generate_manifest() -> Dictionary:
 		"events": 0,
 		"behaviors": 0,
 		"branches": 0,
+		"total_available": 0,
+		"total_included": 0,
+		"total_excluded": 0,
 		"errors": []
 	}
-	
+
 	# Ensure saved directory exists
 	_ensure_directory_exists("res://addons/flowkit/saved")
-	
-	# Create manifest resource
-	var manifest: Resource = load(PROVIDER_MANIFEST_SCRIPT).new()
-	
-	# Scan and collect all provider scripts
+
+	# Step 1: Scan all event sheets and scenes to find actively used provider IDs
+	var used_ids: Dictionary = _scan_used_provider_ids()
+	print("[FlowKit Generator] Used provider IDs:")
+	print("  Actions:    ", used_ids.action_ids)
+	print("  Conditions: ", used_ids.condition_ids)
+	print("  Events:     ", used_ids.event_ids)
+	print("  Branches:   ", used_ids.branch_ids)
+	print("  Behaviors:  ", used_ids.behavior_ids)
+
+	# Step 2: Collect all available provider scripts
+	var all_action_scripts: Array[GDScript] = []
+	var all_condition_scripts: Array[GDScript] = []
+	var all_event_scripts: Array[GDScript] = []
+	var all_behavior_scripts: Array[GDScript] = []
+	var all_branch_scripts: Array[GDScript] = []
+
+	_collect_scripts_recursive(ACTIONS_DIR, all_action_scripts)
+	_collect_scripts_recursive(CONDITIONS_DIR, all_condition_scripts)
+	_collect_scripts_recursive(EVENTS_DIR, all_event_scripts)
+	_collect_scripts_recursive(BEHAVIORS_DIR, all_behavior_scripts)
+	_collect_scripts_recursive(BRANCHES_DIR, all_branch_scripts)
+
+	var total_available: int = all_action_scripts.size() + all_condition_scripts.size() + all_event_scripts.size() + all_behavior_scripts.size() + all_branch_scripts.size()
+
+	# Step 3: Filter to only the providers that are actively used
 	var action_scripts: Array[GDScript] = []
 	var condition_scripts: Array[GDScript] = []
 	var event_scripts: Array[GDScript] = []
 	var behavior_scripts: Array[GDScript] = []
 	var branch_scripts: Array[GDScript] = []
-	
-	_collect_scripts_recursive(ACTIONS_DIR, action_scripts)
-	_collect_scripts_recursive(CONDITIONS_DIR, condition_scripts)
-	_collect_scripts_recursive(EVENTS_DIR, event_scripts)
-	_collect_scripts_recursive(BEHAVIORS_DIR, behavior_scripts)
-	_collect_scripts_recursive(BRANCHES_DIR, branch_scripts)
-	
+
+	var included_paths: Array[String] = []
+	var excluded_paths: Array[String] = []
+
+	_filter_scripts_by_usage(all_action_scripts, used_ids.action_ids, action_scripts, included_paths, excluded_paths)
+	_filter_scripts_by_usage(all_condition_scripts, used_ids.condition_ids, condition_scripts, included_paths, excluded_paths)
+	_filter_scripts_by_usage(all_event_scripts, used_ids.event_ids, event_scripts, included_paths, excluded_paths)
+	_filter_scripts_by_usage(all_behavior_scripts, used_ids.behavior_ids, behavior_scripts, included_paths, excluded_paths)
+	_filter_scripts_by_usage(all_branch_scripts, used_ids.branch_ids, branch_scripts, included_paths, excluded_paths)
+
 	result.actions = action_scripts.size()
 	result.conditions = condition_scripts.size()
 	result.events = event_scripts.size()
 	result.behaviors = behavior_scripts.size()
 	result.branches = branch_scripts.size()
-	
-	# Set the arrays on the manifest
+	result.total_available = total_available
+	result.total_included = included_paths.size()
+	result.total_excluded = excluded_paths.size()
+
+	# Step 4: Create and save the manifest
+	var manifest: Resource = load(PROVIDER_MANIFEST_SCRIPT).new()
 	manifest.set("action_scripts", action_scripts)
 	manifest.set("condition_scripts", condition_scripts)
 	manifest.set("event_scripts", event_scripts)
 	manifest.set("behavior_scripts", behavior_scripts)
 	manifest.set("branch_scripts", branch_scripts)
-	
-	# Save the manifest
+	manifest.set("included_script_paths", included_paths)
+	manifest.set("excluded_script_paths", excluded_paths)
+
 	var error = ResourceSaver.save(manifest, MANIFEST_PATH)
 	if error != OK:
 		result.errors.append("Failed to save manifest: " + str(error))
 		push_error("[FlowKit Generator] Failed to save manifest: " + str(error))
 	else:
 		print("[FlowKit Generator] Manifest saved to: ", MANIFEST_PATH)
-		print("[FlowKit Generator] Total providers: %d actions, %d conditions, %d events, %d behaviors, %d branches" % [
-			result.actions, result.conditions, result.events, result.behaviors, result.branches
+		print("[FlowKit Generator] Included: %d / %d providers (excluded %d unused)" % [
+			result.total_included, result.total_available, result.total_excluded
 		])
-	
+
 	return result
+
+
+## Scan all saved event sheets and scene files to collect the set of
+## provider IDs that are actively used in the project.
+func _scan_used_provider_ids() -> Dictionary:
+	var used = {
+		"action_ids": {},    # Dictionary used as a set: id -> true
+		"condition_ids": {},
+		"event_ids": {},
+		"branch_ids": {},
+		"behavior_ids": {},
+	}
+
+	# Scan event sheets
+	var sheet_dir: DirAccess = DirAccess.open(EVENT_SHEET_DIR)
+	if sheet_dir:
+		sheet_dir.list_dir_begin()
+		var file_name: String = sheet_dir.get_next()
+		while file_name != "":
+			if file_name.ends_with(".tres"):
+				var sheet_path: String = EVENT_SHEET_DIR + file_name
+				var sheet: Resource = load(sheet_path)
+				if sheet is FKEventSheet:
+					_extract_ids_from_sheet(sheet, used)
+			file_name = sheet_dir.get_next()
+		sheet_dir.list_dir_end()
+
+	# Scan scene files for behavior metadata
+	_scan_scenes_for_behaviors(used)
+
+	return used
+
+
+## Extract all provider IDs from a single event sheet.
+func _extract_ids_from_sheet(sheet: FKEventSheet, used: Dictionary) -> void:
+	# Process top-level events
+	for event_block in sheet.events:
+		_extract_ids_from_event_block(event_block, used)
+
+	# Process events inside groups (recursively)
+	for group in sheet.groups:
+		_extract_ids_from_group(group, used)
+
+
+## Extract IDs from a group block (which can contain events, nested groups, etc.)
+func _extract_ids_from_group(group: FKGroupBlock, used: Dictionary) -> void:
+	for child in group.children:
+		var child_type: String = child.get("type", "")
+		var child_data = child.get("data", null)
+		if not child_data:
+			continue
+		match child_type:
+			"event":
+				if child_data is FKEventBlock:
+					_extract_ids_from_event_block(child_data, used)
+			"group":
+				if child_data is FKGroupBlock:
+					_extract_ids_from_group(child_data, used)
+
+
+## Extract IDs from a single event block and all its contents.
+func _extract_ids_from_event_block(block: FKEventBlock, used: Dictionary) -> void:
+	# Event provider
+	if block.event_id and not block.event_id.is_empty():
+		used.event_ids[block.event_id] = true
+
+	# Conditions on the block
+	for cond in block.conditions:
+		_extract_ids_from_condition(cond, used)
+
+	# Actions on the block
+	for action in block.actions:
+		_extract_ids_from_action(action, used)
+
+
+## Extract IDs from a condition (which may itself contain standalone-condition actions).
+func _extract_ids_from_condition(cond: FKEventCondition, used: Dictionary) -> void:
+	if cond.condition_id and not cond.condition_id.is_empty():
+		used.condition_ids[cond.condition_id] = true
+	# Standalone conditions may have nested actions
+	for action in cond.actions:
+		_extract_ids_from_action(action, used)
+
+
+## Extract IDs from an action (including branch sub-actions).
+func _extract_ids_from_action(action: FKEventAction, used: Dictionary) -> void:
+	if action.action_id and not action.action_id.is_empty():
+		used.action_ids[action.action_id] = true
+
+	# Branch handling
+	if action.is_branch:
+		var resolved_branch: String = action.branch_id
+		if resolved_branch.is_empty() and action.branch_type in ["if", "elseif", "else"]:
+			resolved_branch = "if_branch"
+		if not resolved_branch.is_empty():
+			used.branch_ids[resolved_branch] = true
+		# Branch condition
+		if action.branch_condition:
+			_extract_ids_from_condition(action.branch_condition, used)
+		# Nested branch actions
+		for sub_action in action.branch_actions:
+			_extract_ids_from_action(sub_action, used)
+
+
+## Scan all .tscn files in the project for flowkit_behavior metadata.
+func _scan_scenes_for_behaviors(used: Dictionary) -> void:
+	_scan_directory_for_behaviors("res://", used)
+
+
+## Recursively scan a directory for .tscn files containing behavior metadata.
+func _scan_directory_for_behaviors(path: String, used: Dictionary) -> void:
+	var dir: DirAccess = DirAccess.open(path)
+	if not dir:
+		return
+
+	dir.list_dir_begin()
+	var file_name: String = dir.get_next()
+	while file_name != "":
+		if file_name.begins_with("."):
+			file_name = dir.get_next()
+			continue
+		var file_path: String = path.path_join(file_name)
+		if dir.current_is_dir():
+			_scan_directory_for_behaviors(file_path, used)
+		elif file_name.ends_with(".tscn"):
+			_scan_tscn_for_behaviors(file_path, used)
+		file_name = dir.get_next()
+	dir.list_dir_end()
+
+
+## Parse a single .tscn file for flowkit_behavior metadata entries.
+func _scan_tscn_for_behaviors(tscn_path: String, used: Dictionary) -> void:
+	var file: FileAccess = FileAccess.open(tscn_path, FileAccess.READ)
+	if not file:
+		return
+
+	while not file.eof_reached():
+		var line: String = file.get_line()
+		if "flowkit_behavior" in line:
+			# Next line should contain the behavior id
+			var next_line: String = file.get_line()
+			var regex: RegEx = RegEx.new()
+			regex.compile('"id"\\s*:\\s*"([^"]+)"')
+			var match_result: RegExMatch = regex.search(next_line)
+			if match_result:
+				used.behavior_ids[match_result.get_string(1)] = true
+			else:
+				# id might be on the same line
+				match_result = regex.search(line)
+				if match_result:
+					used.behavior_ids[match_result.get_string(1)] = true
+	file.close()
+
+
+## Filter an array of provider scripts, keeping only those whose get_id()
+## matches one of the used IDs. Populates included/excluded path arrays.
+## Base/utility scripts (those without get_id()) are always included if any
+## of their subclass providers are kept, to avoid missing-superclass errors.
+func _filter_scripts_by_usage(
+	all_scripts: Array[GDScript],
+	used_ids: Dictionary,
+	out_scripts: Array[GDScript],
+	included_paths: Array[String],
+	excluded_paths: Array[String]
+) -> void:
+	# First pass: categorise scripts into providers (have get_id) and base classes (don't)
+	var providers: Array[GDScript] = []
+	var base_classes: Array[GDScript] = []  # Scripts without get_id — utility / base classes
+
+	for script in all_scripts:
+		var instance = script.new()
+		if instance.has_method("get_id"):
+			providers.append(script)
+		else:
+			base_classes.append(script)
+
+	# Second pass: keep providers whose id is in the used set
+	var kept_provider_paths: Dictionary = {}  # path -> true
+	for script in providers:
+		var instance = script.new()
+		var script_id: String = instance.get_id()
+		if used_ids.has(script_id):
+			out_scripts.append(script)
+			included_paths.append(script.resource_path)
+			kept_provider_paths[script.resource_path] = true
+		else:
+			excluded_paths.append(script.resource_path)
+
+	# Third pass: include base classes that are ancestors of any kept provider
+	for base_script in base_classes:
+		var base_path: String = base_script.resource_path
+		var is_needed: bool = false
+		# Check if any kept provider extends (directly or transitively) this base class
+		for provider_script in out_scripts:
+			if _script_extends(provider_script, base_script):
+				is_needed = true
+				break
+		if is_needed:
+			out_scripts.append(base_script)
+			included_paths.append(base_path)
+		else:
+			excluded_paths.append(base_path)
+
+
+## Check whether child_script inherits from ancestor_script (directly or transitively).
+func _script_extends(child_script: GDScript, ancestor_script: GDScript) -> bool:
+	var current: GDScript = child_script.get_base_script()
+	while current:
+		if current.resource_path == ancestor_script.resource_path:
+			return true
+		current = current.get_base_script()
+	return false
+
 
 ## Recursively collect all GDScript files from a directory
 func _collect_scripts_recursive(path: String, scripts: Array[GDScript]) -> void:
 	var dir: DirAccess = DirAccess.open(path)
 	if not dir:
 		return
-	
+
 	dir.list_dir_begin()
 	var file_name: String = dir.get_next()
-	
+
 	while file_name != "":
 		var file_path: String = path + "/" + file_name
-		
+
 		if dir.current_is_dir():
 			# Recursively scan subdirectories
 			_collect_scripts_recursive(file_path, scripts)
@@ -745,7 +992,7 @@ func _collect_scripts_recursive(path: String, scripts: Array[GDScript]) -> void:
 			var script: Variant = load(file_path)
 			if script:
 				scripts.append(script)
-		
+
 		file_name = dir.get_next()
-	
+
 	dir.list_dir_end()

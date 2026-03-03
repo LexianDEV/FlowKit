@@ -5,6 +5,7 @@ var action_registry
 var editor
 var generator
 var inspector_plugin
+var export_plugin
 var editor_main_screen
 
 func _enable_plugin() -> void:
@@ -53,7 +54,12 @@ func _enter_tree() -> void:
 	inspector_plugin.set_registry(action_registry)
 	inspector_plugin.set_editor_interface(get_editor_interface())
 	add_inspector_plugin(inspector_plugin)
-	
+
+	# Register export plugin to exclude unused providers from builds
+	export_plugin = preload("res://addons/flowkit/editor/export_plugin.gd").new()
+	export_plugin.set_generator(generator)
+	add_export_plugin(export_plugin)
+
 	print("[FlowKit] Plugin loaded")
 
 func _exit_tree() -> void:
@@ -69,6 +75,11 @@ func _exit_tree() -> void:
 	if inspector_plugin:
 		remove_inspector_plugin(inspector_plugin)
 		inspector_plugin = null
+
+	# Remove export plugin
+	if export_plugin:
+		remove_export_plugin(export_plugin)
+		export_plugin = null
 
 func _has_main_screen() -> bool:
 	return true
