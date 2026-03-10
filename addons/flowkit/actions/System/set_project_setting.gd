@@ -12,9 +12,13 @@ func get_name() -> String:
 func get_inputs() -> Array[FKActionInput]:
 	return [_path_input, _val_input]
 
-var _path_input := FKActionInput.new("Path", "String",
-"The setting path (e.g., 'application/config/name').")
-var _val_input := FKActionInput.new("Value", "Variant", "The value to set.")
+static var _path_input: FKActionInput:
+	get:
+		return FKActionInput.new("Path", "String",
+		"The setting path (e.g., 'application/config/name').")
+static var _val_input: FKActionInput:
+	get:
+		return FKActionInput.new("Value", "Variant", "The value to set.")
 
 func get_supported_types() -> Array[String]:
 	return ["System"]

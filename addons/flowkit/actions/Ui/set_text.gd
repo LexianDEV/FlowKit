@@ -12,8 +12,10 @@ func get_name() -> String:
 func get_inputs() -> Array[FKActionInput]:
 	return [_new_text_input]
 	
-var _new_text_input := FKActionInput.new("New Text", "String",
-"The text that the target will hold.")
+static var _new_text_input: FKActionInput:
+	get:
+		return FKActionInput.new("New Text", "String",
+		"The text that the target will hold.")
 	
 func get_supported_types() -> Array:
 	return ["Label", "RichTextLabel", "Button", "TextEdit", "LineEdit"]

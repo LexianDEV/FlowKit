@@ -15,8 +15,12 @@ func get_supported_types() -> Array[String]:
 func get_inputs() -> Array[FKActionInput]:
 	return [_x_input, _y_input]
 	
-var _x_input := FKActionInput.new("X", "int", "The X position of the window in pixels.")
-var _y_input := FKActionInput.new("Y", "int", "The Y position of the window in pixels.")
+static var _x_input: FKActionInput:
+	get:
+		return FKActionInput.new("X", "int", "The X position of the window in pixels.")
+static var _y_input: FKActionInput:
+	get:
+		return FKActionInput.new("Y", "int", "The Y position of the window in pixels.")
 
 func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
 	var x: int = int(inputs.get("X", 0))

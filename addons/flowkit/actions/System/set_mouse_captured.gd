@@ -15,8 +15,10 @@ func get_supported_types() -> Array[String]:
 func get_inputs() -> Array[FKActionInput]:
 	return [_captured_input]
 
-var _captured_input := FKActionInput.new("Captured", "bool",
-"Whether the mouse cursor should be captured.")
+static var _captured_input: FKActionInput:
+	get:
+		return FKActionInput.new("Captured", "bool",
+		"Whether the mouse cursor should be captured.")
 
 func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
 	var captured: bool = bool(inputs.get("Captured", true))

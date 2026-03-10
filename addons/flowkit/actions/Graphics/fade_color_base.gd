@@ -18,30 +18,23 @@ static var _alpha_input: FKActionInput:
 	get:
 		return FKActionInput.new("Alpha", "float",
 		"How transparent the color should be. 0 for completely transparent, 100 for opaque. " +\
-		"Default: " + str(default_alpha) + "."
-)
+		"Default: " + str(default_alpha) + ".")
 
 static var _alpha_only_input: FKActionInput:
 	get:
 		return FKActionInput.new("Alpha Only","bool",
-		"If true, only the transparency will be changed. Default: " + str(default_alpha_only)
-)
+		"If true, only the transparency will be changed. Default: " + str(default_alpha_only))
 
 static var _duration_input: FKActionInput:
 	get:
-		return FKActionInput.new(
-	"Duration",
-	"float",
-	"How long (in seconds) the fade should take. Defaults to " + str(default_duration) + "."
-)
+		return FKActionInput.new("Duration", "float",
+		"How long (in seconds) the fade should take. Defaults to " + str(default_duration) + ".")
 
 static var _wait_for_finish_input: FKActionInput:
 	get:
-		return FKActionInput.new(
-	"Wait For Finish",
-	"bool",
-	"Whether or not this pauses the Action list until the fade's done running. Default: " \
-	+ str(default_wait_for_finish)
+		return FKActionInput.new("Wait For Finish", "bool",
+		"Whether or not this pauses the Action list until the fade's done running. Default: " \
+		+ str(default_wait_for_finish)
 )
 
 static var default_color_raw := "\"(255, 255, 255)\""

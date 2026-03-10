@@ -17,7 +17,6 @@ static var _value_input: FKActionInput:
 		return FKActionInput.new("Value", "Float",
 		"What to set the X component of the velocity to.")
 
-
 func get_supported_types() -> Array[String]:
 	return ["CharacterBody2D"]
 

@@ -15,8 +15,12 @@ func get_supported_types() -> Array[String]:
 func get_inputs() -> Array[FKActionInput]:
 	return [_x_input, _y_input]
 
-var _x_input := FKActionInput.new("X", "float", "The X position to move the mouse to.")
-var _y_input := FKActionInput.new("Y", "float", "The Y position to move the mouse to.")
+static var _x_input: FKActionInput:
+	get:
+		return FKActionInput.new("X", "float", "The X position to move the mouse to.")
+static var _y_input: FKActionInput:
+	get:
+		return FKActionInput.new("Y", "float", "The Y position to move the mouse to.")
 
 func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
 	var x: float = float(inputs.get("X", 0))

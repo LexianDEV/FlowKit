@@ -17,10 +17,10 @@ static var _x_input: FKActionInput:
 		return FKActionInput.new("X", "Float",
 		"The amount to move the character body along the X axis.")
 
-static var _y_input := FKActionInput.new(
-	"Y",
-	"Float",
-	"The amount to move the character body along the Y axis.")
+static var _y_input: FKActionInput:
+	get:
+		return FKActionInput.new("Y", "Float",
+		"The amount to move the character body along the Y axis.")
 
 func get_supported_types() -> Array[String]:
 	return ["CharacterBody2D"]

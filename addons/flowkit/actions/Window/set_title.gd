@@ -12,7 +12,9 @@ func get_name() -> String:
 func get_inputs() -> Array[FKActionInput]:
 	return [_title_input]
 
-var _title_input := FKActionInput.new("Title", "String", "The title to set for the window.")
+static var _title_input: FKActionInput:
+	get:
+		return FKActionInput.new("Title", "String", "The title to set for the window.")
 
 func get_supported_types() -> Array[String]:
 	return ["Window"]

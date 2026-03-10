@@ -15,8 +15,10 @@ func get_supported_types() -> Array[String]:
 func get_inputs() -> Array[FKActionInput]:
 	return [_vis_input]
 
-var _vis_input := FKActionInput.new("Visible", "bool", 
-"Whether the mouse cursor should be visible.")
+static var _vis_input: FKActionInput:
+	get:
+		return FKActionInput.new("Visible", "bool",
+		"Whether the mouse cursor should be visible.")
 
 func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
 	var visible: bool = bool(inputs.get("Visible", true))

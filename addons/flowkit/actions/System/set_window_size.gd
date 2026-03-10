@@ -15,8 +15,12 @@ func get_supported_types() -> Array[String]:
 func get_inputs() -> Array[FKActionInput]:
 	return [_width_input, _height_input]
 
-var _width_input := FKActionInput.new("Width", "int", "The width of the window in pixels.")
-var _height_input := FKActionInput.new("Height", "int", "The height of the window in pixels.")
+static var _width_input: FKActionInput:
+	get:
+		return FKActionInput.new("Width", "int", "The width of the window in pixels.")
+static var _height_input: FKActionInput:
+	get:
+		return FKActionInput.new("Height", "int", "The height of the window in pixels.")
 
 func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
 	var width: int = int(inputs.get("Width", 1280))

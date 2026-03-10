@@ -12,20 +12,32 @@ func get_name() -> String:
 func get_inputs() -> Array[FKActionInput]:
 	return [_neg_x_input, _pos_x_input, _neg_y_input, _pos_y_input, _store_x_input, _store_y_input]
 	
-var _neg_x_input := FKActionInput.new("Negative X Action", "String",
-"The input action for negative horizontal axis (e.g., 'move_left').")
-var _pos_x_input := FKActionInput.new("Positive X Action", "String",
-"The input action for positive horizontal axis (e.g., 'move_right').")
+static var _neg_x_input: FKActionInput:
+	get:
+		return FKActionInput.new("Negative X Action", "String",
+		"The input action for negative horizontal axis (e.g., 'move_left').")
+static var _pos_x_input: FKActionInput:
+	get:
+		return FKActionInput.new("Positive X Action", "String",
+		"The input action for positive horizontal axis (e.g., 'move_right').")
 
-var _neg_y_input := FKActionInput.new("Negative Y Action", "String",
-"The input action for negative vertical axis (e.g., 'move_up').")
-var _pos_y_input := FKActionInput.new("Positive Y Action", "String",
-"The input action for positive vertical axis (e.g., 'move_down').")
+static var _neg_y_input: FKActionInput:
+	get:
+		return FKActionInput.new("Negative Y Action", "String",
+		"The input action for negative vertical axis (e.g., 'move_up').")
+static var _pos_y_input: FKActionInput:
+	get:
+		return FKActionInput.new("Positive Y Action", "String",
+		"The input action for positive vertical axis (e.g., 'move_down').")
 
-var _store_x_input := FKActionInput.new("Store X In", "String",
-"The system variable name to store the horizontal result in.")
-var _store_y_input := FKActionInput.new("Store Y In", "String",
-"The system variable name to store the vertical result in.")
+static var _store_x_input: FKActionInput:
+	get:
+		return FKActionInput.new("Store X In", "String",
+		"The system variable name to store the horizontal result in.")
+static var _store_y_input: FKActionInput:
+	get:
+		return FKActionInput.new("Store Y In", "String",
+		"The system variable name to store the vertical result in.")
 
 func get_supported_types() -> Array[String]:
 	return ["System"]

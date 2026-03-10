@@ -12,8 +12,10 @@ func get_name() -> String:
 func get_inputs() -> Array[FKActionInput]:
 	return [_one_shot_input]
 	
-var _one_shot_input := FKActionInput.new("One Shot", "bool",
-"If true, the timer will only run once and then stop.")
+static var _one_shot_input: FKActionInput:
+	get:
+		return FKActionInput.new("One Shot", "bool",
+		"If true, the timer will only run once and then stop.")
 
 func get_supported_types() -> Array[String]:
 	return ["Timer"]

@@ -316,9 +316,13 @@ func _save_current_parameter() -> void:
 	if action_inputs.is_empty():
 		return
 	
-	var param_data: Dictionary = action_inputs[current_param_index]
-	var param_name: String = param_data.get("name", "")
-	
+	var param_data = action_inputs[current_param_index]
+	var param_name: String
+	if param_data is Dictionary:
+		param_name = param_data.get("name", "")
+	elif param_data is FKActionInput:
+		param_name = param_data.name
+		
 	if expression_input:
 		param_values[param_name] = expression_input.text
 

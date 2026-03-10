@@ -12,8 +12,9 @@ func get_name() -> String:
 func get_inputs() -> Array[FKActionInput]:
 	return [_message_input]
 
-var _message_input := FKActionInput.new("Message", "String", 
-"The message to print to the console.")
+static var _message_input: FKActionInput:
+	get:
+		return FKActionInput.new("Message", "String", "The message to print to the console.")
 
 func get_supported_types() -> Array[String]:
 	return ["System"]

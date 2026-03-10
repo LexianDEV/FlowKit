@@ -15,7 +15,9 @@ func get_supported_types() -> Array[String]:
 func get_inputs() -> Array[FKActionInput]:
 	return [_enabled_input]
 
-var _enabled_input := FKActionInput.new("Enabled", "bool", "Whether VSync should be enabled.")
+static var _enabled_input: FKActionInput:
+	get:
+		return FKActionInput.new("Enabled", "bool", "Whether VSync should be enabled.")
 
 func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
 	var enabled: bool = bool(inputs.get("Enabled", true))
