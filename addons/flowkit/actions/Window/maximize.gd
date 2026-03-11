@@ -9,9 +9,6 @@ func get_id() -> String:
 func get_name() -> String:
 	return "Maximize"
 
-func get_inputs() -> Array[Dictionary]:
-	return []
-
 func get_supported_types() -> Array[String]:
 	return ["Window"]
 

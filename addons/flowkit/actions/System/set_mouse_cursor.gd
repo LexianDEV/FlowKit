@@ -12,17 +12,26 @@ func get_name() -> String:
 func get_supported_types() -> Array[String]:
 	return ["System"]
 
-func get_inputs() -> Array[Dictionary]:
-	return [
-		{"name": "CursorPath", "type": "String", "description": "Path to the cursor texture (e.g., 'res://assets/cursor.png'). Leave empty to reset to default."},
-		{"name": "HotspotX", "type": "int", "description": "The X coordinate of the cursor hotspot."},
-		{"name": "HotspotY", "type": "int", "description": "The Y coordinate of the cursor hotspot."},
-	]
+func get_inputs() -> Array[FKActionInput]:
+	return [_path_input, _x_input, _y_input]
+
+static var _path_input: FKStringActionInput:
+	get:
+		return FKStringActionInput.new("Cursor Path", 
+		"Path to the cursor texture (e.g., 'res://assets/cursor.png'). Leave empty to reset to default.")
+static var _x_input: FKIntActionInput:
+	get:
+		return FKIntActionInput.new("Hotspot X",
+		"The X coordinate of the cursor hotspot.")
+static var _y_input: FKIntActionInput:
+	get:
+		return FKIntActionInput.new("Hotspot Y",
+		"The Y coordinate of the cursor hotspot.")
 
 func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
-	var cursor_path: String = str(inputs.get("CursorPath", ""))
-	var hotspot_x: int = int(inputs.get("HotspotX", 0))
-	var hotspot_y: int = int(inputs.get("HotspotY", 0))
+	var cursor_path: String = _path_input.get_val(inputs)
+	var hotspot_x: int = _x_input.get_val(inputs)
+	var hotspot_y: int = _y_input.get_val(inputs)
 	
 	if cursor_path.is_empty():
 		Input.set_custom_mouse_cursor(null)

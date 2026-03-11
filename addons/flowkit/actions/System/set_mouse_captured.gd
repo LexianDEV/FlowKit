@@ -12,13 +12,17 @@ func get_name() -> String:
 func get_supported_types() -> Array[String]:
 	return ["System"]
 
-func get_inputs() -> Array[Dictionary]:
-	return [
-		{"name": "Captured", "type": "bool", "description": "Whether the mouse cursor should be captured."},
-	]
+func get_inputs() -> Array[FKActionInput]:
+	return [_captured_input]
+
+static var _captured_input: FKBoolActionInput:
+	get:
+		return FKBoolActionInput.new("Captured", 
+		"Whether the mouse cursor should be captured.",
+		true)
 
 func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
-	var captured: bool = bool(inputs.get("Captured", true))
+	var captured: bool = _captured_input.get_val(inputs)
 	if captured:
 		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 	else:

@@ -12,13 +12,15 @@ func get_name() -> String:
 func get_supported_types() -> Array[String]:
 	return ["System"]
 
-func get_inputs() -> Array[Dictionary]:
-	return [
-		{"name": "Name", "type": "String", "description": "The name of the function to define."},
-	]
+func get_inputs() -> Array[FKActionInput]:
+	return [_name_input]
+
+static var _name_input: FKStringActionInput:
+	get:
+		return FKStringActionInput.new("Name", "The name of the function to define.")
 
 func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
-	var function_name: String = str(inputs.get("Name", ""))
+	var function_name: String = _name_input.get_val(inputs)
 
 	if function_name.is_empty():
 		return

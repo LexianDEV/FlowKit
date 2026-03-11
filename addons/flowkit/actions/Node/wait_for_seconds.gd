@@ -15,17 +15,15 @@ func get_supported_types() -> Array:
 func requires_multi_frames() -> bool:
 	return true
 	
-func get_inputs() -> Array:
-	return [
-		{
-			"name": "Duration",
-			"type": "float",
-			"description": "What you'd expect."
-		},
-	]
+func get_inputs() -> Array[FKActionInput]:
+	return [_duration_input]
+
+static var _duration_input: FKFloatActionInput:
+	get:
+		return FKFloatActionInput.new("Duration", "What you'd expect.")
 
 func execute(target_node: Node, inputs: Dictionary, _str := "") -> void:
-	var duration: float = inputs.get("Duration", 0)
+	var duration: float = _duration_input.get_val(inputs)
 	var valid_input := duration > 0
 	var tree := target_node.get_tree()
 	

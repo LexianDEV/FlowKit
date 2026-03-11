@@ -12,7 +12,7 @@ func get_id() -> String:
 func get_name() -> String:
 	return ""
 
-func get_inputs() -> Array[Dictionary]:
+func get_inputs() -> Array[FKActionInput]:
 	return []
 
 func get_supported_types() -> Array[String]:

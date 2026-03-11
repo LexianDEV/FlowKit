@@ -13,26 +13,25 @@ func get_name() -> String:
 func get_supported_types() -> Array:
 	return ["Node"]
 
-func get_inputs() -> Array:
-	return [
-		{
-			"name": "color",
-			"type": "String", 
-			"description": "Decides what BBCode color the message is wrapped in. Default: white."
-		},
-		{
-			"name": "message",
-			"type": "String",
-			"description": "The message to print. BBCode tags are supported."
-		}
-	]
+func get_inputs() -> Array[FKActionInput]:
+	return [_color_input, _message_input]
+
+static var _color_input: FKStringActionInput:
+	get:
+		return FKStringActionInput.new("Color",
+		"Decides what BBCode color the message is wrapped in. Default: white.")
+
+static var _message_input: FKStringActionInput:
+	get:
+		return FKStringActionInput.new("Message", 
+		"The message to print. BBCode tags are supported.")
 
 func execute(_node: Node, inputs: Dictionary, _str: String = "") -> void:
-	var color_input = inputs.get("color", default_color)
-	var color_start_tag: String = "[color=" + color_input + "]"
+	var color = _color_input.get_val(inputs)
+	var color_start_tag: String = "[color=" + color + "]"
 	var color_end_tag: String = "[/color]"
 	var node_name_tag = "[" + _node.name + "]: "
-	var message = inputs.get("message", "")
+	var message := _message_input.get_val(inputs)
 	message = color_start_tag + node_name_tag + str(message) + color_end_tag
 	print_rich(message)
 	

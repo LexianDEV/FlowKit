@@ -9,15 +9,17 @@ func get_id() -> String:
 func get_name() -> String:
 	return "Set Title"
 
-func get_inputs() -> Array[Dictionary]:
-	return [
-		{"name": "Title", "type": "String", "description": "The title to set for the window."}
-	]
+func get_inputs() -> Array[FKActionInput]:
+	return [_title_input]
+
+static var _title_input: FKStringActionInput:
+	get:
+		return FKStringActionInput.new("Title", "The title to set for the window.")
 
 func get_supported_types() -> Array[String]:
 	return ["Window"]
 
 func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
 	if node and node is Window:
-		var title: String = inputs.get("Title", "")
+		var title: String = _title_input.get_val(inputs)
 		node.title = title

@@ -12,11 +12,13 @@ func get_name() -> String:
 func get_supported_types() -> Array[String]:
 	return ["System"]
 
-func get_inputs() -> Array[Dictionary]:
-	return [
-		{"name": "Title", "type": "String", "description": "The title to set for the window."},
-	]
+func get_inputs() -> Array[FKActionInput]:
+	return [_title_input]
+	
+static var _title_input: FKStringActionInput:
+	get:
+		return FKStringActionInput.new("Title", "The title to set for the window.")
 
 func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
-	var title: String = str(inputs.get("Title", ""))
+	var title: String = _title_input.get_val(inputs)
 	DisplayServer.window_set_title(title)

@@ -8,18 +8,27 @@ expand_margin_left = 4.0
 expand_margin_top = 4.0
 expand_margin_right = 4.0
 expand_margin_bottom = 4.0
-corner_radius = 2
 
-[node name="ExpressionEditor" type="PopupPanel"]
+[node name="ExpressionEditor" type="PopupPanel" unique_id=1148081216 node_paths=PackedStringArray("param_label", "expression_input", "description_label", "description_panel", "node_tree", "item_list", "prev_button", "next_button", "confirm_button")]
+oversampling_override = 1.0
 title = "Expression Editor"
-initial_position = 0
+position = Vector2i(0, 36)
 size = Vector2i(800, 600)
+unresizable = false
 borderless = false
 keep_title_visible = true
 script = ExtResource("1_expr")
-unresizable = false
+param_label = NodePath("MarginContainer/VBoxContainer/TopContainer/ParamLabel")
+expression_input = NodePath("MarginContainer/VBoxContainer/TopContainer/ExpressionInput")
+description_label = NodePath("MarginContainer/VBoxContainer/TopContainer/DescriptionPanel/DescriptionMargin/DescriptionLabel")
+description_panel = NodePath("MarginContainer/VBoxContainer/TopContainer/DescriptionPanel")
+node_tree = NodePath("MarginContainer/VBoxContainer/MainContainer/LeftPanel/NodeTree")
+item_list = NodePath("MarginContainer/VBoxContainer/MainContainer/RightPanel/ItemList")
+prev_button = NodePath("MarginContainer/VBoxContainer/ButtonContainer/PrevButton")
+next_button = NodePath("MarginContainer/VBoxContainer/ButtonContainer/NextButton")
+confirm_button = NodePath("MarginContainer/VBoxContainer/ButtonContainer/ConfirmButton")
 
-[node name="MarginContainer" type="MarginContainer" parent="."]
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=1386342634]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -34,106 +43,104 @@ theme_override_constants/margin_top = 12
 theme_override_constants/margin_right = 12
 theme_override_constants/margin_bottom = 12
 
-[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer" unique_id=598815693]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="Title" type="Label" parent="MarginContainer/VBoxContainer"]
+[node name="Title" type="Label" parent="MarginContainer/VBoxContainer" unique_id=709952430]
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "Expression Editor"
 
-[node name="TopContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer"]
+[node name="TopContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer" unique_id=326487293]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="ParamLabel" type="Label" parent="MarginContainer/VBoxContainer/TopContainer"]
+[node name="ParamLabel" type="Label" parent="MarginContainer/VBoxContainer/TopContainer" unique_id=672394208]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "Parameter (type)"
 
-[node name="ExpressionInput" type="LineEdit" parent="MarginContainer/VBoxContainer/TopContainer"]
+[node name="ExpressionInput" type="LineEdit" parent="MarginContainer/VBoxContainer/TopContainer" unique_id=1133326790]
 layout_mode = 2
 placeholder_text = "Click items below to build your expression..."
 
-[node name="DescriptionPanel" type="PanelContainer" parent="MarginContainer/VBoxContainer/TopContainer"]
+[node name="DescriptionPanel" type="PanelContainer" parent="MarginContainer/VBoxContainer/TopContainer" unique_id=1578924881]
 layout_mode = 2
 size_flags_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_1")
 
-[node name="DescriptionMargin" type="MarginContainer" parent="MarginContainer/VBoxContainer/TopContainer/DescriptionPanel"]
+[node name="DescriptionMargin" type="MarginContainer" parent="MarginContainer/VBoxContainer/TopContainer/DescriptionPanel" unique_id=1808981109]
 layout_mode = 2
 theme_override_constants/margin_left = 8
 theme_override_constants/margin_top = 6
 theme_override_constants/margin_right = 8
 theme_override_constants/margin_bottom = 6
 
-[node name="DescriptionLabel" type="Label" parent="MarginContainer/VBoxContainer/TopContainer/DescriptionPanel/DescriptionMargin"]
-layout_mode = 2
-text = ""
-text_overrun_behavior = 3
-word_wrap_mode = 1
-theme_override_font_sizes/font_size = 10
+[node name="DescriptionLabel" type="Label" parent="MarginContainer/VBoxContainer/TopContainer/DescriptionPanel/DescriptionMargin" unique_id=661347453]
 modulate = Color(0.8, 0.8, 0.8, 1)
+layout_mode = 2
+theme_override_font_sizes/font_size = 10
+text_overrun_behavior = 3
 
-[node name="HelpLabel" type="Label" parent="MarginContainer/VBoxContainer/TopContainer"]
+[node name="HelpLabel" type="Label" parent="MarginContainer/VBoxContainer/TopContainer" unique_id=57317091]
 layout_mode = 2
 theme_override_font_sizes/font_size = 11
 text = "💡 Click items to insert them at cursor position. Use categories to browse available values."
 
-[node name="MainContainer" type="HSplitContainer" parent="MarginContainer/VBoxContainer"]
+[node name="MainContainer" type="HSplitContainer" parent="MarginContainer/VBoxContainer" unique_id=1383817831]
 layout_mode = 2
 size_flags_vertical = 3
+split_offsets = PackedInt32Array(200)
 split_offset = 200
 
-[node name="LeftPanel" type="VBoxContainer" parent="MarginContainer/VBoxContainer/MainContainer"]
+[node name="LeftPanel" type="VBoxContainer" parent="MarginContainer/VBoxContainer/MainContainer" unique_id=669992564]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 8
 
-[node name="NodeLabel" type="Label" parent="MarginContainer/VBoxContainer/MainContainer/LeftPanel"]
+[node name="NodeLabel" type="Label" parent="MarginContainer/VBoxContainer/MainContainer/LeftPanel" unique_id=217103557]
 layout_mode = 2
 theme_override_font_sizes/font_size = 12
 text = "Scene Nodes"
 
-[node name="NodeTree" type="Tree" parent="MarginContainer/VBoxContainer/MainContainer/LeftPanel"]
+[node name="NodeTree" type="Tree" parent="MarginContainer/VBoxContainer/MainContainer/LeftPanel" unique_id=1382178054]
 layout_mode = 2
 size_flags_vertical = 3
-hide_root = false
 
-[node name="RightPanel" type="VBoxContainer" parent="MarginContainer/VBoxContainer/MainContainer"]
+[node name="RightPanel" type="VBoxContainer" parent="MarginContainer/VBoxContainer/MainContainer" unique_id=377121051]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_stretch_ratio = 2.0
 theme_override_constants/separation = 8
 
-[node name="ItemLabel" type="Label" parent="MarginContainer/VBoxContainer/MainContainer/RightPanel"]
+[node name="ItemLabel" type="Label" parent="MarginContainer/VBoxContainer/MainContainer/RightPanel" unique_id=1958617781]
 layout_mode = 2
 theme_override_font_sizes/font_size = 12
 text = "Values"
 
-[node name="ItemList" type="ItemList" parent="MarginContainer/VBoxContainer/MainContainer/RightPanel"]
+[node name="ItemList" type="ItemList" parent="MarginContainer/VBoxContainer/MainContainer/RightPanel" unique_id=1414080068]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="ButtonContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+[node name="ButtonContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer" unique_id=1343805221]
 layout_mode = 2
 theme_override_constants/separation = 8
 alignment = 2
 
-[node name="CancelButton" type="Button" parent="MarginContainer/VBoxContainer/ButtonContainer"]
+[node name="CancelButton" type="Button" parent="MarginContainer/VBoxContainer/ButtonContainer" unique_id=853219538]
 layout_mode = 2
 text = "Cancel"
 
-[node name="PrevButton" type="Button" parent="MarginContainer/VBoxContainer/ButtonContainer"]
+[node name="PrevButton" type="Button" parent="MarginContainer/VBoxContainer/ButtonContainer" unique_id=1605524262]
 layout_mode = 2
 text = "← Previous"
 
-[node name="NextButton" type="Button" parent="MarginContainer/VBoxContainer/ButtonContainer"]
+[node name="NextButton" type="Button" parent="MarginContainer/VBoxContainer/ButtonContainer" unique_id=1581601247]
 layout_mode = 2
 text = "Next →"
 
-[node name="ConfirmButton" type="Button" parent="MarginContainer/VBoxContainer/ButtonContainer"]
+[node name="ConfirmButton" type="Button" parent="MarginContainer/VBoxContainer/ButtonContainer" unique_id=799065093]
 layout_mode = 2
 text = "Confirm"
 

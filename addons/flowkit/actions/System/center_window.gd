@@ -12,9 +12,6 @@ func get_name() -> String:
 func get_supported_types() -> Array[String]:
 	return ["System"]
 
-func get_inputs() -> Array[Dictionary]:
-	return []
-
 func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
 	var screen_size: Vector2i = DisplayServer.screen_get_size()
 	var window_size: Vector2i = DisplayServer.window_get_size()

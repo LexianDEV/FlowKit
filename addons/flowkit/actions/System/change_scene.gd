@@ -12,15 +12,18 @@ func get_name() -> String:
 func get_supported_types() -> Array[String]:
 	return ["System"]
 
-func get_inputs() -> Array[Dictionary]:
-	return [
-		{"name": "ScenePath", "type": "String", "description": "The path to the scene file (e.g., 'res://scenes/level2.tscn')."},
-	]
+func get_inputs() -> Array[FKActionInput]:
+	return [_path_input]
+
+static var _path_input: FKStringActionInput:
+	get:
+		return FKStringActionInput.new("Scene Path", 
+		"The path to the scene file (e.g., 'res://scenes/level2.tscn').")
 
 func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
 	if not node or not node.is_inside_tree():
 		return
-	var scene_path: String = str(inputs.get("ScenePath", ""))
+	var scene_path: String = _path_input.get_val(inputs)
 	if scene_path.is_empty():
 		push_error("[FlowKit] change_scene: ScenePath is empty")
 		return

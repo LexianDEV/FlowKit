@@ -11,42 +11,44 @@ var action_inputs: Array = []
 var current_param_index: int = 0
 var param_values: Dictionary = {}
 
-# UI References
-@onready var param_label := $MarginContainer/VBoxContainer/TopContainer/ParamLabel
-@onready var expression_input := $MarginContainer/VBoxContainer/TopContainer/ExpressionInput
-@onready var description_label := $MarginContainer/VBoxContainer/TopContainer/DescriptionPanel/DescriptionMargin/DescriptionLabel
-@onready var description_panel := $MarginContainer/VBoxContainer/TopContainer/DescriptionPanel
-@onready var node_tree := $MarginContainer/VBoxContainer/MainContainer/LeftPanel/NodeTree
-@onready var item_list := $MarginContainer/VBoxContainer/MainContainer/RightPanel/ItemList
-@onready var prev_button := $MarginContainer/VBoxContainer/ButtonContainer/PrevButton
-@onready var next_button := $MarginContainer/VBoxContainer/ButtonContainer/NextButton
-@onready var confirm_button := $MarginContainer/VBoxContainer/ButtonContainer/ConfirmButton
+@export var param_label: Label
+@export var expression_input: LineEdit 
+@export var description_label: Label
+@export var description_panel: Control
+@export var node_tree: Tree 
+@export var item_list: ItemList 
+@export var prev_button: Button
+@export var next_button: Button 
+@export var confirm_button: Button
 
 var selected_tree_node: Node = null
 
-func _ready() -> void:
-	if node_tree:
-		node_tree.item_selected.connect(_on_node_selected)
-	if item_list:
-		item_list.item_activated.connect(_on_item_activated)
-	
-	# Setup tree if interface is already available
+func _enter_tree() -> void:
+	_toggle_subs(true)
 	if editor_interface:
 		call_deferred("_setup_node_tree")
 
+func _toggle_subs(on: bool):
+	if on:
+		node_tree.item_selected.connect(_on_node_selected)
+		item_list.item_activated.connect(_on_item_activated)
+		if editor_interface:
+			call_deferred("_setup_node_tree")
+	
 func set_editor_interface(interface: EditorInterface) -> void:
 	editor_interface = interface
 	# Setup tree if we're already ready
-	if is_node_ready() and node_tree:
+	if is_node_ready():
 		call_deferred("_setup_node_tree")
 
-func populate_inputs(node_path: String, action_id: String, inputs: Array, current_values: Dictionary = {}) -> void:
+func populate_inputs(node_path: String, action_id: String, inputs: Array, \
+current_values: Dictionary = {}) -> void:
 	selected_node_path = node_path
 	selected_action_id = action_id
 	action_inputs = inputs
 	current_param_index = 0
 	param_values = current_values.duplicate()
-	
+
 	_show_current_parameter()
 	
 	# Setup node tree if editor interface is available
@@ -54,13 +56,12 @@ func populate_inputs(node_path: String, action_id: String, inputs: Array, curren
 		_setup_node_tree()
 
 func _setup_node_tree() -> void:
-	if not node_tree or not editor_interface:
+	if not editor_interface:
 		return
 	
 	node_tree.clear()
 	
-	var scene_root = editor_interface.get_edited_scene_root()
-	if not scene_root:
+	if not _scene_root:
 		return
 	
 	# Add System node as first entry (runtime autoload)
@@ -71,12 +72,12 @@ func _setup_node_tree() -> void:
 	
 	# Create root item
 	var root_item: TreeItem = node_tree.create_item()
-	root_item.set_text(0, scene_root.name)
-	root_item.set_metadata(0, scene_root)
+	root_item.set_text(0, _scene_root.name)
+	root_item.set_metadata(0, _scene_root)
 	root_item.set_icon(0, editor_interface.get_base_control().get_theme_icon("Node", "EditorIcons"))
 	
 	# Recursively add children
-	_add_node_children(scene_root, root_item)
+	_add_node_children(_scene_root, root_item)
 
 func _add_node_children(node: Node, tree_item: TreeItem) -> void:
 	for child in node.get_children():
@@ -86,7 +87,8 @@ func _add_node_children(node: Node, tree_item: TreeItem) -> void:
 		
 		# Get node icon from editor
 		var icon_name: String = child.get_class()
-		var icon: Texture2D = editor_interface.get_base_control().get_theme_icon(icon_name, "EditorIcons")
+		var base_control := editor_interface.get_base_control()
+		var icon: Texture2D = base_control.get_theme_icon(icon_name, "EditorIcons")
 		if icon:
 			child_item.set_icon(0, icon)
 		
@@ -95,53 +97,60 @@ func _add_node_children(node: Node, tree_item: TreeItem) -> void:
 			_add_node_children(child, child_item)
 
 func _show_current_parameter() -> void:
+	print("In show current param")
 	if action_inputs.is_empty():
+		print("Action inputs are empty. Doing nothing.")
 		return
 	
-	var param_data: Dictionary = action_inputs[current_param_index]
-	var param_name: String = param_data.get("name", "Unknown")
-	var param_type: String = param_data.get("type", "Variant")
-	var param_description: String = param_data.get("description", "")
+	print("Action inputs:\n" + str(action_inputs))
+	var current_input = action_inputs[current_param_index]
+	var param_name: String; var param_type: String; var param_description: String;
+	var fk_action_input: FKActionInput
+	if current_input is Dictionary:
+		print("Current input is dict")
+		var param_dict: Dictionary = action_inputs[current_param_index]
+		param_name = param_dict.get("name", "Unknown")
+		param_type = param_dict.get("type", "Variant")
+		param_description = param_dict.get("description", "")
+		
+	elif current_input is FKActionInput:
+		print("Current input is FKActionInput")
+		fk_action_input = current_input
+		param_name = fk_action_input.name
+		param_type = fk_action_input.type
+		param_description = fk_action_input.description
+		
 	
-	if param_label:
-		param_label.text = "%s (%s)" % [param_name, param_type]
+	param_label.text = "%s (%s)" % [param_name, param_type]
+	# ^For some reason, this doesn't work when we assign the format to a var...
+	_update_desc(param_description)
+	_update_expr_input(param_name)
+	_update_nav_buttons()
 	
-	# Update description
-	if description_label:
-		if param_description.is_empty():
-			description_label.text = ""
-			if description_panel:
-				description_panel.visible = false
-		else:
-			description_label.text = param_description
-			if description_panel:
-				description_panel.visible = true
-	
-	if expression_input:
-		expression_input.text = param_values.get(param_name, "")
-		expression_input.grab_focus()
-		expression_input.caret_column = expression_input.text.length()
-	
-	# Update navigation buttons
-	if prev_button:
-		prev_button.disabled = current_param_index == 0
-	if next_button:
-		next_button.disabled = current_param_index >= action_inputs.size() - 1
-	if confirm_button:
-		confirm_button.text = "Confirm" if current_param_index >= action_inputs.size() - 1 else "Next"
+func _update_desc(param_description: String):
+	description_label.text = param_description
+	var is_there_desc_to_show: bool = param_description.length() > 0
+	description_panel.visible = is_there_desc_to_show
 
+func _update_expr_input(param_name: String):
+	expression_input.text = param_values.get(param_name, "")
+	expression_input.grab_focus()
+	expression_input.caret_column = expression_input.text.length()
+
+func _update_nav_buttons():
+	prev_button.disabled = current_param_index == 0
+	next_button.disabled = current_param_index >= action_inputs.size() - 1
+	confirm_button.text = "Confirm" if current_param_index >= action_inputs.size() - 1 else "Next"
+	
 func _on_node_selected() -> void:
 	var selected_item: TreeItem = node_tree.get_selected()
 	if not selected_item:
 		return
 	
 	selected_tree_node = selected_item.get_metadata(0)
-	_populate_node_values()
+	_populate_item_list_for_selected_node()
 
-func _populate_node_values() -> void:
-	if not item_list:
-		return
-	
+func _populate_item_list_for_selected_node() -> void:
 	item_list.clear()
 	
 	# Special handling for System node (null metadata)
@@ -150,38 +159,64 @@ func _populate_node_values() -> void:
 		item_list.add_item("system.get_var(\"variable_name\")")
 		return
 	
-	# Get scene root and target node
-	var scene_root = editor_interface.get_edited_scene_root() if editor_interface else null
-	var target_node = scene_root.get_node_or_null(selected_node_path) if scene_root else null
+	var target_node: Node = _scene_root.get_node_or_null(selected_node_path) if _scene_root \
+	else null
 	
-	# Add node variables
-	if selected_tree_node.has_meta("flowkit_variables"):
-		var vars: Dictionary = selected_tree_node.get_meta("flowkit_variables", {})
-		for var_name in vars.keys():
-			# Check if this is the target node
-			if selected_tree_node == target_node:
-				# Target node - use simple n_ prefix
-				item_list.add_item("n_" + var_name)
-			else:
-				# Different node - calculate path from target node to selected node
-				if target_node and scene_root:
-					# Get path from target to selected node
-					var path_from_target: String = str(target_node.get_path_to(selected_tree_node))
-					item_list.add_item('system.get_node_var(node.get_node("' + path_from_target + '"), "' + var_name + '")')
-				elif scene_root:
-					# Fallback: use path from scene root
-					var path_from_root: String = str(scene_root.get_path_to(selected_tree_node))
-					if path_from_root == ".":
-						# Selected node IS the scene root
-						item_list.add_item('system.get_node_var(node.get_tree().current_scene, "' + var_name + '")')
-					else:
-						item_list.add_item('system.get_node_var(node.get_tree().current_scene.get_node("' + path_from_root + '"), "' + var_name + '")')
+	_add_var_items(target_node)
+	_add_prop_items(target_node)
+	_add_math_op_section()
+
+var _scene_root: Node:
+	get:
+		return editor_interface.get_edited_scene_root() if editor_interface else null
+		
+func _add_var_items(target_node: Node):
+	if not selected_tree_node.has_meta("flowkit_variables"):
+		return
 	
-	# Add node properties
+	var vars: Dictionary = selected_tree_node.get_meta("flowkit_variables", {})
+	
+	if _is_target_node(selected_tree_node):
+		_add_targ_var_items(vars)
+	else:
+		_add_other_node_var_items(vars, target_node)
+
+func _add_targ_var_items(vars: Dictionary):
+	for var_name in vars.keys():
+		item_list.add_item("n_" + var_name)
+
+
+func _add_other_node_var_items(vars: Dictionary, target_node: Node) -> void:
+	for var_name in vars.keys():
+		var ref := _build_cross_node_var_ref(var_name, target_node)
+		item_list.add_item(ref)
+		
+		
+func _build_cross_node_var_ref(var_name: String, target_node: Node) -> String:
+	# Since we want to make sure (when possible) that the inputs for things _not_ targeting 
+	# the System node are evaluated using the target node as the ref point.
+	# Case 1: path from target → selected
+	if target_node and _scene_root:
+		var path_from_target: String = str(target_node.get_path_to(selected_tree_node))
+		return 'system.get_node_var(node.get_node("' + path_from_target + '"), "' + var_name + '")'
+	
+	# Case 2: fallback path from root → selected
+	if _scene_root:
+		var path_from_root: String = str(_scene_root.get_path_to(selected_tree_node))
+		if path_from_root == ".":
+			# Selected node IS the scene root
+			return 'system.get_node_var(node.get_tree().current_scene, "' + var_name + '")'
+		else:
+			return 'system.get_node_var(node.get_tree().current_scene.get_node("' + path_from_root + '"), "' + var_name + '")'
+	
+	# Extremely defensive fallback (shouldn’t normally hit)
+	return 'system.get_node_var(node.get_tree().current_scene, "' + var_name + '")'
+	
+func _add_prop_items(target_node: Node):
 	var properties = []
 	
 	# Check if this is the target node for property references
-	if selected_tree_node == target_node:
+	if _is_target_node(selected_tree_node):
 		# Target node - use 'node.' prefix
 		properties = [
 			"node.name",
@@ -210,9 +245,8 @@ func _populate_node_values() -> void:
 			])
 	else:
 		# Different node - use get_node() reference
-		var scene_root_ref = editor_interface.get_edited_scene_root() if editor_interface else null
-		if scene_root_ref:
-			var absolute_path: String = str(scene_root_ref.get_path_to(selected_tree_node))
+		if _scene_root:
+			var absolute_path: String = str(_scene_root.get_path_to(selected_tree_node))
 			var node_ref: String = 'get_node("' + absolute_path + '")'
 			
 			properties = [
@@ -235,8 +269,13 @@ func _populate_node_values() -> void:
 	
 	for prop in properties:
 		item_list.add_item(prop)
+
+func _is_target_node(node: Node) -> bool:
+	if not _scene_root:
+		return false
+	return node == _scene_root.get_node_or_null(selected_node_path)
 	
-	# Add math operators section
+func _add_math_op_section():
 	item_list.add_item("─────────────────")
 	item_list.set_item_disabled(item_list.item_count - 1, true)
 	item_list.add_item("+ (Add)")
@@ -252,15 +291,12 @@ func _populate_node_values() -> void:
 	item_list.add_item("min(a, b)")
 	item_list.add_item("max(a, b)")
 	item_list.add_item("clamp(val, min, max)")
-
+	
 func _on_item_activated(index: int) -> void:
 	var item_text: String = item_list.get_item_text(index)
 	_insert_at_cursor(item_text)
 
 func _insert_at_cursor(text: String) -> void:
-	if not expression_input:
-		return
-	
 	# Extract just the value part (before any description in parentheses)
 	var insert_text: String = text.split(" (")[0]
 	
@@ -280,9 +316,13 @@ func _save_current_parameter() -> void:
 	if action_inputs.is_empty():
 		return
 	
-	var param_data: Dictionary = action_inputs[current_param_index]
-	var param_name: String = param_data.get("name", "")
-	
+	var param_data = action_inputs[current_param_index]
+	var param_name: String
+	if param_data is Dictionary:
+		param_name = param_data.get("name", "")
+	elif param_data is FKActionInput:
+		param_name = param_data.name
+		
 	if expression_input:
 		param_values[param_name] = expression_input.text
 
@@ -318,3 +358,6 @@ func _confirm() -> void:
 
 func _on_cancel_button_pressed() -> void:
 	hide()
+	
+func _exit_tree() -> void:
+	_toggle_subs(false)

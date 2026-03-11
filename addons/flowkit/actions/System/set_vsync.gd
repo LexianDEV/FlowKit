@@ -12,13 +12,15 @@ func get_name() -> String:
 func get_supported_types() -> Array[String]:
 	return ["System"]
 
-func get_inputs() -> Array[Dictionary]:
-	return [
-		{"name": "Enabled", "type": "bool", "description": "Whether VSync should be enabled."},
-	]
+func get_inputs() -> Array[FKActionInput]:
+	return [_enabled_input]
+
+static var _enabled_input: FKBoolActionInput:
+	get:
+		return FKBoolActionInput.new("Enabled", "Whether VSync should be enabled.", true)
 
 func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
-	var enabled: bool = bool(inputs.get("Enabled", true))
+	var enabled: bool = _enabled_input.get_val(inputs)
 	if enabled:
 		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_ENABLED)
 	else:

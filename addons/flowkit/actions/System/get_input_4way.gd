@@ -9,26 +9,46 @@ func get_id() -> String:
 func get_name() -> String:
 	return "Get Input Axis (4-Way)"
 
-func get_inputs() -> Array[Dictionary]:
-	return [
-		{"name": "Negative X Action", "type": "String", "description": "The input action for negative horizontal axis (e.g., 'move_left')."},
-		{"name": "Positive X Action", "type": "String", "description": "The input action for positive horizontal axis (e.g., 'move_right')."},
-		{"name": "Negative Y Action", "type": "String", "description": "The input action for negative vertical axis (e.g., 'move_up')."},
-		{"name": "Positive Y Action", "type": "String", "description": "The input action for positive vertical axis (e.g., 'move_down')."},
-		{"name": "Store X In", "type": "String", "description": "The system variable name to store the horizontal result in."},
-		{"name": "Store Y In", "type": "String", "description": "The system variable name to store the vertical result in."},
-	]
+func get_inputs() -> Array[FKActionInput]:
+	return [_neg_x_input, _pos_x_input, _neg_y_input, _pos_y_input, _store_x_input, _store_y_input]
+	
+static var _neg_x_input: FKStringActionInput:
+	get:
+		return FKStringActionInput.new("Negative X Action", 
+		"The input action for negative horizontal axis (e.g., 'move_left').")
+static var _pos_x_input: FKStringActionInput:
+	get:
+		return FKStringActionInput.new("Positive X Action", 
+		"The input action for positive horizontal axis (e.g., 'move_right').")
+
+static var _neg_y_input: FKStringActionInput:
+	get:
+		return FKStringActionInput.new("Negative Y Action", 
+		"The input action for negative vertical axis (e.g., 'move_up').")
+static var _pos_y_input: FKStringActionInput:
+	get:
+		return FKStringActionInput.new("Positive Y Action", 
+		"The input action for positive vertical axis (e.g., 'move_down').")
+
+static var _store_x_input: FKStringActionInput:
+	get:
+		return FKStringActionInput.new("Store X In", 
+		"The system variable name to store the horizontal result in.")
+static var _store_y_input: FKStringActionInput:
+	get:
+		return FKStringActionInput.new("Store Y In", 
+		"The system variable name to store the vertical result in.")
 
 func get_supported_types() -> Array[String]:
 	return ["System"]
 
 func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
-	var negative_x_action: String = str(inputs.get("Negative X Action", ""))
-	var positive_x_action: String = str(inputs.get("Positive X Action", ""))
-	var negative_y_action: String = str(inputs.get("Negative Y Action", ""))
-	var positive_y_action: String = str(inputs.get("Positive Y Action", ""))
-	var store_x_in: String = str(inputs.get("Store X In", ""))
-	var store_y_in: String = str(inputs.get("Store Y In", ""))
+	var negative_x_action: String = _neg_x_input.get_val(inputs)
+	var positive_x_action: String = _pos_x_input.get_val(inputs)
+	var negative_y_action: String = _neg_y_input.get_val(inputs)
+	var positive_y_action: String = _pos_y_input.get_val(inputs)
+	var store_x_in: String = _store_x_input.get_val(inputs)
+	var store_y_in: String = _store_y_input.get_val(inputs)
 
 	if negative_x_action.is_empty() or positive_x_action.is_empty() or store_x_in.is_empty():
 		return

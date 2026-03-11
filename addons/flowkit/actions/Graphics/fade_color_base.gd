@@ -4,40 +4,49 @@ class_name FadeColorBase
 func requires_multi_frames() -> bool:
 	return true
 	
-func get_inputs() -> Array:
-	return [
-		{
-			"name": "Target Color",
-			"type": "String",
-			"description": "The color in RGB coordinates. For example, \"(255, 255, 255)\" (include the quotes) for white. If empty, defaults to that color."
-		},
-		{
-			"name": "Alpha",
-			"type": "float",
-			"description": "How transparent the color should be. 0 for completely transparent, 100 for opaque. Default: " + str(default_alpha) + "."
-		},
-		{
-			"name": "Alpha Only",
-			"type": "bool",
-			"description": "If true, only the transparency will be changed. Default: " + str(default_alpha_only)
-		},
-		{
-			"name": "Duration",
-			"type": "float",
-			"description": "How long (in seconds) the fade should take. Defaults to " + str(default_duration) + "."
-		},
-		{
-			"name": "Wait For Finish",
-			"type": "bool",
-			"description": "Whether or not this pauses the Action list until the fade's done running. Default: " + str(default_wait_for_finish)
-		}
-	]
+func get_inputs() -> Array[FKActionInput]:
+	return [_targ_color_input, _alpha_input, _alpha_only_input, \
+	_duration_input, _wait_for_finish_input]
+	
+static var _targ_color_input: FKActionInput:
+	get:
+		return FKActionInput.new("Target Color", "String",
+		"The color in RGB coordinates. For example, \"(255, 255, 255)\" (include the quotes) " + \
+		"for white. If empty, defaults to that color.",
+		default_color_raw)
 
-var default_color_raw := "\"(255, 255, 255)\""
-var default_alpha := 100
-var default_alpha_only := false
-var default_duration := 1.0
-var default_wait_for_finish := true
+static var _alpha_input: FKFloatActionInput:
+	get:
+		return FKFloatActionInput.new("Alpha", 
+		"How transparent the color should be. 0 for completely transparent, 100 for opaque. " +\
+		"Default: " + str(default_alpha) + ".",
+		default_alpha)
+
+static var _alpha_only_input: FKBoolActionInput:
+	get:
+		return FKBoolActionInput.new("Alpha Only",
+		"If true, only the transparency will be changed. Default: " + str(default_alpha_only),
+		default_alpha_only)
+
+static var _duration_input: FKFloatActionInput:
+	get:
+		return FKFloatActionInput.new("Duration",
+		"How long (in seconds) the fade should take. Defaults to " + str(default_duration) + ".",
+		default_duration)
+
+static var _wait_for_finish_input: FKBoolActionInput:
+	get:
+		return FKBoolActionInput.new("Wait For Finish", 
+		"Whether or not this pauses the Action list until the fade's done running. Default: " \
+		+ str(default_wait_for_finish),
+		default_wait_for_finish
+)
+
+static var default_color_raw := "\"(255, 255, 255)\""
+static var default_alpha := 100
+static var default_alpha_only := false
+static var default_duration := 1.0
+static var default_wait_for_finish := true
 
 var tween: Tween = null
 
@@ -62,36 +71,13 @@ func execute(targetNode: Node, inputs: Dictionary, _str := "") -> void:
 	
 	exec_completed.emit()
 
-func parse_inputs(targetNode: Node, inputs: Dictionary) -> void:
-	duration = float(inputs.get("Duration", default_duration))
+func parse_inputs(target_node: Node, inputs: Dictionary) -> void:
+	duration = _duration_input.get_val(inputs)
+	alpha_only = _alpha_only_input.get_val(inputs)
+	alpha = _alpha_input.get_val(inputs) / 100.0 
+	wait_for_finish = _wait_for_finish_input.get_val(inputs)
+	target_color = _parse_color_input(target_node, inputs)
 	
-	var base_alpha_only = inputs.get("Alpha Only", default_alpha_only)
-	var use_default := base_alpha_only is String
-	if use_default:
-		alpha_only = default_alpha_only
-	else:
-		alpha_only = base_alpha_only
-		
-	alpha = inputs.get("Alpha", default_alpha) / 100.0
-	
-	var base_wait := inputs.get("Wait For Finish", default_wait_for_finish)
-	use_default = base_wait is String
-	if use_default:
-		wait_for_finish = default_wait_for_finish
-	else:
-		wait_for_finish = base_wait
-
-	var prop := decide_color_prop_name_for(targetNode)
-
-	if alpha_only:
-		target_color = targetNode.get(prop)
-	else:
-		var raw = inputs.get("Target Color", default_color_raw)
-		var hex := rgb_to_hex(raw)
-		target_color = Color.html(hex)
-
-	target_color.a = alpha
-
 var duration := 0.0
 var alpha_only := false
 var alpha := 0.0
@@ -102,6 +88,20 @@ var wait_for_finish := true
 func decide_color_prop_name_for(_targetNode: Node) -> String:
 	return "color"
 
+func _parse_color_input(target_node: Node, inputs: Dictionary) -> Color:
+	var prop: String = decide_color_prop_name_for(target_node)
+	var result: Color 
+	
+	if alpha_only:
+		result = target_node.get(prop)
+	else:
+		var raw = _targ_color_input.get_val(inputs)
+		var hex := rgb_to_hex(raw)
+		result = Color.html(hex)
+
+	result.a = alpha
+	return result
+	
 func rgb_to_hex(rgb_string: String) -> String:
 	var cleaned := rgb_string.replace("\"", "")
 	cleaned = cleaned.replace("(", "")

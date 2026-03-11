@@ -15,17 +15,15 @@ func get_supported_types() -> Array:
 func requires_multi_frames() -> bool:
 	return true
 	
-func get_inputs() -> Array:
-	return [
-		{
-			"name": "Frame Count",
-			"type": "int",
-			"description": "What you'd expect."
-		},
-	]
+func get_inputs() -> Array[FKActionInput]:
+	return [_frame_input]
+
+static var _frame_input: FKIntActionInput:
+	get:
+		return FKIntActionInput.new("Frame Count", "What you'd expect")
 
 func execute(target_node: Node, inputs: Dictionary, _str := "") -> void:
-	var frame_count: float = inputs.get("Frame Count", 0)
+	var frame_count: float = _frame_input.get_val(inputs)
 	var tree := target_node.get_tree()
 	
 	var valid_input := frame_count > 0
@@ -33,8 +31,6 @@ func execute(target_node: Node, inputs: Dictionary, _str := "") -> void:
 		while frame_count > 0:
 			await tree.process_frame
 			frame_count -= 1
-		var timer := tree.create_timer(frame_count)
-		await timer.timeout
 	else:
 		var message := "[color=red][FlowKit] Frame Count input passed to Wait For Frames Action ("
 		message += str(frame_count) + ") is not valid. Skipping.[/color]" 

@@ -9,11 +9,18 @@ func get_id() -> String:
 func get_name() -> String:
 	return "Move and Collide"
 
-func get_inputs() -> Array[Dictionary]:
-	return [
-		{"name": "X", "type": "Float", "description": "The amount to move the character body along the X axis."},
-		{"name": "Y", "type": "Float", "description": "The amount to move the character body along the Y axis."},
-	]
+func get_inputs() -> Array[FKActionInput]:
+	return [_x_input, _y_input]
+
+static var _x_input: FKActionInput:
+	get:
+		return FKActionInput.new("X", 
+		"The amount to move the character body along the X axis.")
+
+static var _y_input: FKFloatActionInput:
+	get:
+		return FKFloatActionInput.new("Y", 
+		"The amount to move the character body along the Y axis.")
 
 func get_supported_types() -> Array[String]:
 	return ["CharacterBody2D"]
@@ -23,7 +30,7 @@ func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
 		return
 	
 	var body: CharacterBody2D = node as CharacterBody2D
-	var x: float = float(inputs.get("X", 0))
-	var y: float = float(inputs.get("Y", 0))
+	var x: float = _x_input.get_val(inputs)
+	var y: float = _y_input.get_val(inputs)
 
 	body.move_and_collide(Vector2(x, y))

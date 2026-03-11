@@ -9,8 +9,16 @@ func get_name() -> String:
 func get_description() -> String:
 	return "Plays the current animation on an AnimatedSprite2D."
 
-func get_inputs() -> Array[Dictionary]:
-	return [{"name": "Name", "type": "Variant"}, {"name": "Custom Speed", "type": "Float"}, {"name": "From End", "type": "Bool"}]
+func get_inputs() -> Array[FKActionInput]:
+	return [_name_input, _speed_input, _from_end_input]
+
+static var _name_input: FKActionInput:
+	get: return FKActionInput.new("Name", "Variant")
+static var _speed_input: FKActionInput:
+	get: return FKActionInput.new("Custom Speed", "Float")
+	
+static var _from_end_input: FKActionInput:
+	get: return FKActionInput.new("From End", "Bool")
 
 func get_supported_types() -> Array[String]:
 	return ["AnimatedSprite2D"]

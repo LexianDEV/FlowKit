@@ -12,13 +12,16 @@ func get_name() -> String:
 func get_supported_types() -> Array[String]:
 	return ["System"]
 
-func get_inputs() -> Array[Dictionary]:
-	return [
-		{"name": "Action", "type": "String", "description": "The name of the input action to simulate releasing."},
-	]
+func get_inputs() -> Array[FKActionInput]:
+	return [_action_input]
+	
+static var _action_input: FKStringActionInput:
+	get:
+		return FKStringActionInput.new("Action",
+		"The name of the input action to simulate releasing.")
 
 func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
-	var action_name: String = str(inputs.get("Action", ""))
+	var action_name: String = _action_input.get_val(inputs)
 	
 	if not action_name.is_empty():
 		Input.action_release(action_name)

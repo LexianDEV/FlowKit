@@ -9,10 +9,13 @@ func get_id() -> String:
 func get_name() -> String:
 	return "Set Y Position"
 
-func get_inputs() -> Array[Dictionary]:
-	return [
-		{"name": "Y", "type": "Float", "description": "The Y coordinate to set the node's position to."},
-	]
+func get_inputs() -> Array[FKActionInput]:
+	return [_val_input]
+
+static var _val_input: FKActionInput:
+	get:
+		return FKActionInput.new("Y", "Float",
+		"The Y coordinate to set the node's position to.")
 
 func get_supported_types() -> Array[String]:
 	return ["Node2D"]
@@ -22,4 +25,4 @@ func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
 		return
 	
 	var node2d: Node2D = node as Node2D
-	node2d.position.y = inputs.get("Y", 0.0)
+	node2d.position.y = _val_input.get_val(inputs)

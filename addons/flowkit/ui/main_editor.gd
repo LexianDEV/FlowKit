@@ -1398,6 +1398,7 @@ func _on_event_selected(node_path: String, event_id: String, inputs: Array) -> v
 	select_event_modal.hide()
 	
 	if inputs.size() > 0:
+		print("Populating inputs in on event selected")
 		expression_modal.populate_inputs(node_path, event_id, inputs)
 		_popup_centered_on_editor(expression_modal)
 	else:
@@ -1416,6 +1417,7 @@ func _on_condition_selected(node_path: String, condition_id: String, inputs: Arr
 	select_condition_modal.hide()
 	
 	if inputs.size() > 0:
+		print("Populating inputs in on condition selected")
 		expression_modal.populate_inputs(node_path, condition_id, inputs)
 		_popup_centered_on_editor(expression_modal)
 	else:
@@ -1432,10 +1434,12 @@ func _on_condition_selected(node_path: String, condition_id: String, inputs: Arr
 
 func _on_action_selected(node_path: String, action_id: String, inputs: Array) -> void:
 	"""Action type selected."""
+	print("Action selected")
 	pending_id = action_id
 	select_action_modal.hide()
 	
 	if inputs.size() > 0:
+		print("Populating inputs in on action selected")
 		expression_modal.populate_inputs(node_path, action_id, inputs)
 		_popup_centered_on_editor(expression_modal)
 	else:
@@ -1763,6 +1767,7 @@ func _on_row_edit(signal_row, bound_row) -> void:
 		pending_node_path = str(data.target_node)
 		
 		# Open expression modal with current values
+		print("Populating inputs in on row edit")
 		expression_modal.populate_inputs(str(data.target_node), data.event_id, provider_inputs, data.inputs)
 		_popup_centered_on_editor(expression_modal)
 	else:
@@ -1927,7 +1932,7 @@ func _on_branch_action_edit(action_item, branch_item, event_row) -> void:
 		pending_block_type = "action_edit"
 		pending_id = act_data.action_id
 		pending_node_path = str(act_data.target_node)
-
+		print("Populating inputs in on branch action edit")
 		expression_modal.populate_inputs(str(act_data.target_node), act_data.action_id, provider_inputs, act_data.inputs)
 		_popup_centered_on_editor(expression_modal)
 	else:
@@ -2055,6 +2060,7 @@ func _start_branch_workflow(branch_id: String, target_row) -> void:
 		pending_block_type = "branch_evaluation"
 		pending_target_row = target_row
 		if branch_inputs_def.size() > 0:
+			print("Populating inputs in start branch workflow")
 			expression_modal.populate_inputs("", branch_id, branch_inputs_def)
 			_popup_centered_on_editor(expression_modal)
 		else:
@@ -2151,7 +2157,7 @@ func _on_condition_edit_requested(condition_item, bound_row) -> void:
 		pending_block_type = "condition_edit"
 		pending_id = cond_data.condition_id
 		pending_node_path = str(cond_data.target_node)
-		
+		print("Populating inputs in on condition edit requested")
 		expression_modal.populate_inputs(str(cond_data.target_node), cond_data.condition_id, provider_inputs, cond_data.inputs)
 		_popup_centered_on_editor(expression_modal)
 	else:
@@ -2164,12 +2170,13 @@ func _on_action_edit_requested(action_item, bound_row) -> void:
 		return
 	
 	# Get action provider to check if it has inputs
-	var provider_inputs = []
+	var provider_inputs: Array[FKActionInput] = []
 	if registry:
 		for provider in registry.action_providers:
 			if provider.has_method("get_id") and provider.get_id() == act_data.action_id:
-				if provider.has_method("get_inputs"):
+				if provider is FKAction:
 					provider_inputs = provider.get_inputs()
+					print("Provider inputs found for provider type " + provider.get_class() + ": " + str(provider_inputs))
 				break
 	
 	if provider_inputs.size() > 0:
@@ -2178,8 +2185,10 @@ func _on_action_edit_requested(action_item, bound_row) -> void:
 		pending_block_type = "action_edit"
 		pending_id = act_data.action_id
 		pending_node_path = str(act_data.target_node)
-		
-		expression_modal.populate_inputs(str(act_data.target_node), act_data.action_id, provider_inputs, act_data.inputs)
+		print("Populating inputs in on action edit requested. Provider inputs:\n" + str(provider_inputs))
+		var node_path := str(act_data.target_node)
+		expression_modal.populate_inputs(node_path, act_data.action_id, provider_inputs, \
+		act_data.inputs)
 		_popup_centered_on_editor(expression_modal)
 	else:
 		print("Action has no inputs to edit")
