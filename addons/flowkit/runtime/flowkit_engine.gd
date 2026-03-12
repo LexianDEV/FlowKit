@@ -7,15 +7,15 @@ var registry: FKRegistry
 var active_sheets: Array = []  # Each entry: {"sheet": FKEventSheet, "root": Node, "scene_name": String, "uid": int}
 var last_scene: Node = null
 var active_behavior_nodes: Array = []  # Track nodes with active behaviors
-var _block_event_providers: Dictionary = {}  # block_id -> per-block event provider instance
 var _branch_executor := FKBranchExecutor.new()
+var _event_providers := FKEventProviderManager.new()
 
 func _ready() -> void:
 	# Load registry
 	registry = FKRegistry.new()
 	registry.load_all()
-	_branch_executor.fk_engine = self
-	_branch_executor.registry = registry
+	_branch_executor.initialize(self)
+	_event_providers.initialize(self)
 
 	print("[FlowKit] Engine initialized.")
 
@@ -77,8 +77,10 @@ func _on_scene_changed(scene_root: Node) -> void:
 	active_behavior_nodes.clear()  # Clear behavior tracking on scene change
 	
 	# Teardown signal events on previous sheets before clearing
-	_teardown_all_signal_events()
-	_block_event_providers.clear()
+	for entry in active_sheets:
+		_event_providers.teardown_signal_events(entry)
+		
+	_event_providers.clear_providers()
 	
 	if scene_root == null:
 		# Scene unloaded: clear active sheets (optional)
@@ -101,8 +103,6 @@ func _on_scene_changed(scene_root: Node) -> void:
 
 	# Load event sheets for the scene root and any instanced child scenes
 	_load_sheets_for_scene(scene_root)
-
-
 
 func _load_sheets_for_scene(scene_root: Node) -> void:
 	# Clear previous sheets
@@ -133,9 +133,10 @@ func _load_sheets_for_scene(scene_root: Node) -> void:
 				var entry := {"sheet": sheet, "root": node_root, "scene_name": scene_name, "uid": uid}
 				active_sheets.append(entry)
 				# Create per-block event provider instances (each block gets its own)
-				_create_block_providers(entry)
+				_event_providers.create_providers(entry)
+
 				# Setup signal-based events so they can connect to node signals
-				_setup_signal_events(entry)
+				_event_providers.setup_signal_events(entry)
 				print("[FlowKit] Loaded event sheet for scene: ", scene_name, " (node: ", node_root.name, ") with ", sheet.events.size(), " events")
 			else:
 				print("[FlowKit] Failed to load sheet resource at: ", sheet_path)
@@ -160,28 +161,6 @@ func _collect_node_paths(node: Node, uid_to_node: Dictionary) -> void:
 
 	for child in node.get_children():
 		_collect_node_paths(child, uid_to_node)
-
-
-## Create a new event provider instance for each event block in a sheet entry.
-## This ensures each block has its own isolated state.
-func _create_block_providers(entry: Dictionary) -> void:
-	var sheet: FKEventSheet = entry.get("sheet", null)
-	if not sheet:
-		return
-
-	var all_events: Array = sheet.get_all_events()
-
-	for block in all_events:
-		if block.block_id and not _block_event_providers.has(block.block_id):
-			var instance = registry.create_event_instance(block.event_id)
-			if instance:
-				_block_event_providers[block.block_id] = instance
-
-func _get_all_events(sheet: FKEventSheet) -> Array:
-	var events: Array = []
-	events.append_array(sheet.events)
-	_collect_events_from_groups(sheet.groups, events)
-	return events
 
 func _run_sheet(entry: Dictionary) -> void:
 	# Entry is a dictionary with keys: "sheet" and "root"
@@ -230,7 +209,7 @@ func _run_sheet(entry: Dictionary) -> void:
 			continue
 
 		# Get the per-block event provider instance
-		var provider = _block_event_providers.get(block.block_id, null)
+		var provider = _event_providers.get_provider(block.block_id)
 		if not provider:
 			continue
 
@@ -258,65 +237,7 @@ func _run_sheet(entry: Dictionary) -> void:
 		_execute_block(block, current_root)
 # --- Signal event lifecycle -------------------------------------------------
 
-## Set up signal-based events for a loaded sheet entry.
-## For each event block, calls registry.setup_event() with a trigger callback
-## so signal events can connect to Godot signals and fire immediately.
-func _setup_signal_events(entry: Dictionary) -> void:
-	var sheet: FKEventSheet = entry.get("sheet", null)
-	var root_node: Node = entry.get("root", null)
-	if not sheet or not root_node or not is_instance_valid(root_node):
-		return
 
-	var all_events: Array = sheet.get_all_events()
-
-	for block in all_events:
-		var provider = _block_event_providers.get(block.block_id, null)
-		if not provider:
-			continue
-
-		if not (provider.has_method("is_signal_event") and provider.is_signal_event()):
-			continue
-
-		var target := str(block.target_node)
-		var node: Node = _resolve_target(target, root_node)
-		if not node:
-			continue
-
-		# Build a trigger callback that runs this block's conditions & actions
-		var trigger_cb: Callable = _make_trigger_callback(block, root_node)
-		if provider.has_method("setup"):
-			provider.setup(node, trigger_cb, block.block_id)
-
-## Teardown all signal events across every active sheet.
-func _teardown_all_signal_events() -> void:
-	for entry in active_sheets:
-		var sheet: FKEventSheet = entry.get("sheet", null)
-		var root_node: Node = entry.get("root", null)
-		if not sheet or not root_node or not is_instance_valid(root_node):
-			continue
-
-		var all_events: Array = sheet.get_all_events()
-
-		for block in all_events:
-			var provider = _block_event_providers.get(block.block_id, null)
-			if not provider:
-				continue
-			
-			var target := str(block.target_node)
-			var node: Node = _resolve_target(target, root_node)
-			if not node:
-				continue
-
-			if provider.has_method("teardown"):
-				provider.teardown(node, block.block_id)
-
-## Create a Callable that evaluates a block's conditions and runs its actions.
-## This is what signal events call when their signal fires.
-func _make_trigger_callback(block: FKEventBlock, current_root: Node) -> Callable:
-	return func() -> void:
-		if not is_instance_valid(current_root):
-			return
-		_execute_block(block, current_root)
 
 ## Execute a single event block: check all conditions, then run all actions.
 ## Shared by both the poll loop and signal-based trigger callbacks.
@@ -348,20 +269,6 @@ func _execute_actions_list(actions: Array, current_root: Node, block_id: String)
 	
 func _is_multi_frame_provider(provider: Variant) -> bool:
 	return provider and provider.has_method("requires_multi_frames") and provider.requires_multi_frames()
-
-func _collect_events_from_groups(groups: Array, out_events: Array) -> void:
-	for group in groups:
-		if group is FKGroupBlock:
-			for child_item in group.children:
-				var child_type: String = child_item.get("type", "")
-				var child_data: Variant = child_item.get("data", null)
-				
-				if child_type == "event" and child_data is FKEventBlock:
-					out_events.append(child_data)
-				elif child_type == "group" and child_data is FKGroupBlock:
-					# Recursively collect from nested groups
-					_collect_events_from_groups([child_data], out_events)
-
 
 func _ensure_block_ids_in_groups(groups: Array) -> void:
 	"""Recursively ensure all event blocks inside groups have unique IDs."""

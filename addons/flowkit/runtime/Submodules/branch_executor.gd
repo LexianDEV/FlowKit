@@ -4,13 +4,12 @@ class_name FKBranchExecutor
 var registry: FKRegistry
 var fk_engine: FlowKitEngine
 
+func initialize(owner: FlowKitEngine):
+	fk_engine = owner
+	registry = owner.registry
+	
 func _resolve_target(target: String, root: Node) -> Node:
-	if target == _sys_node_name:
-		return fk_engine.get_node(_path_to_sys)
-	return root.get_node_or_null(target)
-
-const _sys_node_name := "System"
-const _path_to_sys := NodePath("/root/FlowKitSystem")
+	return fk_engine._resolve_target(target, root)
 
 ## Evaluate a branch's condition. Returns true if the condition passes.
 func _evaluate_condition(act: FKEventAction, current_root: Node, block_id: String) -> bool:
