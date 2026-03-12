@@ -8,11 +8,14 @@ var active_sheets: Array = []  # Each entry: {"sheet": FKEventSheet, "root": Nod
 var last_scene: Node = null
 var active_behavior_nodes: Array = []  # Track nodes with active behaviors
 var _block_event_providers: Dictionary = {}  # block_id -> per-block event provider instance
+var _branch_executor := FKBranchExecutor.new()
 
 func _ready() -> void:
 	# Load registry
 	registry = FKRegistry.new()
 	registry.load_all()
+	_branch_executor.fk_engine = self
+	_branch_executor.registry = registry
 
 	print("[FlowKit] Engine initialized.")
 
@@ -21,11 +24,18 @@ func _ready() -> void:
 
 var _is_physics_frame: bool = false  # Tracks which callback is currently running
 
+const _path_to_sys := NodePath("/root/FlowKitSystem")
+const _sys_node_name := "System"
+func _resolve_target(target: String, root: Node) -> Node:
+	if target == _sys_node_name:
+		return get_node(_path_to_sys)
+	return root.get_node_or_null(target)
+
 func _process(delta: float) -> void:
 	# Regularly check if the current_scene changed (robust against timing issues).
 	_check_for_scene_change()
 	# Store delta on FlowKitSystem so expressions can read it
-	var system = get_node_or_null("/root/FlowKitSystem")
+	var system = get_node_or_null(_path_to_sys)
 	if system:
 		system.delta = delta
 	_is_physics_frame = false
@@ -37,7 +47,7 @@ func _process(delta: float) -> void:
 
 func _physics_process(delta: float) -> void:
 	# Store delta on FlowKitSystem so expressions can read it
-	var system = get_node_or_null("/root/FlowKitSystem")
+	var system = get_node_or_null(_path_to_sys)
 	if system:
 		system.delta = delta
 	_is_physics_frame = true
@@ -82,7 +92,7 @@ func _on_scene_changed(scene_root: Node) -> void:
 	print("[FlowKit] Scene detected:", scene_name, " (", scene_root.name, ") UID:", scene_uid)
 
 	# Sync node variables from metadata to FlowKitSystem
-	var system: Node = get_tree().root.get_node_or_null("/root/FlowKitSystem")
+	var system: Node = get_tree().root.get_node_or_null(_path_to_sys)
 	if system and system.has_method("sync_scene_node_variables"):
 		system.sync_scene_node_variables(scene_root)
 
@@ -159,9 +169,7 @@ func _create_block_providers(entry: Dictionary) -> void:
 	if not sheet:
 		return
 
-	var all_events: Array = []
-	all_events.append_array(sheet.events)
-	_collect_events_from_groups(sheet.groups, all_events)
+	var all_events: Array = sheet.get_all_events()
 
 	for block in all_events:
 		if block.block_id and not _block_event_providers.has(block.block_id):
@@ -169,6 +177,11 @@ func _create_block_providers(entry: Dictionary) -> void:
 			if instance:
 				_block_event_providers[block.block_id] = instance
 
+func _get_all_events(sheet: FKEventSheet) -> Array:
+	var events: Array = []
+	events.append_array(sheet.events)
+	_collect_events_from_groups(sheet.groups, events)
+	return events
 
 func _run_sheet(entry: Dictionary) -> void:
 	# Entry is a dictionary with keys: "sheet" and "root"
@@ -186,45 +199,35 @@ func _run_sheet(entry: Dictionary) -> void:
 
 	# Process standalone conditions (run every frame)
 	for standalone_cond in sheet.standalone_conditions:
-		var cnode: Node = null
-		if str(standalone_cond.target_node) == "System":
-			cnode = get_node("/root/FlowKitSystem")
-		else:
-			cnode = current_root.get_node_or_null(standalone_cond.target_node)
-			if not cnode:
-				continue
+		var target := str(standalone_cond.target_node)
+		var cnode: Node = _resolve_target(target, current_root)
+		if not cnode:
+			continue
 
 		var cond_result: bool = registry.check_condition(standalone_cond.condition_id, cnode, standalone_cond.inputs, standalone_cond.negated, current_root, "")
 		if cond_result:
 			# Execute actions associated with this standalone condition
 			for act in standalone_cond.actions:
-				var anode: Node = null
-				if str(act.target_node) == "System":
-					anode = get_node("/root/FlowKitSystem")
-				else:
-					anode = current_root.get_node_or_null(act.target_node)
-					if not anode:
-						print("[FlowKit] Standalone condition action target node not found: ", act.target_node)
-						continue
+				target = str(act.target_node)
+				var anode: Node = _resolve_target(target, current_root)
+				if not anode:
+					print("[FlowKit] Standalone condition action target node not found: ", act.target_node)
+					continue
 				var provider: Variant = await registry.execute_action(act.action_id, anode, act.inputs, current_root, "")
 
 
 	# Collect all events from the sheet (both top-level and nested in groups)
-	var all_events: Array = []
-	all_events.append_array(sheet.events)
-	_collect_events_from_groups(sheet.groups, all_events)
+	var all_events: Array = sheet.get_all_events()
 
 	# Process each block individually
 	for block in all_events:
 		# Resolve target node for polling
-		var node: Node = null
-		if str(block.target_node) == "System":
-			node = get_node("/root/FlowKitSystem")
-		else:
-			node = current_root.get_node_or_null(block.target_node)
-			if not node:
-				print("[FlowKit] Event polling target node not found: ", block.target_node, " in scene root: ", current_root.name)
-				continue
+		var target: String = block.target_node
+		var node: Node = _resolve_target(target, current_root)
+		
+		if not node:
+			print("[FlowKit] Event polling target node not found: ", block.target_node, " in scene root: ", current_root.name)
+			continue
 
 		# Get the per-block event provider instance
 		var provider = _block_event_providers.get(block.block_id, null)
@@ -264,9 +267,7 @@ func _setup_signal_events(entry: Dictionary) -> void:
 	if not sheet or not root_node or not is_instance_valid(root_node):
 		return
 
-	var all_events: Array = []
-	all_events.append_array(sheet.events)
-	_collect_events_from_groups(sheet.groups, all_events)
+	var all_events: Array = sheet.get_all_events()
 
 	for block in all_events:
 		var provider = _block_event_providers.get(block.block_id, null)
@@ -276,13 +277,10 @@ func _setup_signal_events(entry: Dictionary) -> void:
 		if not (provider.has_method("is_signal_event") and provider.is_signal_event()):
 			continue
 
-		var node: Node = null
-		if str(block.target_node) == "System":
-			node = get_node("/root/FlowKitSystem")
-		else:
-			node = root_node.get_node_or_null(block.target_node)
-			if not node:
-				continue
+		var target := str(block.target_node)
+		var node: Node = _resolve_target(target, root_node)
+		if not node:
+			continue
 
 		# Build a trigger callback that runs this block's conditions & actions
 		var trigger_cb: Callable = _make_trigger_callback(block, root_node)
@@ -297,22 +295,17 @@ func _teardown_all_signal_events() -> void:
 		if not sheet or not root_node or not is_instance_valid(root_node):
 			continue
 
-		var all_events: Array = []
-		all_events.append_array(sheet.events)
-		_collect_events_from_groups(sheet.groups, all_events)
+		var all_events: Array = sheet.get_all_events()
 
 		for block in all_events:
 			var provider = _block_event_providers.get(block.block_id, null)
 			if not provider:
 				continue
-
-			var node: Node = null
-			if str(block.target_node) == "System":
-				node = get_node_or_null("/root/FlowKitSystem")
-			else:
-				node = root_node.get_node_or_null(block.target_node)
-				if not node:
-					continue
+			
+			var target := str(block.target_node)
+			var node: Node = _resolve_target(target, root_node)
+			if not node:
+				continue
 
 			if provider.has_method("teardown"):
 				provider.teardown(node, block.block_id)
@@ -331,14 +324,11 @@ func _execute_block(block: FKEventBlock, current_root: Node) -> void:
 	# Conditions
 	var passed: bool = true
 	for cond in block.conditions:
-		var cnode: Node = null
-		if str(cond.target_node) == "System":
-			cnode = get_node("/root/FlowKitSystem")
-		else:
-			cnode = current_root.get_node_or_null(cond.target_node)
-			if not cnode:
-				passed = false
-				break
+		var target := str(cond.target_node)
+		var cnode: Node = _resolve_target(target, current_root)
+		if not cnode:
+			passed = false
+			break
 
 		var cond_result: bool = registry.check_condition(cond.condition_id, cnode, cond.inputs, cond.negated, current_root, block.block_id)
 		if not cond_result:
@@ -351,106 +341,11 @@ func _execute_block(block: FKEventBlock, current_root: Node) -> void:
 	# Execute all actions (with branch support, including nested branches)
 	await _execute_actions_list(block.actions, current_root, block.block_id)
 
-## Evaluate a branch's condition. Returns true if the condition passes.
-func _evaluate_branch_condition(act: FKEventAction, current_root: Node, block_id: String) -> bool:
-	if not act.branch_condition:
-		return false
-
-	var cond = act.branch_condition
-	var cnode: Node = null
-	if str(cond.target_node) == "System":
-		cnode = get_node("/root/FlowKitSystem")
-	else:
-		cnode = current_root.get_node_or_null(cond.target_node)
-		if not cnode:
-			return false
-
-	return registry.check_condition(cond.condition_id, cnode, cond.inputs, cond.negated, current_root, block_id)
-
-## Determine whether a branch should execute, delegating to the branch provider.
-## Handles both condition-type and evaluation-type branches.
-func _check_branch_should_execute(act: FKEventAction, provider: Variant, current_root: Node, block_id: String) -> bool:
-	if not provider:
-		return false
-
-	var input_type: String = provider.get_input_type() if provider.has_method("get_input_type") else "condition"
-
-	if input_type == "condition":
-		var cond_result: bool = _evaluate_branch_condition(act, current_root, block_id)
-		return provider.should_execute(cond_result, {}, block_id)
-	else:
-		# Evaluation type: evaluate branch_inputs and let the provider decide
-		var evaluated_inputs: Dictionary = registry.evaluate_branch_inputs(act.branch_inputs, current_root)
-		return provider.should_execute(false, evaluated_inputs, block_id)
-
-## Get evaluated branch inputs for execution-count queries.
-func _get_evaluated_branch_inputs(act: FKEventAction, current_root: Node) -> Dictionary:
-	return registry.evaluate_branch_inputs(act.branch_inputs, current_root)
-
 ## Execute a list of actions, handling branch chains via providers.
 ## Used by both _execute_block (top-level actions) and nested branches.
 func _execute_actions_list(actions: Array, current_root: Node, block_id: String) -> void:
-	var branch_taken: bool = false
-	var in_branch_chain: bool = false
-
-	for act in actions:
-		if act.is_branch:
-			var branch_id: String = registry.resolve_branch_id(act.branch_id, act.branch_type)
-			var provider = registry.get_branch_provider(branch_id)
-
-			if not provider:
-				# Unknown branch provider — skip
-				continue
-
-			match act.branch_type:
-				"if":
-					branch_taken = false
-					in_branch_chain = provider.get_type() == "chain" if provider.has_method("get_type") else false
-					var should_exec = _check_branch_should_execute(act, provider, current_root, block_id)
-					if should_exec:
-						branch_taken = true
-						var evaluated = _get_evaluated_branch_inputs(act, current_root)
-						var count: int = provider.get_execution_count(evaluated, block_id) if provider.has_method("get_execution_count") else 1
-						for i in count:
-							await _execute_actions_list(act.branch_actions, current_root, block_id)
-				"elseif":
-					if in_branch_chain and not branch_taken:
-						var should_exec = _check_branch_should_execute(act, provider, current_root, block_id)
-						if should_exec:
-							branch_taken = true
-							var evaluated = _get_evaluated_branch_inputs(act, current_root)
-							var count: int = provider.get_execution_count(evaluated, block_id) if provider.has_method("get_execution_count") else 1
-							for i in count:
-								await _execute_actions_list(act.branch_actions, current_root, block_id)
-				"else":
-					if in_branch_chain and not branch_taken:
-						branch_taken = true
-						await _execute_actions_list(act.branch_actions, current_root, block_id)
-					in_branch_chain = false
-				_:
-					# Standalone branch (no chain position) — treat like "if"
-					var should_exec = _check_branch_should_execute(act, provider, current_root, block_id)
-					if should_exec:
-						var evaluated = _get_evaluated_branch_inputs(act, current_root)
-						var count: int = provider.get_execution_count(evaluated, block_id) if provider.has_method("get_execution_count") else 1
-						for i in count:
-							await _execute_actions_list(act.branch_actions, current_root, block_id)
-					in_branch_chain = false
-					branch_taken = false
-		else:
-			in_branch_chain = false
-			branch_taken = false
-
-			var anode: Node = null
-			if str(act.target_node) == "System":
-				anode = get_node("/root/FlowKitSystem")
-			else:
-				anode = current_root.get_node_or_null(act.target_node)
-				if not anode:
-					print("[FlowKit] Action target node not found: ", act.target_node)
-					continue
-			var provider: Variant = await registry.execute_action(act.action_id, anode, act.inputs, current_root, block_id)
-
+	await _branch_executor._execute_actions(actions, current_root, block_id)
+	
 func _is_multi_frame_provider(provider: Variant) -> bool:
 	return provider and provider.has_method("requires_multi_frames") and provider.requires_multi_frames()
 
