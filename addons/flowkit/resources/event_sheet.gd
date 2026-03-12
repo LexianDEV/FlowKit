@@ -14,6 +14,26 @@ class_name FKEventSheet
 ## Stores the display order: [{"type": "event"|"comment"|"group", "index": int}, ...]
 @export var item_order: Array[Dictionary] = []
 
+func get_all_events() -> Array:
+	var events := []
+	events.append_array(self.events)
+	_collect_events_from_groups(self.groups, events)
+	return events
+
+func _collect_events_from_groups(groups: Array, out_events: Array) -> void:
+	for group in groups:
+		if group is not FKGroupBlock:
+			continue
+			
+		for child_item in group.children:
+			var child_type: String = child_item.get("type", "")
+			var child_data: Variant = child_item.get("data", null)
+			
+			if child_type == "event" and child_data is FKEventBlock:
+				out_events.append(child_data)
+			elif child_type == "group" and child_data is FKGroupBlock:
+				# Recursively collect from nested groups
+				_collect_events_from_groups([child_data], out_events)
 
 func get_ordered_items() -> Array:
 	"""Get all items in display order as an array of dictionaries with type and data."""
