@@ -105,7 +105,6 @@ func _show_current_parameter() -> void:
 		print("Action inputs are empty. Doing nothing.")
 		return
 	
-	print("Action inputs:\n" + str(action_inputs))
 	var current_input = action_inputs[current_param_index]
 	var param_name: String; var param_type: String; var param_description: String;
 	var fk_action_input: FKActionInput

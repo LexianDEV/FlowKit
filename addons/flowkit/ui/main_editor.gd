@@ -742,10 +742,8 @@ func _get_sheet_path() -> String:
 
 func _load_scene_sheet() -> void:
 	"""Load event sheet for current scene."""
-	print("At start of _load_scene_sheet")
 	_clear_all_blocks()
-	print("Right after _clear_all_blocks")
-	
+
 	var sheet_path = _get_sheet_path()
 	if sheet_path == "" or not FileAccess.file_exists(sheet_path):
 		_show_empty_blocks_state()
@@ -769,7 +767,6 @@ func _load_scene_sheet() -> void:
 func _populate_from_sheet(sheet: FKEventSheet) -> void:
 	"""Create event rows and comments from event sheet data (GDevelop-style)."""
 	# If we have item_order, use it to restore the correct order
-	print("At start of _populate_from_sheet")
 	if sheet.item_order.size() > 0:
 		for item in sheet.item_order:
 			var item_type = item.get("type", "")
@@ -2206,7 +2203,6 @@ func _on_action_edit_requested(action_item, bound_row) -> void:
 			if provider.has_method("get_id") and provider.get_id() == act_data.action_id:
 				if provider is FKAction:
 					provider_inputs = provider.get_inputs()
-					print("Provider inputs found for provider type " + provider.get_class() + ": " + str(provider_inputs))
 				break
 	
 	if provider_inputs.size() > 0:
@@ -2215,7 +2211,7 @@ func _on_action_edit_requested(action_item, bound_row) -> void:
 		pending_block_type = "action_edit"
 		pending_id = act_data.action_id
 		pending_node_path = str(act_data.target_node)
-		print("Populating inputs in on action edit requested. Provider inputs:\n" + str(provider_inputs))
+		
 		var node_path := str(act_data.target_node)
 		expression_modal.populate_inputs(node_path, act_data.action_id, provider_inputs, \
 		act_data.inputs)
