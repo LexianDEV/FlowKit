@@ -1,4 +1,4 @@
-extends Resource
+extends FKBaseBlock
 class_name FKGroupBlock
 ## A group container for organizing events, comments, and nested groups in FlowKit.
 ##
@@ -12,43 +12,82 @@ class_name FKGroupBlock
 ## Child items stored as: [{"type": "event"|"comment"|"group", "data": Resource}, ...]
 @export var children: Array = []
 
+func _init() -> void:
+	block_type = "group"
 
-func add_child_item(type: String, data: Resource) -> void:
-	"""Add a child item to this group."""
+
+func add_child_item(type: String, data: FKBaseBlock) -> void:
 	children.append({"type": type, "data": data})
 
 
 func remove_child_at(index: int) -> void:
-	"""Remove child at the specified index."""
-	if index >= 0 and index < children.size():
+	var valid_index: bool = index >= 0 and index < children.size()
+	if valid_index:
 		children.remove_at(index)
 
 
 func get_child_count() -> int:
-	"""Get the number of children in this group."""
 	return children.size()
 
 
 func get_child_type(index: int) -> String:
-	"""Get the type of child at index."""
-	if index >= 0 and index < children.size():
+	var valid_index: bool = index >= 0 and index < children.size()
+	if valid_index:
 		return children[index].get("type", "")
 	return ""
 
 
-func get_child_data(index: int) -> Resource:
-	"""Get the data resource of child at index."""
-	if index >= 0 and index < children.size():
+func get_child_data(index: int) -> FKBaseBlock:
+	var valid_index: bool = index >= 0 and index < children.size()
+	if valid_index:
 		return children[index].get("data")
 	return null
 
 
-func find_child_index(data: Resource) -> int:
-	"""Find the index of a child by its data resource."""
+func find_child_index(data: FKBaseBlock) -> int:
 	for i in range(children.size()):
 		if children[i].get("data") == data:
 			return i
 	return -1
+
+
+func serialize() -> Dictionary:
+	var result := {
+		"type": block_type,
+		"title": title,
+		"collapsed": collapsed,
+		"color": color,
+		"children": _get_serialized_children(self)
+	}
+	
+	return result
+
+static func _get_serialized_children(block: FKGroupBlock) -> Array:
+	var result: Array = []
+	
+	for child in block.children:
+		var child_type = child.get("type", "")
+		var child_data: FKBaseBlock = child.get("data")
+
+		if child_data:
+			var serialized = child_data.serialize()
+			result.append(serialized)
+			
+	return result
+	
+func deserialize(dict: Dictionary) -> void:
+	title = dict.get("title", "Group")
+	collapsed = dict.get("collapsed", false)
+	color = dict.get("color", Color(0.25, 0.22, 0.35, 1.0))
+
+	children = []
+	for child_dict in dict.get("children", []):
+		var child_block := FKSerializationManager.new().deserialize_block(child_dict)
+		if child_block:
+			children.append({
+				"type": child_block.block_type,
+				"data": child_block
+			})
 
 
 func copy_deep() -> FKGroupBlock:

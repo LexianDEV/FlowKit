@@ -1,10 +1,10 @@
 [gd_resource type="Resource" script_class="FKEventSheet" format=3 uid="uid://uo45usge3b6k"]
 
-[ext_resource type="Script" uid="uid://b1y3c8rnt2rcg" path="res://addons/flowkit/resources/fk_comment.gd" id="1_t5adf"]
-[ext_resource type="Script" uid="uid://bxdhylwvr4osy" path="res://addons/flowkit/resources/event_block.gd" id="2_s7o4u"]
+[ext_resource type="Script" uid="uid://b1y3c8rnt2rcg" path="res://addons/flowkit/runtime/Blocks/comment_block.gd" id="1_t5adf"]
+[ext_resource type="Script" uid="uid://bxdhylwvr4osy" path="res://addons/flowkit/runtime/Blocks/event_block.gd" id="2_s7o4u"]
 [ext_resource type="Script" uid="uid://bwbi0utcwmxwf" path="res://addons/flowkit/resources/event_action.gd" id="3_ytm5k"]
 [ext_resource type="Script" uid="uid://bmaxurgrsv4ct" path="res://addons/flowkit/resources/event_condition.gd" id="4_rm0fh"]
-[ext_resource type="Script" path="res://addons/flowkit/resources/fk_group.gd" id="5_iynvq"]
+[ext_resource type="Script" path="res://addons/flowkit/runtime/Blocks/group_block.gd" id="5_iynvq"]
 [ext_resource type="Script" uid="uid://bumsyiqkp46l1" path="res://addons/flowkit/resources/event_sheet.gd" id="6_1sc5p"]
 
 [sub_resource type="Resource" id="Resource_t5adf"]
@@ -174,6 +174,7 @@ block_id = "event_1770495651_3656512735"
 event_id = "on_ready"
 target_node = NodePath("Timers")
 actions = Array[ExtResource("3_ytm5k")]([SubResource("Resource_t5adf"), SubResource("Resource_s7o4u"), SubResource("Resource_ytm5k"), SubResource("Resource_rm0fh"), SubResource("Resource_iynvq"), SubResource("Resource_1sc5p"), SubResource("Resource_ejtba"), SubResource("Resource_kbegb"), SubResource("Resource_2i0f5"), SubResource("Resource_8saiw"), SubResource("Resource_vta5f"), SubResource("Resource_a77t4"), SubResource("Resource_g2c3u"), SubResource("Resource_li7lq"), SubResource("Resource_b3hw7")])
+block_type = "event"
 
 [resource]
 script = ExtResource("6_1sc5p")

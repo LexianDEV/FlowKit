@@ -1,11 +1,11 @@
 [gd_resource type="Resource" script_class="FKEventSheet" format=3 uid="uid://b83l5jwe7e8b7"]
 
-[ext_resource type="Script" uid="uid://b1y3c8rnt2rcg" path="res://addons/flowkit/resources/fk_comment.gd" id="1_6310v"]
-[ext_resource type="Script" uid="uid://bxdhylwvr4osy" path="res://addons/flowkit/resources/event_block.gd" id="1_iqjwq"]
+[ext_resource type="Script" uid="uid://b1y3c8rnt2rcg" path="res://addons/flowkit/runtime/Blocks/comment_block.gd" id="1_6310v"]
+[ext_resource type="Script" uid="uid://bxdhylwvr4osy" path="res://addons/flowkit/runtime/Blocks/event_block.gd" id="1_iqjwq"]
 [ext_resource type="Script" uid="uid://bwbi0utcwmxwf" path="res://addons/flowkit/resources/event_action.gd" id="2_e5301"]
 [ext_resource type="Script" uid="uid://bmaxurgrsv4ct" path="res://addons/flowkit/resources/event_condition.gd" id="3_6310v"]
 [ext_resource type="Script" uid="uid://bumsyiqkp46l1" path="res://addons/flowkit/resources/event_sheet.gd" id="4_1iq3u"]
-[ext_resource type="Script" path="res://addons/flowkit/resources/fk_group.gd" id="5_1iq3u"]
+[ext_resource type="Script" path="res://addons/flowkit/runtime/Blocks/group_block.gd" id="5_1iq3u"]
 
 [sub_resource type="Resource" id="Resource_6310v"]
 script = ExtResource("2_e5301")
@@ -40,6 +40,7 @@ block_id = "event_1770855419_799863400"
 event_id = "on_ready"
 target_node = NodePath(".")
 actions = Array[ExtResource("2_e5301")]([SubResource("Resource_6310v"), SubResource("Resource_1iq3u"), SubResource("Resource_cbhwn")])
+block_type = "event"
 
 [sub_resource type="Resource" id="Resource_qhwv1"]
 script = ExtResource("2_e5301")
@@ -162,6 +163,7 @@ block_id = "event_1770855273_2148236877"
 event_id = "on_process_physics"
 target_node = NodePath(".")
 actions = Array[ExtResource("2_e5301")]([SubResource("Resource_lifsa"), SubResource("Resource_ercbp"), SubResource("Resource_1geuf"), SubResource("Resource_iv7s5"), SubResource("Resource_01p3u"), SubResource("Resource_jtk1k")])
+block_type = "event"
 
 [sub_resource type="Resource" id="Resource_w3432"]
 script = ExtResource("5_1iq3u")
@@ -174,6 +176,7 @@ children = [{
 "data": SubResource("Resource_7khp5"),
 "type": "event"
 }]
+block_type = "group"
 
 [sub_resource type="Resource" id="Resource_fwgt7"]
 script = ExtResource("2_e5301")
@@ -200,6 +203,7 @@ event_id = "on_process_physics"
 target_node = NodePath(".")
 conditions = Array[ExtResource("3_6310v")]([SubResource("Resource_toik8")])
 actions = Array[ExtResource("2_e5301")]([SubResource("Resource_fwgt7")])
+block_type = "event"
 
 [sub_resource type="Resource" id="Resource_i8xgt"]
 script = ExtResource("2_e5301")
@@ -226,6 +230,7 @@ event_id = "on_process_physics"
 target_node = NodePath(".")
 conditions = Array[ExtResource("3_6310v")]([SubResource("Resource_dkghy")])
 actions = Array[ExtResource("2_e5301")]([SubResource("Resource_i8xgt")])
+block_type = "event"
 
 [sub_resource type="Resource" id="Resource_ja7sq"]
 script = ExtResource("5_1iq3u")
@@ -239,10 +244,12 @@ children = [{
 "data": SubResource("Resource_0864s"),
 "type": "event"
 }]
+block_type = "group"
 
 [sub_resource type="Resource" id="Resource_rcr8d"]
 script = ExtResource("1_6310v")
 text = "Player is not moving"
+block_type = "comment"
 
 [sub_resource type="Resource" id="Resource_y2uhx"]
 script = ExtResource("2_e5301")
@@ -276,10 +283,12 @@ event_id = "on_process_physics"
 target_node = NodePath(".")
 conditions = Array[ExtResource("3_6310v")]([SubResource("Resource_lvjr6"), SubResource("Resource_1lc76")])
 actions = Array[ExtResource("2_e5301")]([SubResource("Resource_y2uhx")])
+block_type = "event"
 
 [sub_resource type="Resource" id="Resource_rfu3m"]
 script = ExtResource("1_6310v")
 text = "Player is moving"
+block_type = "comment"
 
 [sub_resource type="Resource" id="Resource_hklvi"]
 script = ExtResource("2_e5301")
@@ -313,6 +322,7 @@ event_id = "on_process_physics"
 target_node = NodePath(".")
 conditions = Array[ExtResource("3_6310v")]([SubResource("Resource_olurx"), SubResource("Resource_a558m")])
 actions = Array[ExtResource("2_e5301")]([SubResource("Resource_hklvi")])
+block_type = "event"
 
 [sub_resource type="Resource" id="Resource_vco3e"]
 script = ExtResource("5_1iq3u")
@@ -332,6 +342,7 @@ children = [{
 "data": SubResource("Resource_8cdef"),
 "type": "event"
 }]
+block_type = "group"
 
 [resource]
 script = ExtResource("4_1iq3u")
