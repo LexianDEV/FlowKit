@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://bh6btjhk8rtay"]
 
-[ext_resource type="Script" uid="uid://c8hkx3u260w7f" path="res://addons/flowkit/ui/workspace/event_ui.gd" id="1_dlcxj"]
+[ext_resource type="Script" uid="uid://c8hkx3u260w7f" path="res://addons/flowkit/editor/Ui/event_ui.gd" id="1_dlcxj"]
 [ext_resource type="StyleBox" uid="uid://e1ij0p6vitpy" path="res://addons/flowkit/editor/styles/event_ui_normal_style.tres" id="2_y6dnp"]
 [ext_resource type="StyleBox" uid="uid://b30ndro2i6cr8" path="res://addons/flowkit/editor/styles/event_ui_selected_style.tres" id="3_ahi84"]
 

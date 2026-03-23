@@ -36,10 +36,6 @@ signal branch_action_add_requested(branch_item, row)  ## Emitted when adding act
 signal branch_action_edit_requested(action_item, branch_item, row)  ## Emitted when editing action inside branch
 signal nested_branch_add_requested(branch_item, branch_id, row)  ## Emitted when adding nested branch
 
-# === Constants ===
-const EVENT_ROW_SCENE = preload("res://addons/flowkit/ui/workspace/event_row_ui.tscn")
-const COMMENT_SCENE = preload("res://addons/flowkit/ui/workspace/comment_ui.tscn")
-
 # === State ===
 var group_data: FKGroupBlock
 var is_selected: bool = false
@@ -257,16 +253,24 @@ func _instantiate_event_row(data: FKEventBlock) -> Control:
 	
 	return row
 
+var EVENT_ROW_SCENE: Variant:
+	get:
+		return FKEditorGlobals.event_row_scene
 
+var COMMENT_SCENE: Variant:
+	get:
+		return FKEditorGlobals.COMMENT_SCENE
+		
 func _instantiate_comment(data: FKCommentBlock) -> Control:
 	"""Create a comment UI node for the given data."""
-	var comment = COMMENT_SCENE.instantiate()
-	comment.set_comment_data(data)
+	var comment: FKCommentBlockUi = COMMENT_SCENE.instantiate()
+	comment.set_block(data)
 	
 	# Connect comment signals to group handlers
 	comment.delete_requested.connect(_on_child_comment_delete_requested.bind(data))
 	comment.selected.connect(func(n): _on_child_selected(data); selected.emit(n))
-	comment.data_changed.connect(_on_child_modified)
+	print("GroupBlockUi: Listening for comment block contents changed")
+	comment.block_contents_changed.connect(_on_child_modified)
 	comment.insert_comment_above_requested.connect(func(c): insert_comment_above_requested.emit(c))
 	comment.insert_comment_below_requested.connect(func(c): insert_comment_below_requested.emit(c))
 	comment.insert_event_above_requested.connect(func(c): insert_event_above_requested.emit(c))
@@ -278,13 +282,16 @@ func _instantiate_comment(data: FKCommentBlock) -> Control:
 func _instantiate_group(data: FKGroupBlock) -> Control:
 	"""Create a nested group UI node for the given data."""
 	var group_scene = load("res://addons/flowkit/ui/workspace/group_ui.tscn")
-	var nested = group_scene.instantiate()
+	var nested: GroupBlockUi = group_scene.instantiate()
 	nested.set_group_data(data)
 	nested.set_registry(registry)
 	
 	# Connect nested group signals to parent handlers - propagate everything
 	nested.delete_requested.connect(_on_child_group_delete_requested.bind(data))
 	nested.selected.connect(func(n): selected.emit(n))
+	if nested.has_signal("block_contents_changed"):
+		print("GroupBlockUi: Listening for block contents changed")
+		nested.block_contents_changed.connect(_on_child_modified)
 	nested.data_changed.connect(_on_child_modified)
 	nested.before_data_changed.connect(func(): before_data_changed.emit())
 	nested.add_event_requested.connect(func(g): add_event_requested.emit(g))

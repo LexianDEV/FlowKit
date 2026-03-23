@@ -24,6 +24,8 @@ corner_radius_top_right = 3
 
 [node name="BranchItem" type="MarginContainer" unique_id=1274430805 node_paths=PackedStringArray("panel", "header", "actions_container", "body_node", "drop_indicator", "type_label", "condition_label", "icon_label", "add_action_label", "context_menu", "add_action_context_menu")]
 custom_minimum_size = Vector2(0, 32)
+offset_right = 542.0
+offset_bottom = 47.0
 script = ExtResource("1_branchitem")
 panel = NodePath("Panel")
 header = NodePath("Panel/VBox/Header")

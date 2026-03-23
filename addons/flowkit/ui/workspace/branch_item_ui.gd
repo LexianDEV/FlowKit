@@ -1,3 +1,6 @@
+##
+## For displaying an If Branch entry in the Action list in the editor.
+##
 @tool
 extends MarginContainer
 class_name BranchItemUi
@@ -58,7 +61,7 @@ func _enter_tree() -> void:
 	_toggle_subs(true)
 
 func _toggle_subs(on: bool):
-	if on:
+	if on && !_is_subbed:
 		gui_input.connect(_on_gui_input)
 		context_menu.id_pressed.connect(_on_context_menu_id_pressed)
 		
@@ -69,7 +72,8 @@ func _toggle_subs(on: bool):
 		add_action_context_menu.id_pressed.connect(_on_add_action_context_menu_id_pressed)
 		
 		mouse_exited.connect(_on_mouse_exited)
-	else:
+		_is_subbed = true
+	elif !on && _is_subbed:
 		gui_input.disconnect(_on_gui_input)
 		context_menu.id_pressed.disconnect(_on_context_menu_id_pressed)
 		
@@ -80,47 +84,65 @@ func _toggle_subs(on: bool):
 		add_action_context_menu.id_pressed.disconnect(_on_add_action_context_menu_id_pressed)
 		
 		mouse_exited.disconnect(_on_mouse_exited)
+		_is_subbed = false
 		
-	pass
-	
+var _is_subbed := false
+
 func _on_gui_input(event: InputEvent) -> void:
 	var mouse_click: bool = event is InputEventMouseButton and event.pressed
 	if not mouse_click:
 		return
 		
 	if event.button_index == MOUSE_BUTTON_LEFT:
-		if event.double_click:
-			if action_data and action_data.branch_type != "else":
-				edit_condition_requested.emit(self)
-		else:
-			selected.emit(self)
-		get_viewport().set_input_as_handled()
+		_on_left_mouse_button(event)
 	elif event.button_index == MOUSE_BUTTON_RIGHT:
-		selected.emit(self)
-		_prep_and_show_context_menu()
-		get_viewport().set_input_as_handled()
+		_on_right_mouse_button()
 
+func _on_left_mouse_button(event: InputEventMouseButton):
+	if not event.double_click:
+		return
+		
+	if action_data and action_data.branch_type != "else":
+		edit_condition_requested.emit(self)
+	else:
+		selected.emit(self)
+	_viewport.set_input_as_handled()
+
+var _viewport: Viewport:
+	get:
+		return get_viewport()
+		
+func _on_right_mouse_button():
+	selected.emit(self)
+	_prep_and_show_context_menu()
+	_viewport.set_input_as_handled()
+	
 func _prep_and_show_context_menu() -> void:
 	context_menu.clear()
 	
 	# Get the branch provider to decide context menu options
 	var branch_provider = _get_branch_provider()
-	var input_type: String = branch_provider.get_input_type() if branch_provider and branch_provider.has_method("get_input_type") else "condition"
+	var input_type: String = branch_provider.get_input_type() if branch_provider and \
+	branch_provider.has_method("get_input_type") else "condition"
 	
 	if action_data and action_data.branch_type != "else":
 		if input_type == "condition":
 			context_menu.add_item("Edit Condition", 0)
-			var is_negated = action_data.branch_condition and action_data.branch_condition.negated
-			var negate_text = "Set to True (remove negation)" if is_negated else "Set to False (negate)"
+			var is_negated = action_data.branch_condition and \
+			action_data.branch_condition.negated
+			var negate_text = "Set to True (remove negation)" if is_negated else \
+			"Set to False (negate)"
 			context_menu.add_item(negate_text, 4)
 		else:
 			context_menu.add_item("Edit Inputs", 0)
 		context_menu.add_separator()
 	
 	# Only show chain options if the branch provider supports it
-	var is_chain: bool = branch_provider.get_type() == "chain" if branch_provider and branch_provider.has_method("get_type") else false
+	var is_chain: bool = branch_provider.get_type() == "chain" if branch_provider and \
+	branch_provider.has_method("get_type") else false
 	if is_chain:
-		context_menu.add_item("Add Else %s Below" % (branch_provider.get_name() if branch_provider else "If"), 1)
+		context_menu.add_item("Add Else %s Below" % (branch_provider.get_name() if \
+		branch_provider else "If"), 1)
 		context_menu.add_item("Add Else Below", 2)
 		context_menu.add_separator()
 	
@@ -142,11 +164,14 @@ func _on_context_menu_id_pressed(id: int) -> void:
 			_toggle_negate()
 
 func _toggle_negate() -> void:
-	if action_data and action_data.branch_condition:
-		before_data_changed.emit()
-		action_data.branch_condition.negated = not action_data.branch_condition.negated
-		_update_display()
-		data_changed.emit()
+	var can_toggle: bool = action_data and action_data.branch_condition
+	if not can_toggle:
+		return
+		
+	before_data_changed.emit()
+	action_data.branch_condition.negated = not action_data.branch_condition.negated
+	_update_display()
+	data_changed.emit()
 
 func _on_add_action_input(event: InputEvent) -> void:
 	var mouse_click: bool = event is InputEventMouseButton and event.pressed

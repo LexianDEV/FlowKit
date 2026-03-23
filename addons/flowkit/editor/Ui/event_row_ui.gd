@@ -2,6 +2,19 @@
 extends MarginContainer
 class_name FKEventRowUi
 
+# Scene Dependencies
+var CONDITION_ITEM_SCENE: Resource:
+	get:
+		return FKEditorGlobals.condition_item_scene
+		
+var BRANCH_ITEM_SCENE: Resource:
+	get:
+		return FKEditorGlobals.branch_item_scene
+		
+var ACTION_ITEM_SCENE: Resource:
+	get:
+		return FKEditorGlobals.action_item_scene
+		
 signal insert_event_below_requested(event_row)
 signal insert_comment_below_requested(event_row)
 signal replace_event_requested(event_row)
@@ -32,11 +45,7 @@ var event_data: FKEventBlock
 var registry: Node
 var is_selected: bool = false
 
-# Preloads
-const CONDITION_ITEM_SCENE = preload("res://addons/flowkit/ui/workspace/condition_item_ui.tscn")
-const ACTION_ITEM_SCENE = preload("res://addons/flowkit/ui/workspace/action_item_ui.tscn")
-const BRANCH_ITEM_SCENE = preload("res://addons/flowkit/ui/workspace/branch_item_ui.tscn")
-
+# Ui and Styling
 @export_category("Controls")
 @export var panel: PanelContainer
 @export var context_menu: PopupMenu
@@ -63,15 +72,18 @@ func _enter_tree() -> void:
 
 # Not the only sub-toggler in this class, given the way we need things wired
 func _toggle_subs(on: bool):
-	if on:
+	if on && !_is_subbed:
 		gui_input.connect(_on_gui_input)
 		context_menu.id_pressed.connect(_on_context_menu_id_pressed)
-	else:
+	elif !on && _is_subbed:
 		gui_input.disconnect(_on_gui_input)
 		context_menu.id_pressed.disconnect(_on_context_menu_id_pressed)
 			
 	_toggle_label_subs(on)
 	_toggle_drop_zone_signals(on)
+	_is_subbed = !_is_subbed
+
+var _is_subbed := false
 
 func _on_gui_input(event: InputEvent) -> void:
 	var mouse_click: bool = event is InputEventMouseButton and event.pressed
@@ -86,31 +98,41 @@ func _on_gui_input(event: InputEvent) -> void:
 		
 func _prep_then_show_context_menu():
 	context_menu.clear()
-	context_menu.add_item("Add Event Below", 0)
-	context_menu.add_item("Add Comment Below", 4)
+	context_menu.add_item("Add Event Below", MenuChoices.ADD_EVENT_BELOW)
+	context_menu.add_item("Add Comment Below", MenuChoices.ADD_COMMENT_BELOW)
 	context_menu.add_separator()
-	context_menu.add_item("Replace Event", 1)
-	context_menu.add_item("Edit Event", 2)
+	context_menu.add_item("Replace Event", MenuChoices.REPLACE_EVENT)
+	context_menu.add_item("Edit Event", MenuChoices.EDIT_EVENT)
 	context_menu.add_separator()
-	context_menu.add_item("Delete Event", 3)
+	context_menu.add_item("Delete Event", MenuChoices.DELETE_EVENT)
 	context_menu.position = DisplayServer.mouse_get_position()
 	context_menu.popup()
 
-func _on_context_menu_id_pressed(id: int) -> void:
-	match id:
-		0: # Add Event Below
+func _on_context_menu_id_pressed(choice: int) -> void:
+	match choice:
+		MenuChoices.ADD_EVENT_BELOW:
 			insert_event_below_requested.emit(self)
-		1: # Replace Event
+		MenuChoices.REPLACE_EVENT:
 			replace_event_requested.emit(self)
-		2: # Edit Event
+		MenuChoices.EDIT_EVENT:
 			edit_event_requested.emit(self)
-		3: # Delete Event
+		MenuChoices.DELETE_EVENT:
 			delete_event_requested.emit(self)
-		4: # Add Comment Below
+		MenuChoices.ADD_COMMENT_BELOW:
 			insert_comment_below_requested.emit(self)
 
+enum MenuChoices
+{
+	NULL,
+	ADD_EVENT_BELOW = 0,
+	REPLACE_EVENT = 1,
+	EDIT_EVENT = 2,
+	DELETE_EVENT = 3,
+	ADD_COMMENT_BELOW = 4
+}
+
 func _toggle_label_subs(on: bool) -> void:
-	if on:
+	if on && !_is_subbed:
 		add_condition_label.gui_input.connect(_on_add_condition_input)
 		add_condition_label.mouse_entered.connect(_on_add_condition_hover.bind(true))
 		add_condition_label.mouse_exited.connect(_on_add_condition_hover.bind(false))
@@ -118,7 +140,7 @@ func _toggle_label_subs(on: bool) -> void:
 		add_action_label.gui_input.connect(_on_add_action_input)
 		add_action_label.mouse_entered.connect(_on_add_action_hover.bind(true))
 		add_action_label.mouse_exited.connect(_on_add_action_hover.bind(false))
-	else:
+	elif !on && _is_subbed:
 		add_condition_label.gui_input.disconnect(_on_add_condition_input)
 		add_condition_label.mouse_entered.disconnect(_on_add_condition_hover.bind(true))
 		add_condition_label.mouse_exited.disconnect(_on_add_condition_hover.bind(false))
@@ -128,12 +150,12 @@ func _toggle_label_subs(on: bool) -> void:
 		add_action_label.mouse_exited.disconnect(_on_add_action_hover.bind(false))
 				
 func _toggle_drop_zone_signals(on: bool):
-	if on:
+	if on && !_is_subbed:
 		if condition_drop_zone.has_signal("item_dropped"):
 			condition_drop_zone.item_dropped.connect(_on_condition_drop_zone_dropped)
 		if action_drop_zone.has_signal("item_dropped"):
 			action_drop_zone.item_dropped.connect(_on_action_drop_zone_dropped)
-	else:
+	elif !on && _is_subbed:
 		if condition_drop_zone.has_signal("item_dropped"):
 			condition_drop_zone.item_dropped.disconnect(_on_condition_drop_zone_dropped)
 		if action_drop_zone.has_signal("item_dropped"):
@@ -281,6 +303,8 @@ func _update_conditions() -> void:
 		_connect_condition_item_signals(item)
 		conditions_container.add_child(item)
 
+
+		
 func _update_actions() -> void:
 	if not event_data:
 		return

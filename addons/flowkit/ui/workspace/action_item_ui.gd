@@ -28,15 +28,17 @@ func _enter_tree() -> void:
 	_toggle_subs(true)
 
 func _toggle_subs(on: bool):
-	if on:
+	if on && !_is_subbed:
 		gui_input.connect(_on_gui_input)
 		context_menu.id_pressed.connect(_on_context_menu_id_pressed)
 		mouse_exited.connect(_on_mouse_exited)
-	else:
+	elif !on && _is_subbed:
 		gui_input.disconnect(_on_gui_input)
 		context_menu.id_pressed.disconnect(_on_context_menu_id_pressed)
 		mouse_exited.disconnect(_on_mouse_exited)
-		
+
+var _is_subbed := false
+
 func _on_gui_input(event: InputEvent) -> void:
 	var pressed_mouse_button: bool = event is InputEventMouseButton and event.pressed
 	if not pressed_mouse_button:

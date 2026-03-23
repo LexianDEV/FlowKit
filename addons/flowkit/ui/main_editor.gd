@@ -701,19 +701,19 @@ func _create_event_row(data: FKEventBlock) -> Control:
 
 func _create_comment_block(data: FKCommentBlock) -> Control:
 	"""Create comment block node from data."""
-	var comment = COMMENT_SCENE.instantiate()
+	var comment: FKCommentBlockUi = COMMENT_SCENE.instantiate()
 	
 	var copy = FKCommentBlock.new()
 	copy.text = data.text
-	
-	comment.set_comment_data(copy)
+	print("About to give a block node a copy of a comment block")
+	comment.set_block(copy)
 	_connect_comment_signals(comment)
 	return comment
 
-func _connect_comment_signals(comment) -> void:
+func _connect_comment_signals(comment: FKCommentBlockUi) -> void:
 	comment.selected.connect(_on_comment_selected)
 	comment.delete_requested.connect(_on_comment_delete.bind(comment))
-	comment.data_changed.connect(_save_sheet)
+	comment.block_contents_changed.connect(_save_sheet)
 	comment.insert_comment_above_requested.connect(_on_comment_insert_above.bind(comment))
 	comment.insert_comment_below_requested.connect(_on_comment_insert_below.bind(comment))
 	comment.insert_event_above_requested.connect(_on_comment_insert_event_above.bind(comment))
@@ -721,7 +721,8 @@ func _connect_comment_signals(comment) -> void:
 
 func _create_group_block(data: FKGroupBlock) -> Control:
 	"""Create group block node from data."""
-	var group = GROUP_SCENE.instantiate()
+	print("Creating group block node from data")
+	var group: GroupBlockUi = GROUP_SCENE.instantiate()
 	
 	var copy = FKGroupBlock.new()
 	copy.title = data.title
