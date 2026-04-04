@@ -21,3 +21,6 @@ func duplicate_block() -> FKUnit:
 	copy.block_type = block_type
 	copy.text = text
 	return copy
+
+func get_class() -> String:
+	return "FKComment"

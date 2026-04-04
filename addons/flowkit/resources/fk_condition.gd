@@ -18,3 +18,6 @@ func get_supported_types() -> Array[String]:
 
 func check(node: Node, inputs: Dictionary, block_id: String = "") -> bool:
 	return false
+
+func get_class() -> String:
+	return "FKCondition"

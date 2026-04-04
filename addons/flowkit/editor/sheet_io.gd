@@ -47,7 +47,7 @@ func copy_event_block(data: FKEventBlock) -> FKEventBlock:
 func copy_action(act: FKActionUnit) -> FKActionUnit:
 	if act == null:
 		return null
-
+	
 	return act.duplicate_block()
 
 # -------------------------------------------------------------------
@@ -58,22 +58,5 @@ func copy_group_block(data: FKGroup) -> FKGroup:
 	if data == null:
 		return null
 
-	var group_copy := FKGroup.new()
-	group_copy.title = data.title
-	group_copy.collapsed = data.collapsed
-	group_copy.color = data.color
-	group_copy.children = []
-
-	for child in data.children:
-		var unit: FKUnit = null
-
-		# Legacy format: { "type": String, "data": FKUnit }
-		if child is Dictionary:
-			unit = child.get("data")
-		else:
-			unit = child
-
-		if unit and unit is FKUnit:
-			group_copy.children.append(unit.duplicate_block())
-
-	return group_copy
+	var result := data.duplicate_block()
+	return result

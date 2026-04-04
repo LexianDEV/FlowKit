@@ -272,6 +272,9 @@ func _to_string() -> String:
 	if _block != null:
 		result += "\nhas block: true"
 	return result
+
+func _get_class() -> String:
+	return "FKCommentUi"
 	
 func _on_registry_set():
 	# No-op

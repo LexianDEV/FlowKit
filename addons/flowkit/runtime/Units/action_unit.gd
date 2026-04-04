@@ -74,6 +74,7 @@ func get_id() -> String:
 	return action_id
 	
 func duplicate_block() -> FKUnit:
+	#print("[FKActionUnit]: Duplicating!")
 	var copy := FKActionUnit.new()
 	copy.block_type = block_type
 	copy.action_id = action_id
@@ -82,13 +83,16 @@ func duplicate_block() -> FKUnit:
 	copy.is_branch = is_branch
 	copy.branch_type = branch_type
 	copy.branch_id = branch_id
-	copy.branch_inputs = branch_inputs
+	copy.branch_inputs = branch_inputs.duplicate(true)
 	copy.branch_condition = branch_condition.duplicate_block() if branch_condition != null \
 	else null
 	
-	var base_dupes := _to_base_unit_arr(self.branch_actions)
-	base_dupes = _duplicate_blocks(base_dupes)
-	copy.branch_actions = _to_action_unit_arr(base_dupes)
+	var branch_actions_copy: Array[FKActionUnit] = []
+	for elem in branch_actions:
+		var act_copy: FKActionUnit = elem.duplicate()
+		branch_actions_copy.append(act_copy)
+	copy.branch_actions = branch_actions_copy
+		
 	# Copy your other fields here (ids, params, etc.)
 	# e.g. copy.action_id = action_id, etc.
 
@@ -102,3 +106,5 @@ static func _to_action_unit_arr(arr: Array) -> Array[FKActionUnit]:
 			result.append(child)
 	return result
 		
+func get_class() -> String:
+	return "FKActionUnit"

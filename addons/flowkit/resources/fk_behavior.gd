@@ -45,3 +45,6 @@ func physics_process(node: Node, delta: float, inputs: Dictionary) -> void:
 	## Called every physics frame while the behavior is active on a node
 	## Override this for behaviors that need physics-based updates
 	pass
+
+func get_class() -> String:
+	return "FKBehavior"

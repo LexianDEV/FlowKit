@@ -376,6 +376,7 @@ func _remove_child_data(child_data) -> void:
 			idx = i
 			break
 	if idx >= 0:
+		print("Emitting FKGroupUi before_data_changed")
 		before_data_changed.emit()
 		_group.children.remove_at(idx)
 		_rebuild_child_nodes()
@@ -851,8 +852,7 @@ func _to_string() -> String:
 	return result
 	
 func get_class() -> String:
-	var result := "FKGroupUi"
-	return result
+	return "FKGroupUi"
 
 func get_block() -> FKGroup:
 	if _block is FKGroup:

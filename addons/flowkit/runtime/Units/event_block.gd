@@ -77,22 +77,15 @@ func duplicate_block() -> FKUnit:
 	copy.target_node = target_node
 	copy.inputs = inputs.duplicate(true)
 	
-	var conds : Array[FKUnit] = []
-	conds.append_array(self.conditions)
-	var base_dupes := _duplicate_blocks(conds)
-	var duplicated_conds: Array[FKCondition] = []
-	duplicated_conds.append_array(base_dupes)
+	var duplicated_conds: Array[FKConditionUnit] = ArrayUtils.make_fk_condition_dupes(self.conditions)
 	copy.conditions.clear()
 	copy.conditions.append_array(duplicated_conds)
 
-	var acts: Array[FKUnit] = []
-	acts.append_array(self.actions)
-	base_dupes.clear()
-	base_dupes = _duplicate_blocks(acts)
-	var duplicated_acts: Array[FKActionUnit] = []
-	duplicated_acts.append_array(base_dupes)
+	var duplicated_acts: Array[FKActionUnit] = ArrayUtils.make_fk_action_dupes(self.actions)
 	copy.actions.clear()
 	copy.actions.append_array(duplicated_acts)
 
 	return copy
 	
+func get_class() -> String:
+	return "FKEventBlock"

@@ -49,3 +49,6 @@ func get_execution_count(inputs: Dictionary, block_id: String = "") -> int:
 	## How many times the branch body executes when should_execute() is true.
 	## Default is 1 (standard if-style). Override for repeat-style branches.
 	return 1
+
+func get_class() -> String:
+	return "FKBranch"

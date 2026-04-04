@@ -320,18 +320,30 @@ func _clear_undo_history() -> void:
 	undo_manager.clear()
 
 func _undo() -> void:
-	if not undo_manager.can_undo():
+	if not undo_manager.can_undo() or _is_in_undo_redo:
 		return
-
+	_is_in_undo_redo = true
+	#print("[FKMainEditor]: Capturing units for undo")
 	var current_units := _capture_current_units()
-	var restored_units := ArrayUtils._get_fk_units_in(undo_manager.undo(current_units))
-
+	#print("[FKMainEditor]: Fetching prev state from undo manager")
+	var prev_state := undo_manager.undo(current_units)
+	var restored_units := ArrayUtils.get_fk_units_in(prev_state)
+	#print("[FKMainEditor]: Restored units after filter:")
+	for elem in restored_units:
+		print(elem.get_class() + ": " + str(elem))
+		if elem is FKGroup:
+			#print("[FKMainEditor]: It's a group")
+			pass
 	_restore_unit_uis(restored_units)
+	
+	_is_in_undo_redo = false
+	#print("[FKMainEditor]: About to save sheet after restoring units given by undo manager")
 	_save_sheet()
 	print("[FlowKit] Undo performed")
+var _is_in_undo_redo := false
 
-func _capture_current_units() -> Array:
-	var units: Array = []
+func _capture_current_units() -> Array[FKUnit]:
+	var units: Array[FKUnit] = []
 	for ui in _get_block_nodes():
 		if ui and is_instance_valid(ui):
 			var block := ui.get_block()
@@ -340,13 +352,14 @@ func _capture_current_units() -> Array:
 	return units
 	
 func _redo() -> void:
-	if not undo_manager.can_redo():
+	if not undo_manager.can_redo() or _is_in_undo_redo:
 		return
-
+	_is_in_undo_redo = true
 	var current_units := _capture_current_units()
-	var restored_units := ArrayUtils._get_fk_units_in(undo_manager.redo(current_units))
+	var restored_units := ArrayUtils.get_fk_units_in(undo_manager.redo(current_units))
 
 	_restore_unit_uis(restored_units)
+	_is_in_undo_redo = false
 	_save_sheet()
 	print("[FlowKit] Redo performed")
 
@@ -354,6 +367,8 @@ func _restore_unit_uis(units: Array[FKUnit]) -> void:
 	_clear_all_blocks()
 
 	for unit in units:
+		#print("[FKMainEditor]: Current unit in _restore_unit_uis:")
+		#print(unit.get_class() + ": " + str(unit))
 		var node := _create_block_node(unit)
 		blocks_container.add_child(node)
 
@@ -361,6 +376,12 @@ func _restore_unit_uis(units: Array[FKUnit]) -> void:
 		_show_content_state()
 	else:
 		_show_empty_blocks_state()
+		
+	#print("[FKMainEditor]: blocks_container children after _restore_unit_uis:")
+	for elem in blocks_container.get_children():
+		#print(elem.get_class() + ": " + str(elem))
+		pass
+		
 
 
 func _create_block_node(block_resource: FKUnit) -> FKUnitUi:
@@ -559,11 +580,20 @@ func _get_block_nodes() -> Array[FKUnitUi]:
 	var blocks: Array[FKUnitUi] = []
 	
 	for child in blocks_container.get_children():
-		if !is_instance_valid(child) or child.is_queued_for_deletion():
+		if !is_instance_valid(child):
+			#print("[FKMainEditor _get_block_nodes]: skipping " + child.name + " since it is not valid.")
+			continue
+			
+		if child.is_queued_for_deletion():
+			#print("[FKMainEditor _get_block_nodes]: skipping " + child.name + " since it is queued for deletion.")
 			continue
 			
 		if child is FKUnitUi:
+			#print("[FKMainEditor]: Registering " + child.name + " as a block Ui")
 			blocks.append(child)
+		else:
+			#print("[FKMainEditor]: NOT registering " + child.name + " as a block Ui")
+			pass
 	
 	return blocks
 
@@ -590,7 +620,7 @@ func _load_scene_sheet() -> void:
 	"""Load event sheet for current scene."""
 	_clear_all_blocks()
 	if sheet_io == null:
-		printerr("Sheet io is null for some reason")
+		printerr("[FKMainEditor]: Sheet io is null for some reason")
 	var sheet_path = sheet_io.get_sheet_path(current_scene_uid)
 	if sheet_path == "" or not FileAccess.file_exists(sheet_path):
 		_show_empty_blocks_state()
@@ -629,17 +659,22 @@ func _populate_from_sheet(sheet: FKEventSheet) -> void:
 
 func _save_sheet() -> void:
 	var is_scene_open := current_scene_uid != 0
-	if not is_scene_open:
+	if not is_scene_open or _is_in_undo_redo:
 		push_warning("No scene open to save event sheet.")
 		return
 
 	var sheet := _generate_sheet_from_blocks()
+	#print("[FKMainEditor]: Generated sheet from blocks for _save_sheet. Its arr sizes:")
+	#print("Comments: " + str(sheet.comments.size()))
+	#print("Events: " + str(sheet.events.size()))
+	#print("Groups: " + str(sheet.groups.size()))
+	#print("Standalone conditions: " + str(sheet.standalone_conditions.size()))
 	var err := sheet_io.save_sheet(current_scene_uid, sheet)
 
 	if err == OK:
-		print("✓ Event sheet saved")
+		print("[FKMainEditor] ✓ Event sheet saved")
 	else:
-		push_error("Failed to save event sheet: ", err)
+		push_error("[FKMainEditor] Failed to save event sheet: ", err)
 	
 
 func _save_and_reload_sheet() -> void:
@@ -649,6 +684,7 @@ func _save_and_reload_sheet() -> void:
 
 func _generate_sheet_from_blocks() -> FKEventSheet:
 	"""Build event sheet from event rows, comments, and groups (GDevelop-style)."""
+	#print("[FKMainEditor]: Generating sheet from blocks")
 	var sheet = FKEventSheet.new()
 	var events: Array[FKEventBlock] = []
 	var comments: Array[FKComment] = []
@@ -656,13 +692,23 @@ func _generate_sheet_from_blocks() -> FKEventSheet:
 	var item_order: Array[Dictionary] = []
 	var standalone_conditions: Array[FKConditionUnit] = []
 	
-	for block_ui in _get_block_nodes():
+	var block_nodes := _get_block_nodes()
+	#print("[FKMainEditor]: Amount of block nodes to work with: " + str(block_nodes.size()))
+	for block_ui in block_nodes:
 		# Skip invalid or deleted blocks
-		if not is_instance_valid(block_ui) or block_ui.is_queued_for_deletion():
+		if not is_instance_valid(block_ui):
+			print("[FKMainEditor _generate_sheet_from_blocks]: skipping " + block_ui.name + \
+			" because it is not valid")
+			continue
+			
+		if block_ui.is_queued_for_deletion():
+			print("[FKMainEditor _generate_sheet_from_blocks]: skipping " + block_ui.name + \
+			" because it is queued for deletion")
 			continue
 		
 		var data := block_ui.get_block()
 		if not data:
+			print("[FKMainEditor]: " + block_ui.name + " has no block assigned, so we'll skip it")
 			continue
 		
 		var order_to_append: Dictionary = \
@@ -671,20 +717,25 @@ func _generate_sheet_from_blocks() -> FKEventSheet:
 			"index": 0
 		}
 		if data is FKEventBlock:
+			#print("[FKMainEditor]: saving FKEventBlock")
 			var event_copy = sheet_io.copy_event_block(data)
 			order_to_append["index"] = events.size()
 			events.append(event_copy)
 		
 		elif data is FKComment:
-			var comment_copy = FKComment.new()
-			comment_copy.text = data.text
+			#print("[FKMainEditor]: saving FKComment")
+			var comment_copy: FKComment = data.duplicate_block()
 			order_to_append["index"] = comments.size()
 			comments.append(comment_copy)
 		
 		elif data is FKGroup:
+			#print("[FKMainEditor]: saving FKGroup")
 			var group_copy = sheet_io.copy_group_block(data)
 			order_to_append["index"] = groups.size()
 			groups.append(group_copy)
+		else:
+			print("[FKMainEditor]: Found strange " + data.block_type)
+			pass
 			
 		item_order.append(order_to_append)
 	
@@ -708,7 +759,7 @@ func _new_sheet() -> void:
 
 func _create_event_row(data: FKEventBlock) -> FKEventRowUi:
 	"""Create event row node from data (GDevelop-style)."""
-	print("[FKMainEditor] Creating event row node")
+	#print("[FKMainEditor] Creating event row node")
 	var row: FKEventRowUi = EVENT_ROW_SCENE.instantiate()
 	var copy := sheet_io.copy_event_block(data)
 	
@@ -718,7 +769,7 @@ func _create_event_row(data: FKEventBlock) -> FKEventRowUi:
 
 func _create_comment_ui(data: FKComment) -> FKCommentUi:
 	"""Create comment block node from data."""
-	print("[FKMainEditor]: Creating comment block node")
+	#print("[FKMainEditor]: Creating comment block node")
 	var comment: FKCommentUi = COMMENT_SCENE.instantiate()
 	var copy := FKComment.new()
 	copy.text = data.text
@@ -738,11 +789,12 @@ func _connect_comment_signals(comment: FKCommentUi) -> void:
 
 func _create_group_block(data: FKGroup) -> FKGroupUi:
 	"""Create group block node from data."""
-	print("[FKMainEditor]: Creating group block node")
+	#print("[FKMainEditor]: Creating group block node")
 	var group: FKGroupUi = GROUP_SCENE.instantiate()
 	var copy := data.copy_deep()
 	copy.normalize_children()
-	group.call_deferred("legitimize", copy, registry)
+	#group.call_deferred("legitimize", copy, registry)
+	group.legitimize(copy, registry)
 	_connect_group_signals(group)
 	return group
 
@@ -1015,14 +1067,14 @@ func _on_comment_selected(comment_node: FKCommentUi) -> void:
 
 func _on_comment_delete(comment: FKCommentUi) -> void:
 	"""Delete a comment block."""
-	_push_undo_state()
-	
+
 	if selected_row == comment:
 		selected_row = null
 	
 	blocks_container.remove_child(comment)
 	comment.queue_free()
-	_save_sheet()
+	_save_sheet.call_deferred() 
+	# ^To make sure we have a snapshot ready in time
 
 func _on_comment_insert_above(signal_node, bound_comment: FKCommentUi) -> void:
 	"""Insert a new comment above the specified comment."""
@@ -1149,7 +1201,7 @@ func _on_event_selected(node_path: String, event_id: String, inputs: Array) -> v
 	select_event_modal.hide()
 	
 	if inputs.size() > 0:
-		print("Populating inputs in on event selected")
+		#print("[FKMainEditor] Populating inputs in on event selected")
 		expression_modal.populate_inputs(node_path, event_id, inputs)
 		_popup_centered_on_editor(expression_modal)
 	else:
@@ -1168,7 +1220,7 @@ func _on_condition_selected(node_path: String, condition_id: String, inputs: Arr
 	select_condition_modal.hide()
 	
 	if inputs.size() > 0:
-		print("Populating inputs in on condition selected")
+		#print("[FKMainEditor] Populating inputs in on condition selected")
 		expression_modal.populate_inputs(node_path, condition_id, inputs)
 		_popup_centered_on_editor(expression_modal)
 	else:
@@ -1185,12 +1237,12 @@ func _on_condition_selected(node_path: String, condition_id: String, inputs: Arr
 
 func _on_action_selected(node_path: String, action_id: String, inputs: Array) -> void:
 	"""Action type selected."""
-	print("Action selected")
+	#print("[FKMainEditor] Action selected")
 	pending_id = action_id
 	select_action_modal.hide()
 	
 	if inputs.size() > 0:
-		print("Populating inputs in on action selected")
+		#print("[FKMainEditor] Populating inputs in on action selected")
 		expression_modal.populate_inputs(node_path, action_id, inputs)
 		_popup_centered_on_editor(expression_modal)
 	else:
@@ -1519,11 +1571,12 @@ func _on_row_edit(signal_row, bound_row: FKEventRowUi) -> void:
 		pending_node_path = str(data.target_node)
 		
 		# Open expression modal with current values
-		print("Populating inputs in on row edit")
+		#print("[FKMainEditor] Populating inputs in on row edit")
 		expression_modal.populate_inputs(str(data.target_node), data.event_id, provider_inputs, data.inputs)
 		_popup_centered_on_editor(expression_modal)
 	else:
-		print("Event has no inputs to edit")
+		print("[FKMainEditor] Event has no inputs to edit")
+		pass
 
 func _on_row_add_condition(signal_row, bound_row: FKEventRowUi) -> void:
 	pending_target_row = bound_row
@@ -1694,11 +1747,11 @@ event_row: FKEventRowUi) -> void:
 		pending_block_type = "action_edit"
 		pending_id = act_data.action_id
 		pending_node_path = str(act_data.target_node)
-		print("Populating inputs in on branch action edit")
+		#print("[FKMainEditor] Populating inputs in on branch action edit")
 		expression_modal.populate_inputs(str(act_data.target_node), act_data.action_id, provider_inputs, act_data.inputs)
 		_popup_centered_on_editor(expression_modal)
 	else:
-		print("Action has no inputs to edit")
+		print("[FKMainEditor] Action has no inputs to edit")
 
 func _finalize_branch_creation(inputs: Dictionary) -> void:
 	"""Create a condition-type branch and add it to the target's actions."""
@@ -1824,7 +1877,7 @@ func _start_branch_workflow(branch_id: String, target_row) -> void:
 		pending_block_type = "branch_evaluation"
 		pending_target_row = target_row
 		if branch_inputs_def.size() > 0:
-			print("Populating inputs in start branch workflow")
+			#print("[FKMainEditor] Populating inputs in start branch workflow")
 			expression_modal.populate_inputs("", branch_id, branch_inputs_def)
 			_popup_centered_on_editor(expression_modal)
 		else:
@@ -1921,11 +1974,11 @@ func _on_condition_edit_requested(condition_item: FKConditionUnitUi, bound_row) 
 		pending_block_type = "condition_edit"
 		pending_id = cond_data.condition_id
 		pending_node_path = str(cond_data.target_node)
-		print("Populating inputs in on condition edit requested")
+		#print("[FKMainEditor] Populating inputs in on condition edit requested")
 		expression_modal.populate_inputs(str(cond_data.target_node), cond_data.condition_id, provider_inputs, cond_data.inputs)
 		_popup_centered_on_editor(expression_modal)
 	else:
-		print("Condition has no inputs to edit")
+		print("[FKMainEditor] Condition has no inputs to edit")
 
 func _on_action_edit_requested(action_item: FKActionUnitUi, bound_row) -> void:
 	"""Handle double-click on action to edit its inputs."""
@@ -1940,7 +1993,8 @@ func _on_action_edit_requested(action_item: FKActionUnitUi, bound_row) -> void:
 			if provider.has_method("get_id") and provider.get_id() == act_data.action_id:
 				if provider is FKAction:
 					provider_inputs = provider.get_inputs()
-					print("Provider inputs found for provider type " + provider.get_class() + ": " + str(provider_inputs))
+					#print("[FKMainEditor] Provider inputs found for provider type " + \
+					#provider.get_class() + ": " + str(provider_inputs))
 				break
 	
 	if provider_inputs.size() > 0:
@@ -1949,13 +2003,13 @@ func _on_action_edit_requested(action_item: FKActionUnitUi, bound_row) -> void:
 		pending_block_type = "action_edit"
 		pending_id = act_data.action_id
 		pending_node_path = str(act_data.target_node)
-		print("Populating inputs in on action edit requested. Provider inputs:\n" + str(provider_inputs))
+		#print("[FKMainEditor] Populating inputs in on action edit requested. Provider inputs:\n" + str(provider_inputs))
 		var node_path := str(act_data.target_node)
 		expression_modal.populate_inputs(node_path, act_data.action_id, provider_inputs, \
 		act_data.inputs)
 		_popup_centered_on_editor(expression_modal)
 	else:
-		print("Action has no inputs to edit")
+		print("[FKMainEditor] Action has no inputs to edit")
 
 # === Drag and Drop Handlers ===
 

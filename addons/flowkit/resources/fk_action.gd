@@ -23,3 +23,6 @@ func requires_multi_frames() -> bool:
 
 func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
 	pass
+
+func get_class() -> String:
+	return "FKAction"

@@ -2,8 +2,8 @@
 
 [ext_resource type="Script" uid="uid://b1y3c8rnt2rcg" path="res://addons/flowkit/runtime/Units/comment_unit.gd" id="1_opms0"]
 [ext_resource type="Script" uid="uid://bxdhylwvr4osy" path="res://addons/flowkit/runtime/Units/event_block.gd" id="2_at6cs"]
-[ext_resource type="Script" path="res://addons/flowkit/runtime/Units/group.gd" id="3_ehuoq"]
-[ext_resource type="Script" uid="uid://bwbi0utcwmxwf" path="res://addons/flowkit/resources/event_action.gd" id="4_at6cs"]
+[ext_resource type="Script" path="res://addons/flowkit/runtime/Units/group_unit.gd" id="3_ehuoq"]
+[ext_resource type="Script" uid="uid://bwbi0utcwmxwf" path="res://addons/flowkit/runtime/Units/action_unit.gd" id="4_at6cs"]
 [ext_resource type="Script" uid="uid://bumsyiqkp46l1" path="res://addons/flowkit/resources/event_sheet.gd" id="4_ehuxe"]
 [ext_resource type="Script" uid="uid://bmaxurgrsv4ct" path="res://addons/flowkit/runtime/Units/condition_unit.gd" id="5_1wrk8"]
 
@@ -52,7 +52,7 @@ block_type = "condition"
 
 [sub_resource type="Resource" id="Resource_n0pkj"]
 script = ExtResource("2_at6cs")
-block_id = "event_1765072118_562150315"
+block_id = "event_1775511542_917069496"
 event_id = "on_process"
 target_node = NodePath("CharacterBody2D")
 conditions = Array[ExtResource("5_1wrk8")]([SubResource("Resource_iu3q8")])
@@ -62,13 +62,7 @@ block_type = "event"
 [sub_resource type="Resource" id="Resource_hkb6h"]
 script = ExtResource("3_ehuoq")
 title = "Prevent falling off map"
-children = [{
-"data": SubResource("Resource_at6cs"),
-"type": "comment"
-}, {
-"data": SubResource("Resource_n0pkj"),
-"type": "event"
-}]
+children = [SubResource("Resource_at6cs"), SubResource("Resource_n0pkj")]
 block_type = "group"
 
 [resource]

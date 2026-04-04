@@ -26,5 +26,18 @@ func deserialize(dict: Dictionary) -> void:
 	inputs = dict.get("inputs", {}).duplicate()
 	negated = dict.get("negated", false)
 
+func duplicate_block() -> FKUnit:
+	#print("[FKConditionUnit]: Duplicating!")
+	var result: FKConditionUnit = FKConditionUnit.new()
+	result.condition_id = condition_id
+	result.target_node = str(target_node)
+	result.inputs = inputs.duplicate()
+	result.negated = negated
+	
+	return result
+	
 func get_id() -> String:
 	return condition_id
+
+func get_class() -> String:
+	return "FKConditionUnit"

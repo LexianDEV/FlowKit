@@ -27,3 +27,6 @@ class_name FKProviderManifest
 
 ## Resource paths of all provider scripts that were excluded (for reporting)
 @export var excluded_script_paths: Array[String] = []
+
+func get_class() -> String:
+	return "FKProviderManifest"

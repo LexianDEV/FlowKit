@@ -61,7 +61,7 @@ func execute(targetNode: Node, inputs: Dictionary, _str := "") -> void:
 	if apply_right_away:
 		var log_message := "[FlowKit] Duration is 0. Setting " + targetNode.name + "'s " + prop
 		log_message += " prop to " + to_rgb_coords(target_color) + " right away."
-		print(log_message)
+		#print(log_message)
 		targetNode.set(prop, target_color)
 	else:
 		tween = targetNode.create_tween()

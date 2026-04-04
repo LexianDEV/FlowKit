@@ -364,17 +364,30 @@ func _collect_events_from_groups(groups: Array, out_events: Array) -> void:
 
 
 func _ensure_block_ids_in_groups(groups: Array) -> void:
-	"""Recursively ensure all event blocks inside groups have unique IDs."""
+	"""
+	Recursively ensure all FKEventBlock instances inside FKGroup children
+	have unique block IDs. Supports both legacy dictionary children and
+	new FKUnit-only children.
+	"""
 	for group in groups:
-		if group is FKGroup:
-			for child_item in group.children:
-				var child_type: String = child_item.get("type", "")
-				var child_data: Variant = child_item.get("data", null)
-				
-				if child_type == "event" and child_data is FKEventBlock:
-					child_data.ensure_block_id()
-				elif child_type == "group" and child_data is FKGroup:
-					_ensure_block_ids_in_groups([child_data])
+		if not (group is FKGroup):
+			continue
+
+		for child in group.children:
+			var unit: FKUnit = null
+
+			# Legacy format: { "type": String, "data": FKUnit }
+			if child is Dictionary:
+				unit = child.get("data")
+			else:
+				unit = child
+
+			if unit is FKEventBlock:
+				unit.ensure_block_id()
+
+			elif unit is FKGroup:
+				# Recurse into nested groups
+				_ensure_block_ids_in_groups([unit])
 
 # --- Behavior processing ---------------------------------------------------
 func _scan_and_activate_behaviors(scene_root: Node) -> void:
@@ -434,3 +447,6 @@ func _process_behaviors(delta: float, is_physics: bool) -> void:
 		else:
 			if behavior.has_method("process"):
 				behavior.process(node, delta, inputs)
+
+func get_class() -> String:
+	return "FlowKitEngine"

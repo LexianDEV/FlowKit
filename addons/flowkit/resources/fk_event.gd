@@ -43,3 +43,6 @@ func setup(node: Node, trigger_callback: Callable, block_id: String = "") -> voi
 ## The default implementation does nothing.
 func teardown(node: Node, block_id: String = "") -> void:
 	pass
+	
+func get_class() -> String:
+	return "FKCondition"

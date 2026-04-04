@@ -279,3 +279,6 @@ func _to_string() -> String:
 	if _block != null:
 		result += "\nhas block: true"
 	return result
+
+func get_class() -> String:
+	return "FKConditionUnitUi"

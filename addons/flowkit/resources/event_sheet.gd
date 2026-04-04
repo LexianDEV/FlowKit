@@ -22,18 +22,25 @@ func get_all_events() -> Array:
 
 func _collect_events_from_groups(groups: Array, out_events: Array) -> void:
 	for group in groups:
-		if group is not FKGroup:
+		if not (group is FKGroup):
 			continue
-			
-		for child_item in group.children:
-			var child_type: String = child_item.get("type", "")
-			var child_data: Variant = child_item.get("data", null)
-			
-			if child_type == "event" and child_data is FKEventBlock:
-				out_events.append(child_data)
-			elif child_type == "group" and child_data is FKGroup:
-				# Recursively collect from nested groups
-				_collect_events_from_groups([child_data], out_events)
+
+		for child in group.children:
+			var unit: FKUnit = null
+
+			# Legacy format: { "type": String, "data": FKUnit }
+			if child is Dictionary:
+				unit = child.get("data")
+			else:
+				unit = child
+
+			# New format: FKUnit directly
+			if unit is FKEventBlock:
+				out_events.append(unit)
+
+			elif unit is FKGroup:
+				# Recurse into nested groups
+				_collect_events_from_groups([unit], out_events)
 
 func get_ordered_items() -> Array:
 	"""Get all items in display order as an array of dictionaries with type and data."""
@@ -85,3 +92,6 @@ func rebuild_order_from_items(ordered_items: Array) -> void:
 				if data is FKGroup:
 					item_order.append({"type": "group", "index": groups.size()})
 					groups.append(data)
+					
+func get_class() -> String:
+	return "FKEventSheet"

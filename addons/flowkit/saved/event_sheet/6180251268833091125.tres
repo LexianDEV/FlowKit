@@ -2,12 +2,17 @@
 
 [ext_resource type="Script" uid="uid://b1y3c8rnt2rcg" path="res://addons/flowkit/runtime/Units/comment_unit.gd" id="1_t5adf"]
 [ext_resource type="Script" uid="uid://bxdhylwvr4osy" path="res://addons/flowkit/runtime/Units/event_block.gd" id="2_s7o4u"]
-[ext_resource type="Script" uid="uid://bwbi0utcwmxwf" path="res://addons/flowkit/resources/event_action.gd" id="3_ytm5k"]
+[ext_resource type="Script" uid="uid://bwbi0utcwmxwf" path="res://addons/flowkit/runtime/Units/action_unit.gd" id="3_ytm5k"]
 [ext_resource type="Script" uid="uid://bmaxurgrsv4ct" path="res://addons/flowkit/runtime/Units/condition_unit.gd" id="4_rm0fh"]
-[ext_resource type="Script" path="res://addons/flowkit/runtime/Units/group.gd" id="5_iynvq"]
+[ext_resource type="Script" path="res://addons/flowkit/runtime/Units/group_unit.gd" id="5_iynvq"]
 [ext_resource type="Script" uid="uid://bumsyiqkp46l1" path="res://addons/flowkit/resources/event_sheet.gd" id="6_1sc5p"]
 
 [sub_resource type="Resource" id="Resource_t5adf"]
+script = ExtResource("1_t5adf")
+text = "Can make for good reference for a pre-title sequence"
+block_type = "comment"
+
+[sub_resource type="Resource" id="Resource_s7o4u"]
 script = ExtResource("3_ytm5k")
 action_id = "set_window_mode"
 target_node = NodePath("System")
@@ -16,7 +21,7 @@ inputs = {
 }
 block_type = "action"
 
-[sub_resource type="Resource" id="Resource_s7o4u"]
+[sub_resource type="Resource" id="Resource_ytm5k"]
 script = ExtResource("3_ytm5k")
 action_id = "set_window_size"
 target_node = NodePath("System")
@@ -26,23 +31,10 @@ inputs = {
 }
 block_type = "action"
 
-[sub_resource type="Resource" id="Resource_ytm5k"]
-script = ExtResource("3_ytm5k")
-action_id = "Fade Modulate Color"
-target_node = NodePath("CanvasLayer/FlowkitLogo")
-inputs = {
-"Alpha": "0",
-"Alpha Only": "true",
-"Duration": "0",
-"Target Color": "",
-"Wait For Finish": ""
-}
-block_type = "action"
-
 [sub_resource type="Resource" id="Resource_rm0fh"]
 script = ExtResource("3_ytm5k")
 action_id = "Fade Modulate Color"
-target_node = NodePath("CanvasLayer/GodotLogo")
+target_node = NodePath("CanvasLayer/FlowkitLogo")
 inputs = {
 "Alpha": "0",
 "Alpha Only": "true",
@@ -55,6 +47,19 @@ block_type = "action"
 [sub_resource type="Resource" id="Resource_iynvq"]
 script = ExtResource("3_ytm5k")
 action_id = "Fade Modulate Color"
+target_node = NodePath("CanvasLayer/GodotLogo")
+inputs = {
+"Alpha": "0",
+"Alpha Only": "true",
+"Duration": "0",
+"Target Color": "",
+"Wait For Finish": ""
+}
+block_type = "action"
+
+[sub_resource type="Resource" id="Resource_1sc5p"]
+script = ExtResource("3_ytm5k")
+action_id = "Fade Modulate Color"
 target_node = NodePath("CanvasLayer/StudioLogo")
 inputs = {
 "Alpha": "0",
@@ -65,7 +70,7 @@ inputs = {
 }
 block_type = "action"
 
-[sub_resource type="Resource" id="Resource_1sc5p"]
+[sub_resource type="Resource" id="Resource_ejtba"]
 script = ExtResource("3_ytm5k")
 action_id = "Fade Color"
 target_node = NodePath("CanvasLayer/CoversScreen")
@@ -78,7 +83,7 @@ inputs = {
 }
 block_type = "action"
 
-[sub_resource type="Resource" id="Resource_ejtba"]
+[sub_resource type="Resource" id="Resource_kbegb"]
 script = ExtResource("3_ytm5k")
 action_id = "Fade Modulate Color"
 target_node = NodePath("CanvasLayer/StudioLogo")
@@ -91,7 +96,7 @@ inputs = {
 }
 block_type = "action"
 
-[sub_resource type="Resource" id="Resource_kbegb"]
+[sub_resource type="Resource" id="Resource_2i0f5"]
 script = ExtResource("3_ytm5k")
 action_id = "Wait For Input"
 target_node = NodePath("System")
@@ -100,25 +105,12 @@ inputs = {
 }
 block_type = "action"
 
-[sub_resource type="Resource" id="Resource_2i0f5"]
+[sub_resource type="Resource" id="Resource_8saiw"]
 script = ExtResource("3_ytm5k")
 action_id = "Fade Modulate Color"
 target_node = NodePath("CanvasLayer/StudioLogo")
 inputs = {
 "Alpha": "0",
-"Alpha Only": "true",
-"Duration": "2",
-"Target Color": "",
-"Wait For Finish": ""
-}
-block_type = "action"
-
-[sub_resource type="Resource" id="Resource_8saiw"]
-script = ExtResource("3_ytm5k")
-action_id = "Fade Modulate Color"
-target_node = NodePath("CanvasLayer/GodotLogo")
-inputs = {
-"Alpha": "100",
 "Alpha Only": "true",
 "Duration": "2",
 "Target Color": "",
@@ -128,6 +120,19 @@ block_type = "action"
 
 [sub_resource type="Resource" id="Resource_vta5f"]
 script = ExtResource("3_ytm5k")
+action_id = "Fade Modulate Color"
+target_node = NodePath("CanvasLayer/GodotLogo")
+inputs = {
+"Alpha": "100",
+"Alpha Only": "true",
+"Duration": "2",
+"Target Color": "",
+"Wait For Finish": ""
+}
+block_type = "action"
+
+[sub_resource type="Resource" id="Resource_a77t4"]
+script = ExtResource("3_ytm5k")
 action_id = "Wait For Input"
 target_node = NodePath("System")
 inputs = {
@@ -135,7 +140,7 @@ inputs = {
 }
 block_type = "action"
 
-[sub_resource type="Resource" id="Resource_a77t4"]
+[sub_resource type="Resource" id="Resource_g2c3u"]
 script = ExtResource("3_ytm5k")
 action_id = "Fade Modulate Color"
 target_node = NodePath("CanvasLayer/GodotLogo")
@@ -148,7 +153,7 @@ inputs = {
 }
 block_type = "action"
 
-[sub_resource type="Resource" id="Resource_g2c3u"]
+[sub_resource type="Resource" id="Resource_li7lq"]
 script = ExtResource("3_ytm5k")
 action_id = "Fade Modulate Color"
 target_node = NodePath("CanvasLayer/FlowkitLogo")
@@ -161,7 +166,7 @@ inputs = {
 }
 block_type = "action"
 
-[sub_resource type="Resource" id="Resource_li7lq"]
+[sub_resource type="Resource" id="Resource_b3hw7"]
 script = ExtResource("3_ytm5k")
 action_id = "Wait For Input"
 target_node = NodePath("System")
@@ -170,7 +175,7 @@ inputs = {
 }
 block_type = "action"
 
-[sub_resource type="Resource" id="Resource_b3hw7"]
+[sub_resource type="Resource" id="Resource_1qadt"]
 script = ExtResource("3_ytm5k")
 action_id = "Fade Modulate Color"
 target_node = NodePath("CanvasLayer/FlowkitLogo")
@@ -183,18 +188,22 @@ inputs = {
 }
 block_type = "action"
 
-[sub_resource type="Resource" id="Resource_1qadt"]
+[sub_resource type="Resource" id="Resource_cdt56"]
 script = ExtResource("2_s7o4u")
-block_id = "event_1770495651_3656512735"
+block_id = "event_1775569737_3692921711"
 event_id = "on_ready"
 target_node = NodePath("Timers")
-actions = Array[ExtResource("3_ytm5k")]([SubResource("Resource_t5adf"), SubResource("Resource_s7o4u"), SubResource("Resource_ytm5k"), SubResource("Resource_rm0fh"), SubResource("Resource_iynvq"), SubResource("Resource_1sc5p"), SubResource("Resource_ejtba"), SubResource("Resource_kbegb"), SubResource("Resource_2i0f5"), SubResource("Resource_8saiw"), SubResource("Resource_vta5f"), SubResource("Resource_a77t4"), SubResource("Resource_g2c3u"), SubResource("Resource_li7lq"), SubResource("Resource_b3hw7")])
+actions = Array[ExtResource("3_ytm5k")]([SubResource("Resource_s7o4u"), SubResource("Resource_ytm5k"), SubResource("Resource_rm0fh"), SubResource("Resource_iynvq"), SubResource("Resource_1sc5p"), SubResource("Resource_ejtba"), SubResource("Resource_kbegb"), SubResource("Resource_2i0f5"), SubResource("Resource_8saiw"), SubResource("Resource_vta5f"), SubResource("Resource_a77t4"), SubResource("Resource_g2c3u"), SubResource("Resource_li7lq"), SubResource("Resource_b3hw7"), SubResource("Resource_1qadt")])
 block_type = "event"
 
 [resource]
 script = ExtResource("6_1sc5p")
-events = Array[ExtResource("2_s7o4u")]([SubResource("Resource_1qadt")])
+events = Array[ExtResource("2_s7o4u")]([SubResource("Resource_cdt56")])
+comments = Array[ExtResource("1_t5adf")]([SubResource("Resource_t5adf")])
 item_order = Array[Dictionary]([{
+"index": 0,
+"type": "comment"
+}, {
 "index": 0,
 "type": "event"
 }])

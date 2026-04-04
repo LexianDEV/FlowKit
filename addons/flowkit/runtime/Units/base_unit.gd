@@ -43,3 +43,6 @@ static func _to_base_unit_arr(arr: Array) -> Array[FKUnit]:
 			result.append(child)
 			
 	return result
+
+func get_class() -> String:
+	return "FKUnit"

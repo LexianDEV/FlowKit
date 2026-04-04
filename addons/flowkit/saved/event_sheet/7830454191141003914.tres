@@ -2,9 +2,9 @@
 
 [ext_resource type="Script" uid="uid://b1y3c8rnt2rcg" path="res://addons/flowkit/runtime/Units/comment_unit.gd" id="1_e8buc"]
 [ext_resource type="Script" uid="uid://bxdhylwvr4osy" path="res://addons/flowkit/runtime/Units/event_block.gd" id="2_uoxok"]
-[ext_resource type="Script" uid="uid://bwbi0utcwmxwf" path="res://addons/flowkit/resources/event_action.gd" id="3_j21vh"]
+[ext_resource type="Script" uid="uid://bwbi0utcwmxwf" path="res://addons/flowkit/runtime/Units/action_unit.gd" id="3_j21vh"]
 [ext_resource type="Script" uid="uid://bmaxurgrsv4ct" path="res://addons/flowkit/runtime/Units/condition_unit.gd" id="4_s7nm7"]
-[ext_resource type="Script" path="res://addons/flowkit/runtime/Units/group.gd" id="5_i1nl3"]
+[ext_resource type="Script" path="res://addons/flowkit/runtime/Units/group_unit.gd" id="5_i1nl3"]
 [ext_resource type="Script" uid="uid://bumsyiqkp46l1" path="res://addons/flowkit/resources/event_sheet.gd" id="6_rpy5k"]
 
 [sub_resource type="Resource" id="Resource_df7pu"]

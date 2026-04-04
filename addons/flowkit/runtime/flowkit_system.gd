@@ -252,3 +252,6 @@ func _convert_to_type(value: Variant, target_type: String) -> Variant:
 			return false
 		_:  # String or unknown type
 			return str(value)
+
+func get_class() -> String:
+	return "FKSystem"
