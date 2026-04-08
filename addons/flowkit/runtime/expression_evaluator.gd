@@ -17,12 +17,15 @@ class_name FKExpressionEvaluator
 
 ## Evaluate a string expression and returns the result
 ## Tries to parse as literal first, then as GDScript expression
+## Evaluation is syntax-driven: the expression is parsed/evaluated based on its syntax alone.
+## After evaluation, the result type is validated against expected_type (if provided).
 ## context_node: the base instance for expression execution (determines where get_node() resolves from)
 ## scene_root: optional scene root node, exposed as 'scene_root' variable in expressions
 ## target_node: optional action target node, used for n_ variable lookups (falls back to context_node)
-static func evaluate(expr_str: String, context_node: Node = null, scene_root: Node = null, target_node: Node = null) -> Variant:
+## expected_type: optional Variant.Type to validate the result against (-1 = no validation)
+static func evaluate(expr_str: String, context_node: Node = null, scene_root: Node = null, target_node: Node = null, expected_type: int = -1) -> Variant:
 	if expr_str.is_empty():
-		return ""
+		return _check_type("", expected_type, expr_str)
 	
 	# Trim whitespace
 	expr_str = expr_str.strip_edges()
@@ -37,21 +40,22 @@ static func evaluate(expr_str: String, context_node: Node = null, scene_root: No
 		if var_name.is_valid_identifier():
 			var result = _resolve_n_variable(n_var_node, var_name)
 			if result[0]:  # Variable was found
-				return result[1]
+				return _check_type(result[1], expected_type, expr_str)
 			# Variable not found - still try as expression below
 	
 	# Try to parse as a literal value first
 	var literal_result = _try_parse_literal(expr_str)
-	if literal_result != null:
-		return literal_result
+	if literal_result[0]:
+		return _check_type(literal_result[1], expected_type, expr_str)
 	
 	# If not a literal, try to evaluate as a GDScript expression
 	var expr_result = _evaluate_expression(expr_str, context_node, scene_root, target_node)
-	if expr_result != null:
-		return expr_result
+	if expr_result[0]:
+		return _check_type(expr_result[1], expected_type, expr_str)
 	
-	# If all else fails, return as string
-	return expr_str
+	# Evaluation failed - do not fall back to raw string
+	push_error("FlowKit: Failed to evaluate expression: '%s'" % expr_str)
+	return null
 
 
 ## Resolve an n_ variable from a node. Checks FlowKitSystem node variables first,
@@ -95,35 +99,38 @@ static func _resolve_n_variable(node: Node, var_name: String) -> Array:
 
 
 ## Try to parse the string as a literal value (not an expression)
-## Returns the parsed value, or null if it's not a literal
-static func _try_parse_literal(expr: String) -> Variant:
+## Returns [found: bool, value: Variant] to distinguish 'not a literal' from a literal null
+static func _try_parse_literal(expr: String) -> Array:
 	# Boolean literals
 	if expr.to_lower() == "true":
-		return true
+		return [true, true]
 	if expr.to_lower() == "false":
-		return false
+		return [true, false]
 	
 	# Null literal
 	if expr.to_lower() == "null":
-		return null
+		return [true, null]
 	
 	# String literals (quoted)
 	if _is_quoted_string(expr):
-		return _parse_quoted_string(expr)
+		return [true, _parse_quoted_string(expr)]
 	
 	# Numeric literals
 	if _is_numeric(expr):
 		if "." in expr or "e" in expr.to_lower():
-			return float(expr)
+			return [true, float(expr)]
 		else:
-			return int(expr)
+			return [true, int(expr)]
 	
 	# Vector/Color literals (e.g., "Vector2(0,0)", "Color(1,0,0,1)")
 	if _is_constructor_literal(expr):
-		return _evaluate_expression(expr, null)
+		var result = _evaluate_expression(expr, null)
+		if result[0]:
+			return result
+		return [false, null]
 	
 	# Not a literal
-	return null
+	return [false, null]
 
 
 ## Check if string is a quoted string literal
@@ -211,7 +218,7 @@ static func _is_constructor_literal(expr: String) -> bool:
 ## context_node: used as the base instance for Expression.execute() (where get_node() resolves from)
 ## scene_root: optional scene root node, exposed as 'scene_root' in expressions
 ## target_node: optional action target node, exposed as 'node' in expressions (falls back to context_node)
-static func _evaluate_expression(expr_str: String, context_node: Node, scene_root: Node = null, target_node: Node = null) -> Variant:
+static func _evaluate_expression(expr_str: String, context_node: Node, scene_root: Node = null, target_node: Node = null) -> Array:
 	var expression = Expression.new()
 	
 	# Build input variables for the expression
@@ -310,16 +317,16 @@ static func _evaluate_expression(expr_str: String, context_node: Node, scene_roo
 	var parse_error = expression.parse(expr_str, input_names)
 	if parse_error != OK:
 		# Silently fail - not an expression
-		return null
+		return [false, null]
 	
 	# Execute it
 	var result = expression.execute(input_values, context_node, false)
 	
 	if expression.has_execute_failed():
 		# Silently fail - expression execution failed
-		return null
+		return [false, null]
 	
-	return result
+	return [true, result]
 
 
 ## Convenience method to evaluate all inputs in a dictionary
@@ -327,7 +334,8 @@ static func _evaluate_expression(expr_str: String, context_node: Node, scene_roo
 ## context_node: the base instance for expression execution
 ## scene_root: optional scene root node, forwarded to evaluate()
 ## target_node: optional action target node for n_ variable lookups
-static func evaluate_inputs(inputs: Dictionary, context_node: Node = null, scene_root: Node = null, target_node: Node = null) -> Dictionary:
+## type_hints: optional dictionary mapping input names to Variant.Type int values for post-evaluation validation
+static func evaluate_inputs(inputs: Dictionary, context_node: Node = null, scene_root: Node = null, target_node: Node = null, type_hints: Dictionary = {}) -> Dictionary:
 	var evaluated: Dictionary = {}
 	
 	for key in inputs.keys():
@@ -335,8 +343,71 @@ static func evaluate_inputs(inputs: Dictionary, context_node: Node = null, scene
 		
 		# Only evaluate if the value is a string
 		if value is String:
-			evaluated[key] = evaluate(value, context_node, scene_root, target_node)
+			var expected_type: int = type_hints.get(key, -1)
+			evaluated[key] = evaluate(value, context_node, scene_root, target_node, expected_type)
 		else:
 			evaluated[key] = value
 	
 	return evaluated
+
+
+## Validate that a result matches the expected Variant.Type
+## Returns the value as-is but pushes an error if type does not match
+static func _check_type(value: Variant, expected_type: int, expr_str: String) -> Variant:
+	if expected_type < 0:
+		return value
+	if typeof(value) != expected_type:
+		push_error("FlowKit: Expression '%s' evaluated to %s (type %s) but expected type %s" % [
+			expr_str, str(value), type_string(typeof(value)), type_string(expected_type)])
+	return value
+
+
+## Convert a type name string (as used in provider get_inputs()) to a Variant.Type int
+## Returns -1 for unknown or "Variant" types (no validation)
+static func type_name_to_variant_type(type_name: String) -> int:
+	match type_name:
+		"bool":
+			return TYPE_BOOL
+		"int":
+			return TYPE_INT
+		"float":
+			return TYPE_FLOAT
+		"String":
+			return TYPE_STRING
+		"Vector2":
+			return TYPE_VECTOR2
+		"Vector2i":
+			return TYPE_VECTOR2I
+		"Vector3":
+			return TYPE_VECTOR3
+		"Vector3i":
+			return TYPE_VECTOR3I
+		"Vector4":
+			return TYPE_VECTOR4
+		"Vector4i":
+			return TYPE_VECTOR4I
+		"Color":
+			return TYPE_COLOR
+		"Rect2":
+			return TYPE_RECT2
+		"Transform2D":
+			return TYPE_TRANSFORM2D
+		"Plane":
+			return TYPE_PLANE
+		"Quaternion":
+			return TYPE_QUATERNION
+		"AABB":
+			return TYPE_AABB
+		"Basis":
+			return TYPE_BASIS
+		"Transform3D":
+			return TYPE_TRANSFORM3D
+		"NodePath":
+			return TYPE_NODE_PATH
+		"Array":
+			return TYPE_ARRAY
+		"Dictionary":
+			return TYPE_DICTIONARY
+		"Variant", "":
+			return -1
+	return -1

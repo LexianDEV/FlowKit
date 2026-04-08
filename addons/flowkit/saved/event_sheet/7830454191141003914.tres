@@ -12,7 +12,7 @@ script = ExtResource("3_j21vh")
 action_id = "set_window_mode"
 target_node = NodePath("System")
 inputs = {
-"Mode": "windowed"
+"Mode": "\"windowed\""
 }
 block_type = "action"
 
@@ -389,7 +389,7 @@ script = ExtResource("4_s7nm7")
 condition_id = "compare_variable"
 target_node = NodePath("System")
 inputs = {
-"Comparison": "==",
+"Comparison": "\"==\"",
 "Name": "\"chosenAnswer\"",
 "Value": "system.get_var(\"currentCorrectAnswer\")"
 }
@@ -440,7 +440,7 @@ action_id = "Print Message"
 target_node = NodePath(".")
 inputs = {
 "color": "",
-"message": "Response to second answer's button press"
+"message": "\"Response to second answer's button press\""
 }
 block_type = "action"
 
@@ -475,7 +475,7 @@ script = ExtResource("4_s7nm7")
 condition_id = "compare_variable"
 target_node = NodePath("System")
 inputs = {
-"Comparison": "==",
+"Comparison": "\"==\"",
 "Name": "\"chosenAnswer\"",
 "Value": "system.get_var(\"currentCorrectAnswer\")"
 }
@@ -516,7 +516,7 @@ action_id = "Print Message"
 target_node = NodePath(".")
 inputs = {
 "color": "",
-"message": "Response to third answer's button press"
+"message": "\"Response to third answer's button press\""
 }
 block_type = "action"
 
@@ -551,7 +551,7 @@ script = ExtResource("4_s7nm7")
 condition_id = "compare_variable"
 target_node = NodePath("System")
 inputs = {
-"Comparison": "==",
+"Comparison": "\"==\"",
 "Name": "\"chosenAnswer\"",
 "Value": "system.get_var(\"currentCorrectAnswer\")"
 }
@@ -592,7 +592,7 @@ action_id = "Print Message"
 target_node = NodePath(".")
 inputs = {
 "color": "",
-"message": "Response to fourth answer's button press"
+"message": "\"Response to fourth answer's button press\""
 }
 block_type = "action"
 
@@ -627,7 +627,7 @@ script = ExtResource("4_s7nm7")
 condition_id = "compare_variable"
 target_node = NodePath("System")
 inputs = {
-"Comparison": "==",
+"Comparison": "\"==\"",
 "Name": "\"chosenAnswer\"",
 "Value": "system.get_var(\"currentCorrectAnswer\")"
 }
@@ -668,7 +668,7 @@ action_id = "Print Message"
 target_node = NodePath(".")
 inputs = {
 "color": "",
-"message": "First answer button's text changed"
+"message": "\"First answer button's text changed\""
 }
 block_type = "action"
 

@@ -44,7 +44,7 @@ script = ExtResource("5_1wrk8")
 condition_id = "compare_node_variable"
 target_node = NodePath("CharacterBody2D")
 inputs = {
-"Comparison": ">",
+"Comparison": "\">\"",
 "Property": "node.position.y",
 "Value": "n_lowest_y"
 }

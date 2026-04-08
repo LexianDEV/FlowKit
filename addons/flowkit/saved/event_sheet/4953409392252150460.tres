@@ -12,8 +12,8 @@ script = ExtResource("2_e5301")
 action_id = "get_project_setting"
 target_node = NodePath("System")
 inputs = {
-"Path": "physics/2d/default_gravity",
-"Store In": "gravity"
+"Path": "\"physics/2d/default_gravity\"",
+"Store In": "\"gravity\""
 }
 block_type = "action"
 
@@ -23,7 +23,7 @@ action_id = "set_node_variable"
 target_node = NodePath(".")
 inputs = {
 "Value": "-400.0",
-"Variable Name": "jump_force"
+"Variable Name": "\"jump_force\""
 }
 block_type = "action"
 
@@ -33,7 +33,7 @@ action_id = "set_node_variable"
 target_node = NodePath(".")
 inputs = {
 "Value": "200.0",
-"Variable Name": "speed"
+"Variable Name": "\"speed\""
 }
 block_type = "action"
 
@@ -103,7 +103,7 @@ script = ExtResource("3_6310v")
 condition_id = "is_key_pressed"
 target_node = NodePath("System")
 inputs = {
-"Key": "Space"
+"Key": "\"Space\""
 }
 block_type = "condition"
 
@@ -120,9 +120,9 @@ script = ExtResource("2_e5301")
 action_id = "get_input_axis_2way"
 target_node = NodePath("System")
 inputs = {
-"Negative Action": "ui_left",
-"Positive Action": "ui_right",
-"Store In": "direction"
+"Negative Action": "\"ui_left\"",
+"Positive Action": "\"ui_right\"",
+"Store In": "\"direction\""
 }
 block_type = "action"
 
@@ -140,7 +140,7 @@ script = ExtResource("3_6310v")
 condition_id = "compare_node_variable"
 target_node = NodePath(".")
 inputs = {
-"Comparison": "!=",
+"Comparison": "\"!=\"",
 "Property": "direction",
 "Value": "0"
 }
@@ -211,7 +211,7 @@ script = ExtResource("3_6310v")
 condition_id = "compare_node_variable"
 target_node = NodePath(".")
 inputs = {
-"Comparison": "<",
+"Comparison": "\"<\"",
 "Property": "velocity.x",
 "Value": "0"
 }
@@ -240,7 +240,7 @@ script = ExtResource("3_6310v")
 condition_id = "compare_node_variable"
 target_node = NodePath(".")
 inputs = {
-"Comparison": ">",
+"Comparison": "\">\"",
 "Property": "velocity.x",
 "Value": "0"
 }
@@ -280,7 +280,7 @@ target_node = NodePath("AnimatedSprite2D")
 inputs = {
 "Custom Speed": "1",
 "From End": "false",
-"Name": "default"
+"Name": "\"default\""
 }
 block_type = "action"
 
@@ -289,7 +289,7 @@ script = ExtResource("3_6310v")
 condition_id = "compare_node_variable"
 target_node = NodePath(".")
 inputs = {
-"Comparison": "==",
+"Comparison": "\"==\"",
 "Property": "node.velocity.x",
 "Value": "0"
 }
@@ -322,7 +322,7 @@ target_node = NodePath("AnimatedSprite2D")
 inputs = {
 "Custom Speed": "1",
 "From End": "false",
-"Name": "run"
+"Name": "\"run\""
 }
 block_type = "action"
 
@@ -331,7 +331,7 @@ script = ExtResource("3_6310v")
 condition_id = "compare_node_variable"
 target_node = NodePath(".")
 inputs = {
-"Comparison": "!=",
+"Comparison": "\"!=\"",
 "Property": "node.velocity.x",
 "Value": "0"
 }

@@ -12,7 +12,7 @@ script = ExtResource("3_7puo2")
 action_id = "set_window_mode"
 target_node = NodePath("System")
 inputs = {
-"Mode": "windowed"
+"Mode": "\"windowed\""
 }
 block_type = "action"
 
@@ -31,7 +31,7 @@ script = ExtResource("3_7puo2")
 action_id = "set_variable"
 target_node = NodePath("System")
 inputs = {
-"Name": "times",
+"Name": "\"times\"",
 "Value": "1"
 }
 block_type = "action"
@@ -41,7 +41,9 @@ script = ExtResource("3_7puo2")
 action_id = "Print Message"
 target_node = NodePath(".")
 inputs = {
-"color": "red",
+"Color": "\"red\"",
+"Message": "\"Counting from 1 - 10\"",
+"color": "\"red\"",
 "message": "\"Counting from 1 to 10\""
 }
 block_type = "action"
@@ -51,7 +53,7 @@ script = ExtResource("3_7puo2")
 action_id = "Print Message"
 target_node = NodePath(".")
 inputs = {
-"color": "blue",
+"color": "\"blue\"",
 "message": "system.get_var(\"times\")"
 }
 block_type = "action"
@@ -61,7 +63,7 @@ script = ExtResource("3_7puo2")
 action_id = "set_variable"
 target_node = NodePath("System")
 inputs = {
-"Name": "times",
+"Name": "\"times\"",
 "Value": "system.get_var(\"times\")+1"
 }
 block_type = "action"
@@ -82,14 +84,14 @@ script = ExtResource("3_7puo2")
 action_id = "Print Message"
 target_node = NodePath(".")
 inputs = {
-"color": "red",
-"message": "Done!"
+"color": "\"red\"",
+"message": "\"Done!\""
 }
 block_type = "action"
 
 [sub_resource type="Resource" id="Resource_5nvf0"]
 script = ExtResource("2_o0xcg")
-block_id = "event_1775232400_3648767005"
+block_id = "event_1775613196_2355312579"
 event_id = "on_ready"
 target_node = NodePath(".")
 actions = Array[ExtResource("3_7puo2")]([SubResource("Resource_xv5k1"), SubResource("Resource_o0xcg"), SubResource("Resource_7puo2"), SubResource("Resource_ko5ym"), SubResource("Resource_v5tg8"), SubResource("Resource_l83bg")])

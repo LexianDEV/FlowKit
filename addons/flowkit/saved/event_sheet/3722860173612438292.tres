@@ -22,7 +22,7 @@ script = ExtResource("3_uraip")
 action_id = "set_window_mode"
 target_node = NodePath("System")
 inputs = {
-"Mode": "windowed"
+"Mode": "\"windowed\""
 }
 block_type = "action"
 
@@ -58,7 +58,7 @@ action_id = "Print Message"
 target_node = NodePath("Logic")
 inputs = {
 "color": "",
-"message": "First timer hit timeout. Starting the second one."
+"message": "\"First timer hit timeout. Starting the second one.\""
 }
 block_type = "action"
 
@@ -82,7 +82,7 @@ action_id = "Print Message"
 target_node = NodePath("Logic")
 inputs = {
 "color": "",
-"message": "Second timer hit timeout. Starting the third one."
+"message": "\"Second timer hit timeout. Starting the third one.\""
 }
 block_type = "action"
 
@@ -106,7 +106,7 @@ action_id = "Print Message"
 target_node = NodePath("Logic")
 inputs = {
 "color": "",
-"message": "Third timer hit timeout. That's all for this demo scene."
+"message": "\"Third timer hit timeout. That's all for this demo scene.\""
 }
 block_type = "action"
 
