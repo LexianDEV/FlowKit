@@ -38,20 +38,20 @@ static func evaluate(expr_str: String, context_node: Node = null, scene_root: No
 		var var_name = expr_str.substr(2)
 		# Only treat as standalone n_ variable if it's a simple identifier (no operators/spaces)
 		if var_name.is_valid_identifier():
-			var result = _resolve_n_variable(n_var_node, var_name)
-			if result[0]:  # Variable was found
-				return _check_type(result[1], expected_type, expr_str)
+			var result := _resolve_n_variable(n_var_node, var_name)
+			if result.success:
+				return _check_type(result.value, expected_type, expr_str)
 			# Variable not found - still try as expression below
 	
 	# Try to parse as a literal value first
-	var literal_result = _try_parse_literal(expr_str)
-	if literal_result[0]:
-		return _check_type(literal_result[1], expected_type, expr_str)
+	var literal_result := _try_parse_literal(expr_str)
+	if literal_result.success:
+		return _check_type(literal_result.value, expected_type, expr_str)
 	
 	# If not a literal, try to evaluate as a GDScript expression
-	var expr_result = _evaluate_expression(expr_str, context_node, scene_root, target_node)
-	if expr_result[0]:
-		return _check_type(expr_result[1], expected_type, expr_str)
+	var expr_result := _evaluate_expression(expr_str, context_node, scene_root, target_node)
+	if expr_result.success:
+		return _check_type(expr_result.value, expected_type, expr_str)
 	
 	# Evaluation failed - do not fall back to raw string
 	push_error("FlowKit: Failed to evaluate expression: '%s'" % expr_str)
@@ -60,14 +60,13 @@ static func evaluate(expr_str: String, context_node: Node = null, scene_root: No
 
 ## Resolve an n_ variable from a node. Checks FlowKitSystem node variables first,
 ## then node metadata (inspector-defined), then script properties.
-## Returns a 2-element array [found: bool, value: Variant] to distinguish
-## 'not found' from 'found with value null'.
-static func _resolve_n_variable(node: Node, var_name: String) -> Array:
+## Returns an FKEvalResult to distinguish 'not found' from 'found with value null'.
+static func _resolve_n_variable(node: Node, var_name: String) -> FKEvalResult:
 	var system = node.get_tree().root.get_node_or_null("/root/FlowKitSystem")
 	if system and system.has_method("get_node_var"):
 		# Check if the variable exists before getting it
 		if system.has_method("has_node_var") and system.has_node_var(node, var_name):
-			return [true, system.get_node_var(node, var_name, null)]
+			return FKEvalResult.succeeded(system.get_node_var(node, var_name, null))
 	
 	# Fallback: check node metadata directly (inspector-defined FlowKit variables)
 	if node.has_meta("flowkit_variables"):
@@ -89,48 +88,48 @@ static func _resolve_n_variable(node: Node, var_name: String) -> Array:
 						"bool":
 							if value is String:
 								value = value.to_lower() == "true"
-			return [true, value]
+			return FKEvalResult.succeeded(value)
 	
 	# Fallback: check if the node itself has this property (script-exported variables)
 	if var_name in node:
-		return [true, node.get(var_name)]
+		return FKEvalResult.succeeded(node.get(var_name))
 	
-	return [false, null]
+	return FKEvalResult.failed()
 
 
 ## Try to parse the string as a literal value (not an expression)
-## Returns [found: bool, value: Variant] to distinguish 'not a literal' from a literal null
-static func _try_parse_literal(expr: String) -> Array:
+## Returns an FKEvalResult to distinguish 'not a literal' from a literal null
+static func _try_parse_literal(expr: String) -> FKEvalResult:
 	# Boolean literals
 	if expr.to_lower() == "true":
-		return [true, true]
+		return FKEvalResult.succeeded(true)
 	if expr.to_lower() == "false":
-		return [true, false]
+		return FKEvalResult.succeeded(false)
 	
 	# Null literal
 	if expr.to_lower() == "null":
-		return [true, null]
+		return FKEvalResult.succeeded(null)
 	
 	# String literals (quoted)
 	if _is_quoted_string(expr):
-		return [true, _parse_quoted_string(expr)]
+		return FKEvalResult.succeeded(_parse_quoted_string(expr))
 	
 	# Numeric literals
 	if _is_numeric(expr):
 		if "." in expr or "e" in expr.to_lower():
-			return [true, float(expr)]
+			return FKEvalResult.succeeded(float(expr))
 		else:
-			return [true, int(expr)]
+			return FKEvalResult.succeeded(int(expr))
 	
 	# Vector/Color literals (e.g., "Vector2(0,0)", "Color(1,0,0,1)")
 	if _is_constructor_literal(expr):
-		var result = _evaluate_expression(expr, null)
-		if result[0]:
+		var result := _evaluate_expression(expr, null)
+		if result.success:
 			return result
-		return [false, null]
+		return FKEvalResult.failed()
 	
 	# Not a literal
-	return [false, null]
+	return FKEvalResult.failed()
 
 
 ## Check if string is a quoted string literal
@@ -218,7 +217,7 @@ static func _is_constructor_literal(expr: String) -> bool:
 ## context_node: used as the base instance for Expression.execute() (where get_node() resolves from)
 ## scene_root: optional scene root node, exposed as 'scene_root' in expressions
 ## target_node: optional action target node, exposed as 'node' in expressions (falls back to context_node)
-static func _evaluate_expression(expr_str: String, context_node: Node, scene_root: Node = null, target_node: Node = null) -> Array:
+static func _evaluate_expression(expr_str: String, context_node: Node, scene_root: Node = null, target_node: Node = null) -> FKEvalResult:
 	var expression = Expression.new()
 	
 	# Build input variables for the expression
@@ -317,16 +316,16 @@ static func _evaluate_expression(expr_str: String, context_node: Node, scene_roo
 	var parse_error = expression.parse(expr_str, input_names)
 	if parse_error != OK:
 		# Silently fail - not an expression
-		return [false, null]
+		return FKEvalResult.failed()
 	
 	# Execute it
 	var result = expression.execute(input_values, context_node, false)
 	
 	if expression.has_execute_failed():
 		# Silently fail - expression execution failed
-		return [false, null]
+		return FKEvalResult.failed()
 	
-	return [true, result]
+	return FKEvalResult.succeeded(result)
 
 
 ## Convenience method to evaluate all inputs in a dictionary
