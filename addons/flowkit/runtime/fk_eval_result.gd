@@ -8,12 +8,17 @@ class_name FKEvalResult
 var success: bool
 var value: Variant
 
-func _init(p_success: bool = false, p_value: Variant = null) -> void:
+## Good for providing further details about the evaluation.
+var message := ""
+
+
+func _init(p_success: bool = false, p_value: Variant = null, p_message = "") -> void:
 	success = p_success
 	value = p_value
+	message = p_message
 
-static func succeeded(p_value: Variant) -> FKEvalResult:
-	return FKEvalResult.new(true, p_value)
+static func succeeded(p_value: Variant, p_message = "") -> FKEvalResult:
+	return FKEvalResult.new(true, p_value, p_message)
 
-static func failed() -> FKEvalResult:
-	return FKEvalResult.new(false, null)
+static func failed(p_message = "") -> FKEvalResult:
+	return FKEvalResult.new(false, null, p_message)
