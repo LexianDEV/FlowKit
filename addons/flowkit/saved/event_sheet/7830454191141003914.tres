@@ -352,7 +352,7 @@ block_type = "action"
 
 [sub_resource type="Resource" id="Resource_e5g1r"]
 script = ExtResource("2_uoxok")
-block_id = "event_1775232171_154220858"
+block_id = "event_1775659447_3672557272"
 event_id = "on_ready"
 target_node = NodePath(".")
 actions = Array[ExtResource("3_j21vh")]([SubResource("Resource_df7pu"), SubResource("Resource_uoxok"), SubResource("Resource_j21vh"), SubResource("Resource_emcdn"), SubResource("Resource_ulxaw"), SubResource("Resource_rpy5k"), SubResource("Resource_efrgi"), SubResource("Resource_e6bne"), SubResource("Resource_1h0yk"), SubResource("Resource_7gjgi"), SubResource("Resource_njo67"), SubResource("Resource_7p70r"), SubResource("Resource_jl3cs"), SubResource("Resource_y38jp"), SubResource("Resource_6grxg"), SubResource("Resource_jpbjx"), SubResource("Resource_ewbs2"), SubResource("Resource_7e0ye"), SubResource("Resource_yayi7"), SubResource("Resource_4t33x"), SubResource("Resource_3wu3y"), SubResource("Resource_8wvsr"), SubResource("Resource_apwru"), SubResource("Resource_yrydo"), SubResource("Resource_hlcqt"), SubResource("Resource_cfel1"), SubResource("Resource_fe1w8"), SubResource("Resource_e0fgu"), SubResource("Resource_t47qt"), SubResource("Resource_icjx7"), SubResource("Resource_o3aem"), SubResource("Resource_bmqy2"), SubResource("Resource_7fkax"), SubResource("Resource_f6ogq"), SubResource("Resource_gajsv")])
@@ -428,7 +428,7 @@ block_type = "action"
 
 [sub_resource type="Resource" id="Resource_ulr6u"]
 script = ExtResource("2_uoxok")
-block_id = "event_1775232171_4091464554"
+block_id = "event_1775659447_3464841607"
 event_id = "On Button Pressed"
 target_node = NodePath("HoldsAnswers/FirstAnswerButton")
 actions = Array[ExtResource("3_j21vh")]([SubResource("Resource_3pq7a"), SubResource("Resource_2q5cv"), SubResource("Resource_cpo3s"), SubResource("Resource_crlsd")])
@@ -504,7 +504,7 @@ block_type = "action"
 
 [sub_resource type="Resource" id="Resource_0gvro"]
 script = ExtResource("2_uoxok")
-block_id = "event_1775232171_499628423"
+block_id = "event_1775659447_3107014360"
 event_id = "On Button Pressed"
 target_node = NodePath("HoldsAnswers/SecondAnswerButton")
 actions = Array[ExtResource("3_j21vh")]([SubResource("Resource_iud1s"), SubResource("Resource_wccxq"), SubResource("Resource_jvbn4"), SubResource("Resource_jj233")])
@@ -580,7 +580,7 @@ block_type = "action"
 
 [sub_resource type="Resource" id="Resource_gekfw"]
 script = ExtResource("2_uoxok")
-block_id = "event_1775232171_3876886669"
+block_id = "event_1775659447_1974639899"
 event_id = "On Button Pressed"
 target_node = NodePath("HoldsAnswers/ThirdAnswerButton")
 actions = Array[ExtResource("3_j21vh")]([SubResource("Resource_v6ggk"), SubResource("Resource_2ae07"), SubResource("Resource_18u5c"), SubResource("Resource_lp0wt")])
@@ -656,7 +656,7 @@ block_type = "action"
 
 [sub_resource type="Resource" id="Resource_po1c6"]
 script = ExtResource("2_uoxok")
-block_id = "event_1775232171_2356464836"
+block_id = "event_1775659447_126874220"
 event_id = "On Button Pressed"
 target_node = NodePath("HoldsAnswers/FourthAnswerButton")
 actions = Array[ExtResource("3_j21vh")]([SubResource("Resource_a6awu"), SubResource("Resource_m718d"), SubResource("Resource_uvq0u"), SubResource("Resource_bieu4")])
@@ -674,7 +674,7 @@ block_type = "action"
 
 [sub_resource type="Resource" id="Resource_pcxsw"]
 script = ExtResource("2_uoxok")
-block_id = "event_1775232171_1664066350"
+block_id = "event_1775659447_558483279"
 event_id = "On Text Changed"
 target_node = NodePath("HoldsAnswers/FirstAnswerButton")
 actions = Array[ExtResource("3_j21vh")]([SubResource("Resource_6m3qi")])

@@ -1,3 +1,4 @@
+
 @tool
 extends Control
 class_name FKMainEditor
@@ -1757,28 +1758,49 @@ func _finalize_branch_creation(inputs: Dictionary) -> void:
 	"""Create a condition-type branch and add it to the target's actions."""
 	_push_undo_state()
 
+	var cond := _create_new_cond_for_branch(inputs)
+	var branch_data := _create_new_branch_unit(cond)
+	_add_branch_to_event_row(branch_data)
+
+	_show_content_state()
+	_reset_workflow()
+	_save_sheet()
+
+func _create_new_cond_for_branch(inputs: Dictionary) -> FKConditionUnit:
 	var cond := FKConditionUnit.new()
 	cond.condition_id = pending_id
 	cond.target_node = pending_node_path
 	cond.inputs = inputs
 	cond.negated = false
-
+	return cond
+	
+func _create_new_branch_unit(cond: FKConditionUnit) -> FKActionUnit:
 	var branch_data := FKActionUnit.new()
 	branch_data.is_branch = true
 	branch_data.branch_type = "if"
 	branch_data.branch_id = pending_branch_id
 	branch_data.branch_condition = cond
 	branch_data.branch_actions = [] as Array[FKActionUnit]
+	return branch_data
+	
+func _add_branch_to_event_row(branch_data: FKActionUnit):
+	# Not necessarily directly, though. Where _exactly_ we add
+	# it depends on what's pending.
+	var branch_ui: FKBranchUnitUi = null
+	var event_ui: FKEventRowUi = null
+	
+	if pending_target_branch is FKBranchUnitUi:
+		branch_ui = pending_target_branch
+	elif pending_target_row is FKEventRowUi:
+		event_ui = pending_target_row
+	
+	var add_as_nested_branch: bool = branch_ui != null
+	var add_as_top_level_branch: bool = event_ui != null
+	if add_as_nested_branch:
+		branch_ui.add_branch_action(branch_data)
+	elif add_as_top_level_branch:
+		event_ui.add_action(branch_data)
 
-	# If pending_target_branch is set, add as nested branch
-	if pending_target_branch and pending_target_branch.has_method("add_branch_action"):
-		pending_target_branch.add_branch_action(branch_data)
-	elif pending_target_row and pending_target_row.has_method("add_action"):
-		pending_target_row.add_action(branch_data)
-
-	_show_content_state()
-	_reset_workflow()
-	_save_sheet()
 
 func _finalize_elseif_creation(inputs: Dictionary) -> void:
 	"""Create an ELSE IF branch and insert it after the current branch."""
@@ -1845,6 +1867,9 @@ func _update_branch_condition(expressions: Dictionary) -> void:
 
 func _finalize_branch_action_creation(inputs: Dictionary) -> void:
 	"""Add an action inside a branch."""
+	print("[FKMainEditor]: in _finalize_branch_action_creation. Inputs:")
+	print(str(inputs))
+	print("[FKMainEditor]: Pending target branch type: " + pending_target_branch.get_class())
 	_push_undo_state()
 
 	var data := FKActionUnit.new()
@@ -1854,6 +1879,9 @@ func _finalize_branch_action_creation(inputs: Dictionary) -> void:
 
 	if pending_target_branch and pending_target_branch.has_method("add_branch_action"):
 		pending_target_branch.add_branch_action(data)
+	elif pending_target_branch is FKBranchUnitUi:
+		print("[FKMainEditor]: Pending target branch has no add_branch_action method, but it is a FKBranchUnitUi ")
+		
 
 	_show_content_state()
 	_reset_workflow()
