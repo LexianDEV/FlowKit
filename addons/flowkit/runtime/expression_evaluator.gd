@@ -23,7 +23,8 @@ class_name FKExpressionEvaluator
 ## scene_root: optional scene root node, exposed as 'scene_root' variable in expressions
 ## target_node: optional action target node, used for n_ variable lookups (falls back to context_node)
 ## expected_type: optional Variant.Type to validate the result against (-1 = no validation)
-static func evaluate(expr_str: String, context_node: Node = null, scene_root: Node = null, target_node: Node = null, expected_type: int = -1) -> Variant:
+static func evaluate(expr_str: String, context_node: Node = null, scene_root: Node = null, \
+target_node: Node = null, expected_type: int = -1) -> Variant:
 	if expr_str.is_empty():
 		return _check_type("", expected_type, expr_str)
 	
@@ -204,7 +205,8 @@ static func _is_numeric(expr: String) -> bool:
 
 ## Check if string is a constructor literal like "Vector2(0,0)" or "Color(1,0,0)"
 static func _is_constructor_literal(expr: String) -> bool:
-	var constructors = ["Vector2", "Vector3", "Vector4", "Color", "Rect2", "Transform2D", "Plane", "Quaternion", "AABB", "Basis", "Transform3D"]
+	var constructors = ["Vector2", "Vector3", "Vector4", "Color", "Rect2", 
+	"Transform2D", "Plane", "Quaternion", "AABB", "Basis", "Transform3D"]
 	
 	for constructor in constructors:
 		if expr.begins_with(constructor + "(") and expr.ends_with(")"):
@@ -217,7 +219,8 @@ static func _is_constructor_literal(expr: String) -> bool:
 ## context_node: used as the base instance for Expression.execute() (where get_node() resolves from)
 ## scene_root: optional scene root node, exposed as 'scene_root' in expressions
 ## target_node: optional action target node, exposed as 'node' in expressions (falls back to context_node)
-static func _evaluate_expression(expr_str: String, context_node: Node, scene_root: Node = null, target_node: Node = null) -> FKEvalResult:
+static func _evaluate_expression(expr_str: String, context_node: Node, scene_root: Node = null, \
+target_node: Node = null) -> FKEvalResult:
 	var expression = Expression.new()
 	
 	# Build input variables for the expression
@@ -334,7 +337,8 @@ static func _evaluate_expression(expr_str: String, context_node: Node, scene_roo
 ## scene_root: optional scene root node, forwarded to evaluate()
 ## target_node: optional action target node for n_ variable lookups
 ## type_hints: optional dictionary mapping input names to Variant.Type int values for post-evaluation validation
-static func evaluate_inputs(inputs: Dictionary, context_node: Node = null, scene_root: Node = null, target_node: Node = null, type_hints: Dictionary = {}) -> Dictionary:
+static func evaluate_inputs(inputs: Dictionary, context_node: Node = null, \
+scene_root: Node = null, target_node: Node = null, type_hints: Dictionary = {}) -> Dictionary:
 	var evaluated: Dictionary = {}
 	
 	for key in inputs.keys():
