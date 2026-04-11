@@ -15,7 +15,7 @@ inputs = {
 "Color": "",
 "Message": "",
 "color": "",
-"message": "This is a message printed with the default color."
+"message": "\"This is a message printed with the default color.\""
 }
 block_type = "action"
 
@@ -34,7 +34,7 @@ script = ExtResource("3_5poua")
 action_id = "set_window_mode"
 target_node = NodePath("System")
 inputs = {
-"Mode": "windowed"
+"Mode": "\"windowed\""
 }
 block_type = "action"
 
@@ -43,8 +43,8 @@ script = ExtResource("3_5poua")
 action_id = "Print Message"
 target_node = NodePath(".")
 inputs = {
-"color": "red",
-"message": "This is a message printed in red text."
+"color": "\"red\"",
+"message": "\"This is a message printed in red text.\""
 }
 block_type = "action"
 
@@ -53,8 +53,8 @@ script = ExtResource("3_5poua")
 action_id = "Print Message"
 target_node = NodePath(".")
 inputs = {
-"color": "green",
-"message": "[i]This is a message printed in green italicized text.[/i]"
+"color": "\"green\"",
+"message": "\"[i]This is a message printed in green italicized text.[/i]\""
 }
 block_type = "action"
 
@@ -63,8 +63,8 @@ script = ExtResource("3_5poua")
 action_id = "Print Message"
 target_node = NodePath(".")
 inputs = {
-"color": "yellow",
-"message": "[b]Yellow bold text.[/b]"
+"color": "\"yellow\"",
+"message": "\"[b]Yellow bold text.[/b]\""
 }
 block_type = "action"
 
@@ -74,7 +74,7 @@ action_id = "Print Message"
 target_node = NodePath(".")
 inputs = {
 "color": "",
-"message": "[wave][color=#FF0000]W[/color][color=#FF5500]a[/color][color=#FFAA00]v[/color][color=#FFFF00]y[/color] [color=#54FF00]r[/color][color=#00FF00]a[/color][color=#00FF55]i[/color][color=#00FFAA]n[/color][color=#00FEFF]b[/color][color=#00A9FF]o[/color][color=#0054FF]w[/color] [color=#5500FF]t[/color][color=#AA00FF]e[/color][color=#FF00FE]x[/color][color=#FF00AA]t[/color][color=#FF0054]![/color][/wave]"
+"message": "\"[wave][color=#FF0000]W[/color][color=#FF5500]a[/color][color=#FFAA00]v[/color][color=#FFFF00]y[/color] [color=#54FF00]r[/color][color=#00FF00]a[/color][color=#00FF55]i[/color][color=#00FFAA]n[/color][color=#00FEFF]b[/color][color=#00A9FF]o[/color][color=#0054FF]w[/color] [color=#5500FF]t[/color][color=#AA00FF]e[/color][color=#FF00FE]x[/color][color=#FF00AA]t[/color][color=#FF0054]![/color][/wave]\""
 }
 block_type = "action"
 

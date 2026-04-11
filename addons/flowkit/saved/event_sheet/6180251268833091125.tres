@@ -17,7 +17,7 @@ script = ExtResource("3_ytm5k")
 action_id = "set_window_mode"
 target_node = NodePath("System")
 inputs = {
-"Mode": "windowed"
+"Mode": "\"windowed\""
 }
 block_type = "action"
 
@@ -101,7 +101,7 @@ script = ExtResource("3_ytm5k")
 action_id = "Wait For Input"
 target_node = NodePath("System")
 inputs = {
-"Input Binding Name": "ui_accept"
+"Input Binding Name": "\"ui_accept\""
 }
 block_type = "action"
 
@@ -136,7 +136,7 @@ script = ExtResource("3_ytm5k")
 action_id = "Wait For Input"
 target_node = NodePath("System")
 inputs = {
-"Input Binding Name": "ui_accept"
+"Input Binding Name": "\"ui_accept\""
 }
 block_type = "action"
 
@@ -171,7 +171,7 @@ script = ExtResource("3_ytm5k")
 action_id = "Wait For Input"
 target_node = NodePath("System")
 inputs = {
-"Input Binding Name": "ui_accept"
+"Input Binding Name": "\"ui_accept\""
 }
 block_type = "action"
 
