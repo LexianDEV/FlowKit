@@ -2,10 +2,10 @@
 extends MarginContainer
 class_name FKUnitUi
 
-signal before_block_changed(node)
-signal block_changed(node)
+signal before_block_changed(node: FKUnitUi)
+signal block_changed(node: FKUnitUi)
 signal block_contents_changed()
-signal selected(node)
+signal selected(node: FKUnitUi)
 
 ## Call this when you want to have an FKUnitUi work properly as
 ## a non-preview instance. This func assumes this instance
@@ -44,6 +44,7 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	update_display.call_deferred()
 	
+## Returns the FKUnit this is representing.
 func get_block() -> FKUnit:
 	return _block
 

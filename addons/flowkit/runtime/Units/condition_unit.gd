@@ -33,6 +33,7 @@ func duplicate_block() -> FKUnit:
 	result.target_node = str(target_node)
 	result.inputs = inputs.duplicate()
 	result.negated = negated
+	result.actions = [] as Array[FKActionUnit]
 	
 	return result
 	

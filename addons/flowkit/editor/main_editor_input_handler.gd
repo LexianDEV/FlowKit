@@ -8,7 +8,7 @@ func initialize(main_ed: FKMainEditor):
 	
 var _editor: FKMainEditor
 var clipboard: FKClipboardManager
-var block_container: BlockContainerUi
+var block_container: FKBlockContainerUi
 
 func handle_input(event: InputEvent):
 	var is_left_click: bool = event is InputEventMouseButton and event.pressed and \

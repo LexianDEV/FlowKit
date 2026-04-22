@@ -21,6 +21,7 @@ func load_sheet(scene_uid: int) -> FKEventSheet:
 func save_sheet(scene_uid: int, sheet: FKEventSheet) -> int:
 	var sheet_path := get_sheet_path(scene_uid)
 	if sheet_path == "":
+		print("[SheetIo] Returning err invalid param")
 		return ERR_INVALID_PARAMETER
 
 	DirAccess.make_dir_recursive_absolute(SHEET_DIR)

@@ -186,7 +186,10 @@ func _can_drop_data(at_position: Vector2, data) -> bool:
 		var parent = get_parent()
 		if parent and parent.has_method("_can_drop_data"):
 			var parent_pos = at_position + position
-			return parent._can_drop_data(parent_pos, data)
+			#print("[FKCommentUi] Delegating to parent's (" + parent.name + "'s) _can_drop_data")
+			var result: bool = parent._can_drop_data(parent_pos, data)
+			#print("Result: " + str(result))
+			return result
 	
 	return false
 
@@ -197,14 +200,17 @@ func _drop_data(at_position: Vector2, data) -> void:
 		return
 		
 	var drag_data = data as FKDragData
-	
+	#print("[FKCommentUi] Drag data type given in _drop_data: " + drag_data.type)
 	# For event_row, comment, or group drags, forward to parent
-	if drag_data.type in [DragTarget.Type.EVENT_ROW, DragTarget.Type.COMMENT, \
-	DragTarget.Type.GROUP]:
+	if drag_data.type in _drag_targets:
 		var parent = get_parent()
 		if parent and parent.has_method("_drop_data"):
 			var parent_pos = at_position + position
+			#print("[FKCommentUi] Dropping at pos " + str(parent_pos))
 			parent._drop_data(parent_pos, data)
+
+static var _drag_targets := [DragTarget.Type.EVENT_ROW, DragTarget.Type.COMMENT, \
+	DragTarget.Type.GROUP]
 
 func _on_right_click(event: InputEventMouseButton):
 	_show_context_menu(event.global_position)

@@ -1,6 +1,6 @@
 @tool
 extends VBoxContainer
-class_name BlockContainerUi
+class_name FKBlockContainerUi
 ## Container for event blocks, comments, and groups in the FlowKit editor.
 ##
 ## Handles drag-and-drop reordering of blocks and accepts drops from
@@ -19,26 +19,102 @@ var current_drop_index: int = -1  ## Current calculated drop position
 
 # === Lifecycle ===
 
+func _enter_tree() -> void:
+	_toggle_subs(true)
+	pass
+	
+func _toggle_subs(on: bool):
+	if on and not _is_subbed:
+		child_entered_tree.connect(_on_child_entered_tree)
+		child_exiting_tree.connect(_on_child_exiting_tree)
+		
+	elif not on and _is_subbed:
+		child_entered_tree.disconnect(_on_child_entered_tree)
+		child_exiting_tree.disconnect(_on_child_exiting_tree)
+		
+	_is_subbed = on
+
+var _is_subbed := false
+
+func _on_child_entered_tree(child: Node):
+	if child is not FKUnitUi:
+		return
+	var ui := child as FKUnitUi
+	_update_lookup_registration(ui, true)
+	_toggle_sub_for(ui, true)
+	
+func _on_child_exiting_tree(child: Node):
+	if child is not FKUnitUi:
+		return
+	var ui := child as FKUnitUi
+	_update_lookup_registration(ui, false)
+	_toggle_sub_for(ui, false)
+
+
+	
+
 func _ready() -> void:
 	pass
 
+func _update_lookup_registration(ui: FKUnitUi, have_registered: bool):
+	if not is_instance_valid(ui) or ui.is_queued_for_deletion():
+		var error_message: = "[FKBlockContainerUi] Can't register " + ui.name + \
+		" into lookup. It's invalid or queued for deletion."
+		printerr(error_message)
+		return
+		
+	if have_registered:
+		_unit_lookup[ui] = ui.get_block()
+	elif _unit_lookup.has(ui):
+		_unit_lookup.erase(ui)
+		
+var _unit_lookup: Dictionary[FKUnitUi, FKUnit] = {}
 
+# We need this to keep our unit cache updated whenever needed.
+func _toggle_sub_for(ui: FKUnitUi, on: bool):
+	if on:
+		ui.block_changed.connect(_on_unit_ui_block_changed)
+	else:
+		ui.block_changed.disconnect(_on_unit_ui_block_changed)
+		
+func _on_unit_ui_block_changed(ui: FKUnitUi):
+	_update_lookup_registration(ui, true) 
+	# ^ Since we're listening for this unit ui, naturally we'll want to keep it registered
+			
+## Returns an array containing the FKUnits represented by the top-level FKUnitUis
+## parented to this container.
+var units: Array[FKUnit]:
+	get:
+		return _unit_lookup.values()
+
+## Returns an array of the top-level FKUnitUis parented to this container.
+var unit_uis: Array[FKUnitUi]:
+	get:
+		return _unit_lookup.keys()
+		
+## Removes all FKUnitUis this container is holding.
+func clear_unit_nodes():
+	for child in get_children():
+		if child is FKUnitUi:
+			remove_child(child)
+			child.queue_free()
+	
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_DRAG_END:
 		_hide_drop_indicator()
 
 # === Block Management ===
 
-func _get_visible_blocks() -> Array[Control]:
+func _get_visible_blocks() -> Array[FKUnitUi]:
 	"""Get all visible block children (excluding indicator and labels)."""
-	var blocks: Array[Control] = []
-	for child in get_children():
+	var blocks: Array[FKUnitUi] = []
+	for child in _unit_lookup.keys():
 		if DropIndicatorManager.is_indicator(child):
 			continue
 		# Skip invalid or deleted children
 		if not is_instance_valid(child) or child.is_queued_for_deletion():
 			continue
-		if child.visible and child.name != "EmptyLabel":
+		if child.visible and child is FKUnitUi:
 			blocks.append(child)
 	return blocks
 
@@ -112,19 +188,24 @@ func _can_drop_data(at_position: Vector2, data) -> bool:
 
 func _drop_data(at_position: Vector2, data) -> void:
 	"""Handle the drop operation."""
+	#print("[FKBlockContainerUi] In _drop_data")
 	_hide_drop_indicator()
 	
-	var node = _get_drag_node(data)
+	var node := _get_drag_node(data)
 	if node == null or not is_instance_valid(node):
+		printerr("[FKBlockContainerUi] _drop_data: drag node invalid")
 		return
 	
+	#print("[FKBlockContainerUi] Drag node: " + node.name)
 	var visible_blocks = _get_visible_blocks()
 	var target_visual_idx = _calculate_visual_drop_index(at_position, visible_blocks)
 	var is_from_different_parent = node.get_parent() != self
 	
 	if is_from_different_parent:
+		#print("[FKBlockContainerUi] Handling external drop")
 		_handle_external_drop(node, visible_blocks, target_visual_idx)
 	else:
+		#print("[FKBlockContainerUi] Handling internal reorder")
 		_handle_internal_reorder(node, visible_blocks, target_visual_idx)
 
 
@@ -170,6 +251,7 @@ func _handle_internal_reorder(node: Node, visible_blocks: Array, target_idx: int
 	
 	# No-op if same position
 	if target_idx == current_visual_idx or target_idx == current_visual_idx + 1:
+		#print("[FKBlockContainerUi] No op. Same pos")
 		return
 	
 	# Calculate actual child index
@@ -186,8 +268,20 @@ func _handle_internal_reorder(node: Node, visible_blocks: Array, target_idx: int
 		target_child_idx -= 1
 	
 	before_block_moved.emit()
+	#print("[FKBlockContainerUi] About to move block to index " + str(target_child_idx))
 	move_child(node, target_child_idx)
+	_refresh_unit_lookup()
+	#print("[FKBlockContainerUi] Done moving block. It is at index " + str(node.get_index()))
 	block_moved.emit()
+
+func _refresh_unit_lookup():
+	## This is so that our properties for exposing the units and their uis
+	## have things in the correct order. This makes sure that reorders stick.
+	_unit_lookup.clear()
+	for elem in get_children():
+		if elem is FKUnitUi:
+			var ui := elem as FKUnitUi
+			_unit_lookup[ui] = ui.get_block()
 
 # === Input Handling ===
 
@@ -210,3 +304,6 @@ func _gui_input(event: InputEvent) -> void:
 		
 		if not clicked_on_child:
 			empty_area_clicked.emit()
+
+func _exit_tree() -> void:
+	_toggle_subs(false)
