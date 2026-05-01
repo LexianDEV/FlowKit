@@ -50,9 +50,6 @@ func _on_child_exiting_tree(child: Node):
 	_update_lookup_registration(ui, false)
 	_toggle_sub_for(ui, false)
 
-
-	
-
 func _ready() -> void:
 	pass
 
