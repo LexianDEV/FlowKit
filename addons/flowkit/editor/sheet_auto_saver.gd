@@ -49,7 +49,8 @@ func _save_after_one_frame():
 	# Why one frame? To give time for any setup that the unit uis need upon
 	# being added, removed, etc.
 	if enabled:
-		_save_sheet.call_deferred()
+		await _main_editor.get_tree().process_frame 
+		_save_sheet()
 
 ## Saves the sheet to disk before returning it.
 ## If saving fails, this returns null.
