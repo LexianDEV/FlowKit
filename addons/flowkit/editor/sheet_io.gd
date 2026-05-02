@@ -1,3 +1,7 @@
+##
+## In charge of saving and loading Event Sheets to/from disk.
+##
+
 extends RefCounted
 class_name FKSheetIO
 
@@ -38,7 +42,6 @@ func copy_event_block(data: FKEventBlock) -> FKEventBlock:
 	if data == null:
 		return null
 
-	# Use FKUnit deep copy
 	return data.duplicate_block()
 
 # -------------------------------------------------------------------

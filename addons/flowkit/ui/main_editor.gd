@@ -8,6 +8,8 @@ var registry: FKRegistry
 var generator
 var current_scene_uid: int = 0
 
+@export var auto_save_sheets: bool = true
+
 # UI References
 @export var scroll_container: ScrollContainer
 @export var blocks_container: FKBlockContainerUi
@@ -45,21 +47,22 @@ var input_manager: FKMainEditorInputHandler = FKMainEditorInputHandler.new()
 var sheet_io : FKSheetIO = FKSheetIO.new()
 var serializer := FKSerializationManager.new()
 var unit_ui_factory: FKUnitUiFactory
+var sheet_auto_saver: FKSheetAutoSaver = FKSheetAutoSaver.new()
 
 func _enter_tree() -> void:
 	unit_ui_factory = FKUnitUiFactory.new(sheet_io)
+	sheet_auto_saver.init(self, auto_save_sheets)
 	input_manager.initialize(self)
 	_toggle_subs(true)
 	
-
 func _toggle_subs(on: bool):
 	if on and not _is_subbed:
 		# For autosave and undo state on drag-and-drop reorder
 		blocks_container.before_block_moved.connect(_push_undo_state)
-		blocks_container.block_moved.connect(_save_and_reload_sheet)
+		#blocks_container.block_moved.connect(_on_auto_saver_saved)
 	elif not on and _is_subbed:
 		blocks_container.before_block_moved.disconnect(_push_undo_state)
-		blocks_container.block_moved.disconnect(_save_and_reload_sheet)
+		#blocks_container.block_moved.disconnect(_on_auto_saver_saved)
 	
 	_is_subbed = on
 
@@ -178,8 +181,6 @@ func _paste_events() -> void:
 		if first_row == null:
 			first_row = row
 
-	_save_sheet()
-
 	if first_row:
 		_on_row_selected(first_row)
 		
@@ -220,7 +221,6 @@ func _paste_actions() -> void:
 		for act in new_actions:
 			branch_data.branch_actions.append(act)
 		target_row.update_display()
-		_save_sheet()
 		_on_row_selected(target_row)
 		return
 
@@ -230,7 +230,6 @@ func _paste_actions() -> void:
 		data.actions.append(act)
 
 	target_row.update_display()
-	_save_sheet()
 	_on_row_selected(target_row)
 
 func _paste_conditions() -> void:
@@ -254,7 +253,6 @@ func _paste_conditions() -> void:
 		data.conditions.append(cond)
 
 	target_row.update_display()
-	_save_sheet()
 	_on_row_selected(target_row)
 
 func _paste_group() -> void:
@@ -292,7 +290,6 @@ func _paste_group() -> void:
 				"data": new_group
 			})
 		target_group.update_display()
-		_save_sheet()
 		_on_row_selected(target_group)
 		return
 
@@ -301,7 +298,6 @@ func _paste_group() -> void:
 	_wire_signals(group_node)
 	blocks_container.add_child(group_node)
 
-	_save_sheet()
 	_on_row_selected(group_node)
 	
 # === Undo/Redo System ===
@@ -332,8 +328,8 @@ func _undo() -> void:
 	
 	_is_in_undo_redo = false
 	#print("[FKMainEditor]: About to save sheet after restoring units given by undo manager")
-	_save_sheet()
 	print("[FlowKit] Undo performed")
+	
 var _is_in_undo_redo := false
 	
 func _redo() -> void:
@@ -345,7 +341,6 @@ func _redo() -> void:
 
 	_restore_unit_uis(restored_units)
 	_is_in_undo_redo = false
-	_save_sheet()
 	print("[FlowKit] Redo performed")
 
 func _restore_unit_uis(units: Array[FKUnit]) -> void:
@@ -394,7 +389,6 @@ func _delete_selected_row() -> void:
 		# Direct child of blocks_container - delete it
 		blocks_container.remove_child(row_to_delete)
 		row_to_delete.queue_free()
-		_save_sheet()
 	else:
 		# Row is inside a group - emit the appropriate delete signal
 		if row_to_delete is FKGroupUi:
@@ -446,7 +440,6 @@ func _delete_selected_item() -> void:
 	
 	# Update display and save
 	parent_row.update_display()
-	_save_sheet()
 
 func _recursive_remove_action_from_list(actions: Array, target_action) -> bool:
 	"""Recursively search and remove an action from actions array and branch sub-actions."""
@@ -548,9 +541,29 @@ func _process(delta: float) -> void:
 
 	var scene_uid := ResourceLoader.get_resource_uid(scene_path)
 	if scene_uid != current_scene_uid:
-		current_scene_uid = scene_uid
-		_clear_undo_history()
-		_refresh_ui()
+		_reset_for_new_scene(scene_uid)
+		
+
+func _reset_for_new_scene(scene_uid: int):
+	current_scene_uid = scene_uid
+	_clear_undo_history()
+	# We don't want the auto-saver being triggered by the UI-changes 
+	# we'll cause here, so...
+	sheet_auto_saver.enabled = false
+	_refresh_ui()
+	sheet_auto_saver.refresh()
+	if auto_save_sheets:
+		_enable_sheet_auto_save(30) 
+		# ^Surprisingly, 10 frames aren't enough.
+	
+func _enable_sheet_auto_save(frames_to_wait: int = 0):
+	if frames_to_wait > 0:
+		var frames_waited: int = 0
+		while frames_waited < frames_to_wait:
+			await get_tree().process_frame
+			frames_waited += 1
+			
+	sheet_auto_saver.enabled = true
 
 # === Block Management ===
 
@@ -577,7 +590,7 @@ func _populate_from_sheet(sheet: FKEventSheet) -> void:
 		var ui := unit_ui_factory.unit_ui_from(unit)
 		_wire_signals(ui)
 		blocks_container.add_child(ui)
-
+	
 	if sheet.ordered_items.is_empty():
 		_show_empty_blocks_state()
 	else:
@@ -591,12 +604,6 @@ func _wire_signals(unit: FKUnitUi):
 	else:
 		_connect_event_row_signals(unit)
 		
-	
-func _save_and_reload_sheet() -> void:
-	"""Save sheet and refresh UI to ensure visual/data sync (for drag-drop operations)."""
-	var saved := _save_sheet()
-	_refresh_ui(saved)
-	
 ## Saves the sheet to disk before returning it.
 ## If saving fails, this returns null.
 func _save_sheet() -> FKEventSheet:
@@ -606,9 +613,6 @@ func _save_sheet() -> FKEventSheet:
 		return
 
 	var units := blocks_container.units
-	#print("[FKMainEditor] Units found to save in _save_sheet:")
-	#for elem in units:
-		#print(elem.get_class())
 		
 	var sheet := FKEventSheet.from_units(units)
 	var err := sheet_io.save_sheet(current_scene_uid, sheet)
@@ -628,6 +632,7 @@ func _refresh_ui(sheet: FKEventSheet = null):
 		# Why this fallback? We want other parts of this script to be able to
 		# refresh the ui without having to look for the sheet first.
 		sheet = sheet_io.load_sheet(current_scene_uid)
+		
 	_refresh_sheet_ui(sheet)
 	
 func _refresh_sheet_ui(sheet: FKEventSheet):
@@ -654,18 +659,17 @@ func _new_sheet() -> void:
 func _connect_comment_signals(comment: FKCommentUi) -> void:
 	comment.selected.connect(_on_comment_selected)
 	comment.delete_requested.connect(_on_comment_delete.bind(comment))
-	comment.block_contents_changed.connect(_save_sheet)
+
 	comment.insert_comment_above_requested.connect(_on_comment_insert_above.bind(comment))
 	comment.insert_comment_below_requested.connect(_on_comment_insert_below.bind(comment))
 	comment.insert_event_above_requested.connect(_on_comment_insert_event_above.bind(comment))
 	comment.insert_event_below_requested.connect(_on_comment_insert_event_below.bind(comment))
 
 
-
 func _connect_group_signals(group: FKGroupUi) -> void:
 	group.selected.connect(_on_group_selected)
 	group.delete_requested.connect(_on_group_delete.bind(group))
-	group.data_changed.connect(_save_sheet)
+
 	group.before_data_changed.connect(_push_undo_state)
 	group.add_event_requested.connect(_on_group_add_event_requested)
 	# Connect edit signals from children inside groups
@@ -737,9 +741,6 @@ func _on_group_delete(group: FKGroupUi) -> void:
 	
 	blocks_container.remove_child(group)
 	group.queue_free()
-	_save_sheet()
-
-
 
 func _on_add_group_button_pressed() -> void:
 	"""Add a new group block."""
@@ -755,7 +756,6 @@ func _on_add_group_button_pressed() -> void:
 	blocks_container.add_child(group)
 	
 	_show_content_state()
-	_save_sheet()
 
 # === Signal Connections ===
 
@@ -774,7 +774,7 @@ func _connect_event_row_signals(row) -> void:
 	row.action_edit_requested.connect(_on_action_edit_requested.bind(row))
 	row.condition_dropped.connect(_on_condition_dropped)
 	row.action_dropped.connect(_on_action_dropped)
-	row.data_changed.connect(_save_sheet)
+
 	row.before_data_changed.connect(_push_undo_state)
 	# Branch signals
 	row.add_branch_requested.connect(_on_row_add_branch.bind(row))
@@ -790,8 +790,6 @@ func _connect_event_row_signals(row) -> void:
 func _on_new_sheet() -> void:
 	_new_sheet()
 
-func _on_save_sheet() -> void:
-	_save_sheet()
 
 func _on_generate_providers() -> void:
 	if not generator:
@@ -902,7 +900,6 @@ func _on_add_comment_button_pressed() -> void:
 	blocks_container.add_child(comment)
 	
 	_show_content_state()
-	_save_sheet()
 
 func _on_row_selected(row: FKUnitUi) -> void:
 	"""Handle row selection with visual feedback."""
@@ -937,7 +934,6 @@ func _on_comment_delete(comment: FKCommentUi) -> void:
 	
 	blocks_container.remove_child(comment)
 	comment.queue_free()
-	_save_sheet.call_deferred() 
 	# ^To make sure we have a snapshot ready in time
 
 func _on_comment_insert_above(signal_node, bound_comment: FKCommentUi) -> void:
@@ -977,7 +973,6 @@ func _insert_comment_relative_to(target_block: Node, offset: int) -> void:
 	blocks_container.move_child(comment, insert_idx)
 	
 	_show_content_state()
-	_save_sheet()
 
 func _on_condition_selected_in_row(condition_node: FKConditionUnitUi) -> void:
 	"""Handle condition item selection."""
@@ -1181,7 +1176,6 @@ func _finalize_event_creation(inputs: Dictionary) -> void:
 	
 	_show_content_state()
 	_reset_workflow()
-	_save_sheet()
 
 
 func _finalize_event_above_target(inputs: Dictionary) -> void:
@@ -1206,7 +1200,6 @@ func _finalize_event_above_target(inputs: Dictionary) -> void:
 	
 	_show_content_state()
 	_reset_workflow()
-	_save_sheet()
 
 
 func _finalize_event_in_group(inputs: Dictionary) -> void:
@@ -1230,7 +1223,6 @@ func _finalize_event_in_group(inputs: Dictionary) -> void:
 	
 	_show_content_state()
 	_reset_workflow()
-	_save_sheet()
 
 func _finalize_condition_creation(inputs: Dictionary) -> void:
 	"""Add condition to the current event row."""
@@ -1249,7 +1241,6 @@ func _finalize_condition_creation(inputs: Dictionary) -> void:
 	
 	_show_content_state()
 	_reset_workflow()
-	_save_sheet()
 
 func _finalize_action_creation(inputs: Dictionary) -> void:
 	"""Add action to the current event row."""
@@ -1266,7 +1257,6 @@ func _finalize_action_creation(inputs: Dictionary) -> void:
 	
 	_show_content_state()
 	_reset_workflow()
-	_save_sheet()
 
 func _update_event_inputs(expressions: Dictionary) -> void:
 	"""Update existing event row with new inputs."""
@@ -1414,7 +1404,6 @@ func _on_row_delete(signal_row, bound_row) -> void:
 	if bound_row.get_parent() == blocks_container:
 		blocks_container.remove_child(bound_row)
 		bound_row.queue_free()
-		_save_sheet()
 
 func _on_row_edit(signal_row, bound_row: FKEventRowUi) -> void:
 	var data: FKUnit = bound_row.get_block() if bound_row != null \
@@ -1535,7 +1524,6 @@ func _on_branch_add_else(branch_item: FKBranchUnitUi, event_row: FKEventRowUi) -
 		actions_array.append(else_data)
 
 	event_row.update_display()
-	_save_sheet()
 
 func _on_branch_condition_edit(branch_item: FKBranchUnitUi, event_row: FKEventRowUi) -> void:
 	"""Edit the condition or inputs of a branch."""
@@ -1631,7 +1619,6 @@ func _finalize_branch_creation(inputs: Dictionary) -> void:
 
 	_show_content_state()
 	_reset_workflow()
-	_save_sheet()
 
 func _create_new_cond_for_branch(inputs: Dictionary) -> FKConditionUnit:
 	var cond := FKConditionUnit.new()
@@ -1711,7 +1698,6 @@ func _finalize_elseif_creation(inputs: Dictionary) -> void:
 
 	_show_content_state()
 	_reset_workflow()
-	_save_sheet()
 
 func _update_branch_condition(expressions: Dictionary) -> void:
 	"""Update an existing branch's condition inputs."""
@@ -1752,7 +1738,6 @@ func _finalize_branch_action_creation(inputs: Dictionary) -> void:
 		
 	_show_content_state()
 	_reset_workflow()
-	_save_sheet()
 
 ## Start the correct workflow for a branch provider (condition or evaluation).
 func _start_branch_workflow(branch_id: String, target_row) -> void:
@@ -1797,7 +1782,6 @@ func _finalize_branch_evaluation_creation(inputs: Dictionary) -> void:
 
 	_show_content_state()
 	_reset_workflow()
-	_save_sheet()
 
 ## Update evaluation inputs on an existing branch.
 func _update_branch_evaluation(expressions: Dictionary) -> void:
@@ -1844,7 +1828,6 @@ func _finalize_elseif_evaluation_creation(expressions: Dictionary) -> void:
 
 	_show_content_state()
 	_reset_workflow()
-	_save_sheet()
 
 # === Condition/Action Edit Handlers ===
 
@@ -1931,7 +1914,6 @@ target_row: FKEventRowUi) -> void:
 		target_data.conditions.append(cond_copy)
 		target_row.update_display()
 	
-	_save_sheet()
 
 func _on_action_dropped(source_row: FKEventRowUi, action_data: FKActionUnit, target_row: FKUnitUi) -> void:
 	"""Handle action dropped from one event row to another."""
@@ -1961,7 +1943,6 @@ func _on_action_dropped(source_row: FKEventRowUi, action_data: FKActionUnit, tar
 		target_data.actions.append(act_copy)
 		target_row.update_display()
 	
-	_save_sheet()
 
 func _generate_unique_block_id(event_id: String) -> String:
 	"""Generate a unique ID for an event block."""
