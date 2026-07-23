@@ -68,9 +68,8 @@ func _get_display_name_from_registry() -> String:
 	var display_name := _cond_block.condition_id
 	if registry:
 		for provider in registry.condition_providers:
-			if provider.has_method("get_id") and provider.get_id() == _cond_block.condition_id:
-				if provider.has_method("get_name"):
-					display_name = provider.get_name()
+			if provider.get_id() == _cond_block.condition_id:
+				display_name = provider.get_name()
 				break
 	return display_name
 

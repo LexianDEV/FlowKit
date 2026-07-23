@@ -167,6 +167,7 @@ func rebuild_order_from_items(ordered_items: Array) -> void:
 					groups.append(data)
 
 func on_loaded_from_disk():
+	print("[FKEventSheet]: on_loaded_from_disk called")
 	_call_child_on_loaded_from_disk(events)
 	_call_child_on_loaded_from_disk(standalone_conditions)
 	_call_child_on_loaded_from_disk(comments)
@@ -185,6 +186,8 @@ func refresh():
 		
 	_id_assigner.prop_name = "personal_id"
 	_id_assigner._append_array_as_invalid([0, FKUnit.INVALID_ID])
+
+	_id_assigner.reset_taken_caches()
 	_refresh_uids()
 
 # For backwards compatibility with older versions of FlowKit

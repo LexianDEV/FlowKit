@@ -1,21 +1,9 @@
-extends Resource
+extends FKProviderBase
 class_name FKEvent
 
-func get_description() -> String:
-	return "No description provided."
-
-func get_id() -> String:
-	return ""
-
-func get_name() -> String:
-	return ""
-
-func get_supported_types() -> Array[String]:
-	return []
-
-func get_inputs() -> Array:
-	return []
-
+func get_provider_kind() -> String:
+	return KIND_EVENT
+	
 func poll(node: Node, inputs: Dictionary = {}, block_id: int = -1) -> bool:
 	return false
 
@@ -45,4 +33,4 @@ func teardown(node: Node, block_id: int = -1) -> void:
 	pass
 	
 func get_class() -> String:
-	return "FKCondition"
+	return "FKEvent"

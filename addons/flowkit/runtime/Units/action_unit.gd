@@ -116,3 +116,6 @@ static func _to_action_unit_arr(arr: Array) -> Array[FKActionUnit]:
 		
 func get_class() -> String:
 	return "FKActionUnit"
+
+func get_real_class() -> String:
+	return self.get_class()

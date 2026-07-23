@@ -40,14 +40,6 @@ func deserialize(dict: Dictionary) -> void:
 
 func duplicate_block() -> FKUnit:
 	var result := self.duplicate(true)
-	# var result: FKConditionUnit = FKConditionUnit.new()
-	# result.personal_id = personal_id
-	# result.condition_id = condition_id
-	# result.target_node = str(target_node)
-	# result.inputs = inputs.duplicate()
-	# result.negated = negated
-	# result.actions = [] as Array[FKActionUnit]
-	
 	return result
 	
 func get_id() -> String:

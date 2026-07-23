@@ -124,12 +124,7 @@ func _load_sheets_for_scene(scene_root: Node) -> void:
 		if ResourceLoader.exists(sheet_path):
 			var sheet: FKEventSheet = load(sheet_path)
 			if sheet:
-				# Ensure all blocks have unique IDs (for backward compatibility with old saved sheets)
-				for block in sheet.events:
-					if block:
-						block.ensure_block_id()
-				# Also ensure block IDs for events inside groups
-				_ensure_block_ids_in_groups(sheet.groups)
+				sheet.on_loaded_from_disk()
 				var entry := {"sheet": sheet, "root": node_root, "scene_name": scene_name, "uid": uid}
 				active_sheets.append(entry)
 				# Create per-block event provider instances (each block gets its own)
@@ -169,13 +164,42 @@ func _create_block_providers(entry: Dictionary) -> void:
 	if not sheet:
 		return
 
-	var all_events: Array = sheet.get_all_events()
+	var error_message: String = ""
+	var sheet_uid: int = entry.get("uid", -1)
+	if sheet_uid < 0:
+		error_message = "[FlowKit] Invalid sheet UID for entry: %s" % str(entry)
+		push_error(error_message)
+		return
 
+	var all_events: Array = sheet.get_all_events()
+	
+	var sheet_label: String = str(entry.get("scene_name", "unknown_scene"))
+	if sheet is Resource and not sheet.resource_path.is_empty():
+		sheet_label = sheet.resource_path.get_file()
 	for block in all_events:
-		if block.block_id and not _block_event_providers.has(block.block_id):
-			var instance = registry.create_event_instance(block.event_id)
+		var event_unit: FKEventUnit = block as FKEventUnit
+		if not event_unit:
+			error_message = "[FlowKit] Invalid FKEventUnit in sheet '%s': %s" % \
+			[sheet_label, str(block)]
+			push_error(error_message)
+			continue
+		
+		var unit_id := event_unit.personal_id
+		if unit_id <= FKUnit.INVALID_ID:
+			
+			error_message = "[FlowKit] FKEventUnit '%s' in sheet '%s' has invalid personal_id: %d" \
+			% [event_unit.event_id, sheet_label, unit_id]
+			push_error(error_message)
+			continue
+
+		var key := _event_provider_key(sheet_uid, unit_id)
+		if not _block_event_providers.has(key):
+			var instance = registry.create_event_instance(event_unit.event_id)
 			if instance:
-				_block_event_providers[block.block_id] = instance
+				_block_event_providers[key] = instance
+
+func _event_provider_key(sheet_uid: int, event_unit_id: int) -> String:
+	return "%d:%d" % [sheet_uid, event_unit_id]
 
 func _get_all_events(sheet: FKEventSheet) -> Array:
 	var events: Array = []
@@ -197,6 +221,7 @@ func _run_sheet(entry: Dictionary) -> void:
 		# If the root is invalid, skip this sheet
 		return
 
+	var error_message: String = ""
 	# Process standalone conditions (run every frame)
 	for standalone_cond in sheet.standalone_conditions:
 		var target := str(standalone_cond.target_node)
@@ -212,7 +237,9 @@ func _run_sheet(entry: Dictionary) -> void:
 				target = str(act.target_node)
 				var anode: Node = _resolve_target(target, current_root)
 				if not anode:
-					print("[FlowKit] Standalone condition action target node not found: ", act.target_node)
+					error_message = "[FlowKit] Standalone condition action target " +\
+					"node not found: %s" % str(act.target_node)
+					push_error(error_message)
 					continue
 				var provider: Variant = await registry.execute_action(act.action_id, anode, 
 				act.inputs, current_root)
@@ -220,19 +247,26 @@ func _run_sheet(entry: Dictionary) -> void:
 
 	# Collect all events from the sheet (both top-level and nested in groups)
 	var all_events: Array = sheet.get_all_events()
+	var sheet_uid: int = entry.get("uid", -1)
 
-	# Process each block individually
+	# Process each event unit individually
 	for block in all_events:
-		# Resolve target node for polling
-		var target: String = block.target_node
-		var node: Node = _resolve_target(target, current_root)
-		
-		if not node:
-			print("[FlowKit] Event polling target node not found: ", block.target_node, " in scene root: ", current_root.name)
+		var event_unit: FKEventUnit = block if block is FKEventUnit else null
+		if not event_unit:
 			continue
 
-		# Get the per-block event provider instance
-		var provider = _block_event_providers.get(block.block_id, null)
+		# Resolve target node for polling
+		var target: String = str(event_unit.target_node)
+		var node: Node = _resolve_target(target, current_root)
+		if not node:
+			error_message = "[FlowKit] Event polling target node not found: %s in scene root: %s" \
+			% [str(event_unit.target_node), current_root.name]
+			push_error(error_message)	
+			continue
+
+		# Lookup provider instance by (sheet uid + unit personal_id)
+		var key := _event_provider_key(sheet_uid, event_unit.personal_id)
+		var provider = _block_event_providers.get(key, null)
 		if not provider:
 			continue
 
@@ -241,76 +275,89 @@ func _run_sheet(entry: Dictionary) -> void:
 			continue
 
 		# Skip events that belong to the wrong callback
-		# on_process_physics should only run during _physics_process
-		# on_process should only run during _process
-		if block.event_id == "on_process_physics" and not _is_physics_frame:
+		if event_unit.event_id == "on_process_physics" and not _is_physics_frame:
 			continue
-		if block.event_id == "on_process" and _is_physics_frame:
+		if event_unit.event_id == "on_process" and _is_physics_frame:
 			continue
 
-		# Poll the event with the per-block provider instance
+		# Poll and execute
 		if not provider.has_method("poll"):
 			continue
-		var evaluated_inputs: Dictionary = ExpressionEvaluator.evaluate_inputs(block.inputs, node, current_root)
-		var event_triggered = provider.poll(node, evaluated_inputs, block.block_id)
+		var evaluated_inputs: Dictionary = ExpressionEvaluator.evaluate_inputs(event_unit.inputs, node, current_root)
+		var event_triggered: bool = provider.poll(node, evaluated_inputs, event_unit.personal_id)
 		if not event_triggered:
 			continue
 
-		# Execute the block's conditions and actions
-		_execute_block(block, current_root)
+		_execute_block(event_unit, current_root)
+
 # --- Signal event lifecycle -------------------------------------------------
 
 ## Set up signal-based events for a loaded sheet entry.
 ## For each event block, calls registry.setup_event() with a trigger callback
 ## so signal events can connect to Godot signals and fire immediately.
+## Set up signal-based events for a loaded sheet entry.
+## For each event unit, calls provider.setup() with a trigger callback
+## so signal events can connect to Godot signals and fire immediately.
 func _setup_signal_events(entry: Dictionary) -> void:
 	var sheet: FKEventSheet = entry.get("sheet", null)
 	var root_node: Node = entry.get("root", null)
-	if not sheet or not root_node or not is_instance_valid(root_node):
+	var sheet_uid: int = entry.get("uid", -1)
+	if not sheet or not root_node or not is_instance_valid(root_node) or sheet_uid < 0:
 		return
 
 	var all_events: Array = sheet.get_all_events()
 
 	for block in all_events:
-		var provider = _block_event_providers.get(block.block_id, null)
+		var event_unit: FKEventUnit = block as FKEventUnit
+		if not event_unit:
+			continue
+
+		var key := _event_provider_key(sheet_uid, event_unit.personal_id)
+		var provider = _block_event_providers.get(key, null)
 		if not provider:
 			continue
 
 		if not (provider.has_method("is_signal_event") and provider.is_signal_event()):
 			continue
 
-		var target := str(block.target_node)
+		var target := str(event_unit.target_node)
 		var node: Node = _resolve_target(target, root_node)
 		if not node:
 			continue
 
-		# Build a trigger callback that runs this block's conditions & actions
-		var trigger_cb: Callable = _make_trigger_callback(block, root_node)
+		# Build a trigger callback that runs this unit's conditions & actions
+		var trigger_cb: Callable = _make_trigger_callback(event_unit, root_node)
 		if provider.has_method("setup"):
-			provider.setup(node, trigger_cb, block.block_id)
+			provider.setup(node, trigger_cb, event_unit.personal_id)
 
 ## Teardown all signal events across every active sheet.
 func _teardown_all_signal_events() -> void:
 	for entry in active_sheets:
 		var sheet: FKEventSheet = entry.get("sheet", null)
 		var root_node: Node = entry.get("root", null)
-		if not sheet or not root_node or not is_instance_valid(root_node):
+		var sheet_uid: int = entry.get("uid", -1)
+		if not sheet or not root_node or not is_instance_valid(root_node) or sheet_uid < 0:
 			continue
 
 		var all_events: Array = sheet.get_all_events()
 
 		for block in all_events:
-			var provider = _block_event_providers.get(block.block_id, null)
+			var event_unit: FKEventUnit = block as FKEventUnit
+			if not event_unit:
+				continue
+
+			var key := _event_provider_key(sheet_uid, event_unit.personal_id)
+			var provider = _block_event_providers.get(key, null)
 			if not provider:
 				continue
-			
-			var target := str(block.target_node)
+
+			var target := str(event_unit.target_node)
 			var node: Node = _resolve_target(target, root_node)
 			if not node:
 				continue
 
 			if provider.has_method("teardown"):
-				provider.teardown(node, block.block_id)
+				provider.teardown(node, event_unit.personal_id)
 
 ## Create a Callable that evaluates a block's conditions and runs its actions.
 ## This is what signal events call when their signal fires.

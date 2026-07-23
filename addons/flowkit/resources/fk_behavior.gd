@@ -1,30 +1,19 @@
-extends Resource
-class_name FKBehavior
+extends FKProviderBase
 
 ## Base class for FlowKit behaviors
 ## Behaviors are pre-written scripts that can be attached to nodes to add functionality
 ## without requiring the user to write code.
+class_name FKBehavior
 
-func get_description() -> String:
-	return "No description provided."
+func get_provider_kind() -> String:
+	return KIND_BEHAVIOR
 
-func get_id() -> String:
-	return ""
-
-func get_name() -> String:
-	return ""
-
+## Returns an array of input definitions
+## Each dictionary should have:
+## - "name": String - the input parameter name
+## - "type": String - the type of the input (e.g., "String", "float", "int")
+## - "default": Variant - the default value for this input
 func get_inputs() -> Array[Dictionary]:
-	## Returns an array of input definitions
-	## Each dictionary should have:
-	## - "name": String - the input parameter name
-	## - "type": String - the type of the input (e.g., "String", "float", "int")
-	## - "default": Variant - the default value for this input
-	return []
-
-func get_supported_types() -> Array[String]:
-	## Returns an array of node class names this behavior supports
-	## e.g., ["CharacterBody2D"] or ["Node2D", "Node3D"]
 	return []
 
 func apply(node: Node, inputs: Dictionary) -> void:

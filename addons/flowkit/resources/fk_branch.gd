@@ -1,18 +1,12 @@
-extends Resource
-class_name FKBranch
+extends FKProviderBase
 
 ## Base class for FlowKit branch providers.
 ## Branches define control-flow constructs (if, repeat, etc.) that wrap actions.
 ## Extend this class to create custom branch types that appear in the "Add..." menu.
+class_name FKBranch
 
-func get_description() -> String:
-	return "No description provided."
-
-func get_id() -> String:
-	return ""
-
-func get_name() -> String:
-	return ""
+func get_provider_kind() -> String:
+	return KIND_BRANCH
 
 func get_type() -> String:
 	## Returns "single" or "chain".
