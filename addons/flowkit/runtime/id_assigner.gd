@@ -89,8 +89,9 @@ func _assign_new_ids_as_needed(items: Array):
 	for elem in items:
 		var current_id = elem.get(prop_name)
 
-		var wrong_type: bool = typeof(current_id) != TYPE_INT
-		var is_dupe: bool = _taken_ids.count(current_id) > 1
+		var has_int_id: bool = current_id != null and typeof(current_id) == TYPE_INT
+		var wrong_type: bool = current_id != null and not has_int_id
+		var is_dupe: bool = has_int_id and _taken_ids.count(current_id) > 1
 		var needs_new_id: bool = (
 			current_id == null
 			or wrong_type

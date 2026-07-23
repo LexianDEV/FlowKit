@@ -4,7 +4,7 @@ func test_fkunit_basic_serialization():
 	var unit := FKUnit.new()
 	unit.block_type = "event"
 	var expected_id := 5
-	unit.personal_id = expected_id
+	unit.uid = expected_id
 
 	var json := unit.serialize()
 
@@ -16,21 +16,21 @@ func test_fkunit_roundtrip():
 	var unit := FKUnit.new()
 	unit.block_type = "comment"
 	var expected_id := 42
-	unit.personal_id = expected_id
+	unit.uid = expected_id
 
 	var json := unit.serialize()
 
 	var restored := FKUnit.new()
 	restored.deserialize(json)
 
-	assert_eq(restored.personal_id, expected_id)
+	assert_eq(restored.uid, expected_id)
 
 
 func test_fkunit_deep_duplication():
 	var unit := FKUnit.new()
 	unit.block_type = "group"
 	var expected_id := 99
-	unit.personal_id = expected_id
+	unit.uid = expected_id
 
 	var dup := unit.duplicate_block()
 
@@ -38,4 +38,4 @@ func test_fkunit_deep_duplication():
 	assert_true(deep_copy_success)
 
 	assert_eq(dup.block_type, "group")
-	assert_eq(dup.personal_id, expected_id)
+	assert_eq(dup.uid, expected_id)

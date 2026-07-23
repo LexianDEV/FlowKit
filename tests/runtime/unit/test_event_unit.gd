@@ -2,7 +2,7 @@ extends GutTest
 
 func test_event_basic_serialization():
     var ev := FKEventUnit.new("on_ready", NodePath("Player"))
-    ev.personal_id = 10
+    ev.uid = 10
     ev.inputs = {"speed": 5}
 
     var cond := FKConditionUnit.new()
@@ -33,7 +33,7 @@ func test_event_basic_serialization():
 
 func test_event_roundtrip():
     var ev := FKEventUnit.new("on_process", NodePath("Enemy"))
-    ev.personal_id = 77
+    ev.uid = 77
     ev.inputs = {"delta": 0.016}
 
     var cond := FKConditionUnit.new()
@@ -66,7 +66,7 @@ func test_event_roundtrip():
 
 func test_event_deep_duplication():
     var ev := FKEventUnit.new("on_custom", NodePath("Mage"))
-    ev.personal_id = 123
+    ev.uid = 123
     ev.inputs = {"mana": 30}
 
     var cond := FKConditionUnit.new()

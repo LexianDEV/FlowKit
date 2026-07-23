@@ -67,7 +67,7 @@ func legitimize(block: FKUnit, editor_globals: FKEditorGlobals):
 # FKUnitUi integration
 # ---------------------------------------------------------
 
-func _validate_block(to_set: FKUnit) -> bool:
+func _validate_unit(to_set: FKUnit) -> bool:
 	return to_set == null or to_set is FKGroup
 
 func _on_contents_changed(node: FKUnitUi) -> void:
@@ -87,7 +87,7 @@ func _update_styling() -> void:
 
 var _group: FKGroup:
 	get:
-		return _block as FKGroup
+		return _unit as FKGroup
 
 # ---------------------------------------------------------
 # Lifecycle / subscriptions
@@ -392,7 +392,7 @@ func _sync_children_to_data() -> void:
 		if not is_instance_valid(child) or child.is_queued_for_deletion():
 			continue
 		if child is FKUnitUi:
-			var unit: FKUnit = child.get_block()
+			var unit: FKUnit = child.get_unit()
 			if unit:
 				new_children.append(unit)
 	_group.children = new_children
@@ -847,16 +847,16 @@ func _show_drop_indicator(at_position: Vector2, _drag_node: Node) -> void:
 func _to_string() -> String:
 	var result := "\nFKGroupUi"
 	
-	if _block != null:
+	if _unit != null:
 		result += "\nhas block: true"
 	return result
 	
 func get_class() -> String:
 	return "FKGroupUi"
 
-func get_block() -> FKGroup:
-	if _block is FKGroup:
-		return _block as FKGroup
+func get_unit() -> FKGroup:
+	if _unit is FKGroup:
+		return _unit as FKGroup
 	else:
 		return null
 		

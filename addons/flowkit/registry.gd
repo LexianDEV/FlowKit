@@ -40,6 +40,20 @@ func _provider_matches_id(provider: Variant, wanted_id: String) -> bool:
 		return false
 	return _provider_id_of(provider) == wanted_id
 
+func _provider_source_of(provider: Variant) -> String:
+	if provider == null:
+		return "<null>"
+
+	if provider is Object and provider.has_method("get_script"):
+		var script: Variant = provider.get_script()
+		if script is Script and not script.resource_path.is_empty():
+			return script.resource_path
+
+	if provider is Script and not provider.resource_path.is_empty():
+		return provider.resource_path
+
+	return str(provider)
+
 func _warn_registry_duplicates() -> void:
 	_warn_duplicate_ids(action_providers, "action")
 	_warn_duplicate_ids(condition_providers, "condition")
@@ -51,13 +65,14 @@ func _warn_duplicate_ids(providers: Array, label: String) -> void:
 	var seen: Dictionary = {}
 	for p in providers:
 		var pid := _provider_id_of(p)
+		var source := _provider_source_of(p)
 		if pid.is_empty():
-			push_warning("[FKRegistry] %s provider has empty id: %s" % [label, p])
+			push_warning("[FKRegistry] %s provider has empty id in %s" % [label, source])
 			continue
 		if seen.has(pid):
-			push_warning("[FKRegistry] Duplicate %s provider id '%s': %s and %s" % [label, pid, seen[pid], p])
+			push_warning("[FKRegistry] Duplicate %s provider id '%s' in %s and %s" % [label, pid, seen[pid], source])
 		else:
-			seen[pid] = p
+			seen[pid] = source
 
 func load_all() -> void:
 	# Try to load from manifest first (required for exported builds)
@@ -232,7 +247,7 @@ func get_event_provider(event_id: String) -> Variant:
 	return null
 
 ## Create a new, independent instance of the event provider for the given event_id.
-## Each event block should get its own instance to avoid shared state bugs.
+## Each event unit should get its own instance to avoid shared state bugs.
 func create_event_instance(event_id: String) -> Variant:
 	for provider in event_providers:
 		if _provider_matches_id(provider, event_id):
@@ -240,7 +255,7 @@ func create_event_instance(event_id: String) -> Variant:
 	return null
 
 ## Call setup() on an event provider so it can connect to signals on the target node.
-## trigger_callback is a Callable the provider can call to fire the block immediately.
+## trigger_callback is a Callable the provider can call to fire the unit immediately.
 func setup_event(event_id: String, node: Node, trigger_callback: Callable, unit_id: int = -1) -> void:
 	var provider: Variant = get_event_provider(event_id)
 	if provider and provider.has_method("setup"):

@@ -76,7 +76,7 @@ const _preview_label_color := Color(0.9, 0.95, 0.9, 0.7)
 # FKUnitUi integration
 # ---------------------------------------------------------
 
-func _validate_block(to_set: FKUnit) -> bool:
+func _validate_unit(to_set: FKUnit) -> bool:
 	return to_set == null or to_set is FKEventUnit
 
 func _update_styling() -> void:
@@ -327,7 +327,7 @@ func _update_event_header() -> void:
 	event_header_label.text = _header_label_format % [display_name, node_name, params_text]
 
 func _get_event() -> FKEventUnit:
-	return get_block() as FKEventUnit
+	return get_unit() as FKEventUnit
 
 func _update_conditions() -> void:
 	var e := _get_event()
@@ -476,7 +476,7 @@ func _on_nested_branch_requested(requester: FKBranchUnitUi, branch_id: String):
 
 func _on_branch_item_delete(item: FKUnitUi) -> void:
 	before_contents_changed.emit(self)
-	var act_data := item.get_block()
+	var act_data := item.get_unit()
 	var e := _get_event()
 	if act_data and e:
 		var idx = e.actions.find(act_data)
@@ -489,7 +489,7 @@ func _on_condition_item_edit(item: FKConditionUnitUi) -> void:
 
 func _on_condition_item_delete(item: FKConditionUnitUi) -> void:
 	before_contents_changed.emit(self)
-	var cond_data = item.get_block()
+	var cond_data = item.get_unit()
 	var e := _get_event()
 	if cond_data and e:
 		var idx = e.conditions.find(cond_data)
@@ -500,7 +500,7 @@ func _on_condition_item_delete(item: FKConditionUnitUi) -> void:
 
 func _on_condition_item_negate(item: FKConditionUnitUi) -> void:
 	before_contents_changed.emit(self)
-	var cond_data = item.get_block()
+	var cond_data = item.get_unit()
 	if cond_data:
 		cond_data.negated = not cond_data.negated
 		item.update_display()
@@ -515,7 +515,7 @@ func _on_action_item_edit(item: FKActionUnitUi) -> void:
 
 func _on_action_item_delete(item: FKActionUnitUi) -> void:
 	before_contents_changed.emit(self)
-	var act_data = item.get_block()
+	var act_data = item.get_unit()
 	var e := _get_event()
 	if act_data and e:
 		var idx = e.actions.find(act_data)
@@ -534,8 +534,8 @@ drop_above: bool) -> void:
 	if not e:
 		return
 
-	var source_data := source_item.get_block()
-	var target_data := target_item.get_block()
+	var source_data := source_item.get_unit()
+	var target_data := target_item.get_unit()
 	if not source_data or not target_data:
 		return
 
@@ -590,7 +590,7 @@ target_branch: FKActionUnitUi) -> void:
 
 	_recursive_remove_action(e.actions, source_data)
 
-	var action_data: FKActionUnit = target_branch.get_block()
+	var action_data: FKActionUnit = target_branch.get_unit()
 	var target_actions := action_data.branch_actions
 	var target_idx := target_actions.find(target_data)
 
@@ -608,14 +608,14 @@ func _on_action_dropped_into_branch(source_item: FKActionUnitUi, target_branch: 
 	if not e:
 		return
 
-	var source_data := source_item.get_block()
+	var source_data := source_item.get_unit()
 	if not source_data:
 		return
 
 	before_contents_changed.emit(self)
 
 	_recursive_remove_action(e.actions, source_data)
-	var action_data: FKActionUnit = target_branch.get_block()
+	var action_data: FKActionUnit = target_branch.get_unit()
 	action_data.branch_actions.append(source_data)
 
 	_update_actions()
@@ -627,8 +627,8 @@ drop_above: bool) -> void:
 	if not e:
 		return
 
-	var source_data := source_item.get_block()
-	var target_data := target_item.get_block()
+	var source_data := source_item.get_unit()
+	var target_data := target_item.get_unit()
 	if not source_data or not target_data:
 		return
 
@@ -809,7 +809,7 @@ func _drop_data(at_position: Vector2, data) -> void:
 func _to_string() -> String:
 	var result := "FKEventRowUi"
 	
-	if _block != null:
+	if _unit != null:
 		result += "\nhas block: true"
 	return result
 
@@ -817,9 +817,9 @@ func get_class() -> String:
 	var result := "FKEventRowUi"
 	return result
 	
-func get_block() -> FKEventUnit:
-	if _block is FKEventUnit:
-		return _block as FKEventUnit
+func get_unit() -> FKEventUnit:
+	if _unit is FKEventUnit:
+		return _unit as FKEventUnit
 	else:
 		return null
 	

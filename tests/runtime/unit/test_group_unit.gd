@@ -3,7 +3,7 @@ extends GutTest
 
 func test_group_basic_serialization():
 	var grp := FKGroup.new()
-	grp.personal_id = 5
+	grp.uid = 5
 	grp.title = "MyGroup"
 	grp.collapsed = true
 	grp.color = Color(0.1, 0.2, 0.3, 1.0)
@@ -43,7 +43,7 @@ func _make_child_units() -> Array[FKUnit]:
 
 func test_group_roundtrip():
 	var grp := FKGroup.new()
-	grp.personal_id = 77
+	grp.uid = 77
 	grp.title = "RoundTrip"
 	grp.collapsed = false
 	grp.color = Color(0.5, 0.4, 0.3, 1.0)
@@ -69,7 +69,7 @@ func test_group_roundtrip():
 
 func test_group_deep_duplication():
 	var grp := FKGroup.new()
-	grp.personal_id = 123
+	grp.uid = 123
 	grp.title = "DeepCopy"
 	grp.collapsed = true
 	grp.color = Color(0.9, 0.8, 0.7, 1.0)

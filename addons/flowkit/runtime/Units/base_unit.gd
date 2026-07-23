@@ -8,20 +8,20 @@ const INVALID_ID := 0
 
 ## This is meant to be relative to the Event Sheet it belongs to, as opposed
 ## to being globally exclusive.
-@export var personal_id: int = INVALID_ID:
+@export var uid: int = INVALID_ID:
 	set(value):
-		if personal_id == null: # This is expected after reading older FKUnits from disk
-			personal_id = INVALID_ID
+		if uid == null: # This is expected after reading older FKUnits from disk
+			uid = INVALID_ID
 
 		if value < INVALID_ID:
-			print("[FKUnit] I was passed a negative personal_id. It may be a sign of an "+\
+			print("[FKUnit] I was passed a negative uid. It may be a sign of an "+\
 			"issue elsewhere.")
-			personal_id = INVALID_ID
+			uid = INVALID_ID
 			return
 
-		personal_id = value
+		uid = value
 	get:
-		return personal_id
+		return uid
 
 func may_have_children():
 	return false 
@@ -58,13 +58,13 @@ func get_display_name() -> String:
 func serialize() -> Dictionary:
 	var result: Dictionary = {
 		"type": block_type,
-		"personal_id": personal_id
+		"uid": uid
 	}
 	return result
 
 ## Subclasses override this to populate themselves from a Dictionary.
 func deserialize(dict: Dictionary) -> void:
-	personal_id = dict.get("personal_id")
+	uid = dict.get("uid", dict.get("personal_id", INVALID_ID))
 
 # Deep-copy contract for undo/redo and clipboard.
 func duplicate_block() -> FKUnit:

@@ -189,12 +189,12 @@ func _serialize_comment_block(data: FKComment) -> Dictionary:
 # ===========================
 
 func _deserialize_event_block(dict: Dictionary) -> FKEventUnit:
-	var unit_id: int = dict.get("personal_id", -1)
+	var unit_id: int = dict.get("uid", dict.get("personal_id", -1))
 	var event_id = dict.get("event_id", "")
 	var target_node = NodePath(dict.get("target_node", ""))
 
 	var data = FKEventUnit.new(event_id, target_node)
-	data.personal_id = unit_id
+	data.uid = unit_id
 	data.inputs = dict.get("inputs", {}).duplicate()
 	data.conditions = [] as Array[FKConditionUnit]
 	data.actions = [] as Array[FKActionUnit]

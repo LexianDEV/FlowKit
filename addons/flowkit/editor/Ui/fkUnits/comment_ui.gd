@@ -47,8 +47,8 @@ func _update_block_text():
 
 var _comment_block: FKComment:
 	get:
-		if _block is FKComment:
-			return _block as FKComment
+		if _unit is FKComment:
+			return _unit as FKComment
 		else:
 			return null
 
@@ -140,7 +140,7 @@ func _on_left_click(event: InputEventMouseButton):
 		_set_edit_mode(true)
 	accept_event()
 	
-func _validate_block(to_set: FKUnit):
+func _validate_unit(to_set: FKUnit):
 	var is_valid: bool = to_set == null || to_set is FKComment
 	if not is_valid:
 		var error_message = "[FKCommentUi _validate_block]: FKCommentUi instances are meant to only " +\
@@ -269,13 +269,13 @@ const _insert_event_below_choice: int = 11
 const _insert_comment_above_choice: int = 12
 const _insert_comment_below_choice: int = 13
 
-func get_block() -> FKComment:
-	return _block
+func get_unit() -> FKComment:
+	return _unit
 	
 func _to_string() -> String:
 	var result := "FKCommentUi"
 	
-	if _block != null:
+	if _unit != null:
 		result += "\nhas block: true"
 	return result
 

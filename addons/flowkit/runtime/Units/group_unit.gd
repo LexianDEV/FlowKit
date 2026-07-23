@@ -105,7 +105,7 @@ func deserialize(dict: Dictionary) -> void:
 	children.clear()
 
 	for child_dict in dict.get("children", []):
-		var child_block := _serialization_manager.deserialize_block(child_dict)
+		var child_block := _serialization_manager.deserialize_unit(child_dict)
 		if child_block:
 			children.append(child_block)
 

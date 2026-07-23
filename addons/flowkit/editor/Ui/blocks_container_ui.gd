@@ -1,18 +1,18 @@
 @tool
 extends VBoxContainer
-class_name FKBlockContainerUi
+class_name FKUnitContainerUi
 ## Container for event blocks, comments, and groups in the FlowKit editor.
 ##
 ## Handles drag-and-drop reordering of blocks and accepts drops from
 ## nested groups. Uses DropIndicatorManager for visual feedback.
 
 # === Signals ===
-signal block_moved  ## Emitted after a block is moved/reordered
+signal unit_moved  ## Emitted after a block is moved/reordered
 signal empty_area_clicked  ## Emitted when clicking empty space (for deselection)
-signal before_block_moved  ## Emitted before block move for undo state capture
+signal before_unit_moved  ## Emitted before block move for undo state capture
 
 # === Internal State ===
-var _suppress_block_moved := false  ## Suppress block_moved emission during multi-step operations
+var _suppress_block_moved := false  ## Suppress unit_moved emission during multi-step operations
 
 # === State ===
 var current_drop_index: int = -1  ## Current calculated drop position
@@ -63,13 +63,13 @@ func _ready() -> void:
 
 func _update_lookup_registration(ui: FKUnitUi, have_registered: bool):
 	if not is_instance_valid(ui) or ui.is_queued_for_deletion():
-		var error_message: = "[FKBlockContainerUi] Can't register " + ui.name + \
+		var error_message: = "[FKUnitContainerUi] Can't register " + ui.name + \
 		" into lookup. It's invalid or queued for deletion."
 		printerr(error_message)
 		return
 		
 	if have_registered:
-		_unit_lookup[ui] = ui.get_block()
+		_unit_lookup[ui] = ui.get_unit()
 	elif _unit_lookup.has(ui):
 		_unit_lookup.erase(ui)
 		
@@ -193,30 +193,30 @@ func _can_drop_data(at_position: Vector2, data) -> bool:
 
 func _drop_data(at_position: Vector2, data) -> void:
 	"""Handle the drop operation."""
-	#print("[FKBlockContainerUi] In _drop_data")
+	#print("[FKUnitContainerUi] In _drop_data")
 	_hide_drop_indicator()
 	
 	var node := _get_drag_node(data)
 	if node == null or not is_instance_valid(node):
-		printerr("[FKBlockContainerUi] _drop_data: drag node invalid")
+		printerr("[FKUnitContainerUi] _drop_data: drag node invalid")
 		return
 	
-	#print("[FKBlockContainerUi] Drag node: " + node.name)
+	#print("[FKUnitContainerUi] Drag node: " + node.name)
 	var visible_blocks = _get_visible_blocks()
 	var target_visual_idx = _calculate_visual_drop_index(at_position, visible_blocks)
 	var is_from_different_parent = node.get_parent() != self
 	
 	if is_from_different_parent:
-		#print("[FKBlockContainerUi] Handling external drop")
+		#print("[FKUnitContainerUi] Handling external drop")
 		_handle_external_drop(node, visible_blocks, target_visual_idx)
 	else:
-		#print("[FKBlockContainerUi] Handling internal reorder")
+		#print("[FKUnitContainerUi] Handling internal reorder")
 		_handle_internal_reorder(node, visible_blocks, target_visual_idx)
 
 
 func _handle_external_drop(node: Node, visible_blocks: Array, target_idx: int) -> void:
 	"""Handle drop from a different parent (e.g., from inside a group)."""
-	before_block_moved.emit()
+	before_unit_moved.emit()
 	
 	# Remove from original parent and notify it
 	var original_parent = node.get_parent()
@@ -247,8 +247,8 @@ func _handle_external_drop(node: Node, visible_blocks: Array, target_idx: int) -
 	
 	move_child(node, target_child_idx)
 	
-	# Defer block_moved to ensure all data is synced before save/reload
-	call_deferred("emit_signal", "block_moved")
+	# Defer unit_moved to ensure all data is synced before save/reload
+	call_deferred("emit_signal", "unit_moved")
 
 func _handle_internal_reorder(node: Node, visible_blocks: Array, target_idx: int) -> void:
 	"""Handle reordering within this container."""
@@ -256,7 +256,7 @@ func _handle_internal_reorder(node: Node, visible_blocks: Array, target_idx: int
 	
 	# No-op if same position
 	if target_idx == current_visual_idx or target_idx == current_visual_idx + 1:
-		#print("[FKBlockContainerUi] No op. Same pos")
+		#print("[FKUnitContainerUi] No op. Same pos")
 		return
 	
 	# Calculate actual child index
@@ -272,12 +272,12 @@ func _handle_internal_reorder(node: Node, visible_blocks: Array, target_idx: int
 	if target_child_idx > current_child_idx:
 		target_child_idx -= 1
 	
-	before_block_moved.emit()
-	#print("[FKBlockContainerUi] About to move block to index " + str(target_child_idx))
+	before_unit_moved.emit()
+	#print("[FKUnitContainerUi] About to move block to index " + str(target_child_idx))
 	move_child(node, target_child_idx)
 	_refresh_unit_lookup()
-	#print("[FKBlockContainerUi] Done moving block. It is at index " + str(node.get_index()))
-	block_moved.emit()
+	#print("[FKUnitContainerUi] Done moving block. It is at index " + str(node.get_index()))
+	unit_moved.emit()
 
 func _refresh_unit_lookup():
 	## This is so that our properties for exposing the units and their uis
@@ -286,7 +286,7 @@ func _refresh_unit_lookup():
 	for elem in get_children():
 		if elem is FKUnitUi:
 			var ui := elem as FKUnitUi
-			_unit_lookup[ui] = ui.get_block()
+			_unit_lookup[ui] = ui.get_unit()
 
 # === Input Handling ===
 

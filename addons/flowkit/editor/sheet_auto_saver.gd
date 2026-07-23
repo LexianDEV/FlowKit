@@ -87,9 +87,9 @@ func _save_sheet() -> FKEventSheet:
 	
 	return result
 
-var _block_container: FKBlockContainerUi:
+var _block_container: FKUnitContainerUi:
 	get:
-		var result: FKBlockContainerUi = null
+		var result: FKUnitContainerUi = null
 		if _globals:
 			result = _globals.block_container_ui
 		return result

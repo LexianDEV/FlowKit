@@ -9,7 +9,7 @@ class_name FKMainEditor
 # UI References
 @export_category("UI")
 @export var scroll_container: ScrollContainer
-@export var blocks_container: FKBlockContainerUi
+@export var blocks_container: FKUnitContainerUi
 @export var empty_label: Label
 @export var add_event_btn: Button
 @export var menu_bar: FKMenuBar
@@ -137,12 +137,12 @@ func _toggle_subs(on: bool):
 	if on and !_is_subbed:
 		# For undo state on drag-and-drop reorder
 		visibility_changed.connect(_on_visibility_changed)
-		blocks_container.before_block_moved.connect(_push_undo_state)
+		blocks_container.before_unit_moved.connect(_push_undo_state)
 		menu_bar.save_sheet.connect(_save_sheet)
 		add_event_btn.pressed.connect(_on_add_event_button_pressed)
 	elif !on and _is_subbed:
 		visibility_changed.disconnect(_on_visibility_changed)
-		blocks_container.before_block_moved.disconnect(_push_undo_state)
+		blocks_container.before_unit_moved.disconnect(_push_undo_state)
 		menu_bar.save_sheet.disconnect(_save_sheet)
 		add_event_btn.pressed.disconnect(_on_add_event_button_pressed)
 	else:
@@ -289,7 +289,7 @@ func _paste_actions() -> void:
 		target_branch = _find_parent_branch(selected_item)
 
 	if target_branch:
-		var branch_data = target_branch.get_block()
+		var branch_data = target_branch.get_unit()
 		for act in new_actions:
 			branch_data.branch_actions.append(act)
 		target_row.update_display()
@@ -297,7 +297,7 @@ func _paste_actions() -> void:
 		return
 
 	# Normal paste into event row
-	var data := target_row.get_block() as FKEventUnit
+	var data := target_row.get_unit() as FKEventUnit
 	for act in new_actions:
 		data.actions.append(act)
 
@@ -321,7 +321,7 @@ func _paste_conditions() -> void:
 
 	_on_pre_ui_change()
 
-	var data := target_row.get_block() as FKEventUnit
+	var data := target_row.get_unit() as FKEventUnit
 	for cond in new_conditions:
 		data.conditions.append(cond)
 
@@ -358,7 +358,7 @@ func _paste_group() -> void:
 			target_group.add_group_to_group(new_group)
 		else:
 			# Fallback: append to children manually
-			var block := target_group.get_block()
+			var block := target_group.get_unit()
 			block.children.append({
 				"type": "group",
 				"data": new_group
@@ -534,15 +534,15 @@ func _delete_selected_item() -> void:
 	
 	# Check if it's a condition or action
 	if item_to_delete is FKConditionUnitUi:
-		var cond_data := item_to_delete.get_block() as FKConditionUnit
-		var event_data := parent_row.get_block()
+		var cond_data := item_to_delete.get_unit() as FKConditionUnit
+		var event_data := parent_row.get_unit()
 		if cond_data and event_data:
 			var idx = event_data.conditions.find(cond_data)
 			if idx >= 0:
 				event_data.conditions.remove_at(idx)
 	elif item_to_delete is FKActionUnitUi or item_to_delete is FKBranchUnitUi:
-		var act_data := item_to_delete.get_block() as FKActionUnit
-		var event_data := parent_row.get_block()
+		var act_data := item_to_delete.get_unit() as FKActionUnit
+		var event_data := parent_row.get_unit()
 		if act_data and event_data:
 			var idx = event_data.actions.find(act_data)
 			if idx >= 0:
@@ -693,7 +693,7 @@ func _show_content_state() -> void:
 	empty_label.visible = false
 	add_event_btn.visible = true
 
-func _get_block_nodes() -> Array[FKUnitUi]:
+func _get_unit_nodes() -> Array[FKUnitUi]:
 	return blocks_container.unit_uis
 	
 # === File Operations ===
@@ -1099,7 +1099,7 @@ func _on_row_insert_comment_below(signal_row, bound_row: FKEventRowUi) -> void:
 	"""Insert a new comment below the specified event row."""
 	_insert_comment_relative_to(bound_row, 1)
 
-func _insert_comment_relative_to(target_block: Node, offset: int) -> void:
+func _insert_comment_relative_to(target_unit: Node, offset: int) -> void:
 	"""Insert a new comment relative to a target block (0 = above, 1 = below)."""
 	_push_undo_state()
 	
@@ -1110,7 +1110,7 @@ func _insert_comment_relative_to(target_block: Node, offset: int) -> void:
 	blocks_container.add_child(comment)
 	
 	# Calculate insert position
-	var insert_idx := target_block.get_index() + offset
+	var insert_idx := target_unit.get_index() + offset
 	blocks_container.move_child(comment, insert_idx)
 	
 	_show_content_state()
@@ -1425,7 +1425,7 @@ func _update_event_inputs(expressions: Dictionary) -> void:
 	_push_undo_state()
 	
 	if pending_target_row:
-		var data: FKUnit = pending_target_row.get_block()
+		var data: FKUnit = pending_target_row.get_unit()
 		if data:
 			data.inputs = expressions
 			pending_target_row.update_display()
@@ -1438,7 +1438,7 @@ func _update_condition_inputs(expressions: Dictionary) -> void:
 	_push_undo_state()
 	
 	if pending_target_item:
-		var data := pending_target_item.get_block()
+		var data := pending_target_item.get_unit()
 		if data:
 			data.inputs = expressions
 			pending_target_item.update_display()
@@ -1451,7 +1451,7 @@ func _update_action_inputs(expressions: Dictionary) -> void:
 	_push_undo_state()
 	
 	if pending_target_item:
-		var data := pending_target_item.get_block()
+		var data := pending_target_item.get_unit()
 		if data:
 			data.inputs = expressions
 			pending_target_item.update_display()
@@ -1468,14 +1468,14 @@ func _replace_event(expressions: Dictionary) -> void:
 	_push_undo_state()
 	
 	# Get old row's position and conditions/actions
-	var old_unit: FKUnit = pending_target_row.get_block()
+	var old_unit: FKUnit = pending_target_row.get_unit()
 	var old_index := pending_target_row.get_index()
 	var old_parent := pending_target_row.get_parent()
 	
 	# Create new event data, preserving personal id
-	var old_unit_id: int = old_unit.personal_id
+	var old_unit_id: int = old_unit.uid
 	var new_unit := FKEventUnit.new(pending_id, pending_node_path)
-	new_unit.personal_id = old_unit_id
+	new_unit.uid = old_unit_id
 	new_unit.inputs = expressions
 	new_unit.conditions = old_unit.conditions if old_unit else ([] as Array[FKConditionUnit])
 	new_unit.actions = old_unit.actions if old_unit else ([] as Array[FKActionUnit])
@@ -1491,7 +1491,7 @@ func _replace_event(expressions: Dictionary) -> void:
 	
 	# Add to the same parent (blocks_container or children_container within group)
 	if old_parent:
-		if old_parent is FKBlockContainerUi and new_row is FKUnitUi:
+		if old_parent is FKUnitContainerUi and new_row is FKUnitUi:
 			old_parent.add_child(new_row)
 		else:
 			old_parent.add_child(new_row)
@@ -1544,7 +1544,7 @@ func _on_row_replace(signal_row, bound_row: FKEventRowUi) -> void:
 	pending_block_type = "event_replace"
 	
 	# Get current node path from the row being replaced
-	var data := bound_row.get_block()
+	var data := bound_row.get_unit()
 	if data:
 		pending_node_path = str(data.target_node)
 	
@@ -1567,7 +1567,7 @@ func _on_row_delete(signal_row, bound_row) -> void:
 		bound_row.queue_free()
 
 func _on_row_edit(signal_row, bound_row: FKEventRowUi) -> void:
-	var data: FKUnit = bound_row.get_block() if bound_row != null \
+	var data: FKUnit = bound_row.get_unit() if bound_row != null \
 	else null
 	if not data:
 		return
@@ -1619,7 +1619,7 @@ func _on_branch_add_elseif(branch_item: FKBranchUnitUi, event_row: FKUnitUi) -> 
 	pending_target_branch = branch_item
 
 	# Determine the branch provider to pick the right workflow
-	var act_data := branch_item.get_block()
+	var act_data := branch_item.get_unit()
 	var bid: String = registry.resolve_branch_id(act_data.branch_id if act_data \
 	else "", act_data.branch_type if act_data else "")
 	pending_branch_id = bid
@@ -1653,7 +1653,7 @@ func _on_branch_add_else(branch_item: FKBranchUnitUi, event_row: FKEventRowUi) -
 	"""Add an Else branch below an existing branch."""
 	_push_undo_state()
 
-	var branch_data := branch_item.get_block()
+	var branch_data := branch_item.get_unit()
 	if not branch_data or not event_row:
 		return
 
@@ -1668,7 +1668,7 @@ func _on_branch_add_else(branch_item: FKBranchUnitUi, event_row: FKEventRowUi) -
 	# Find the array containing this branch (could be nested)
 	var actions_array: Array
 	if branch_item.parent_branch:
-		actions_array = branch_item.parent_branch.get_block().branch_actions
+		actions_array = branch_item.parent_branch.get_unit().branch_actions
 	else:
 		var event_data = event_row.get_event_data()
 		if not event_data:
@@ -1686,7 +1686,7 @@ func _on_branch_add_else(branch_item: FKBranchUnitUi, event_row: FKEventRowUi) -
 
 func _on_branch_condition_edit(branch_item: FKBranchUnitUi, event_row: FKEventRowUi) -> void:
 	"""Edit the condition or inputs of a branch."""
-	var act_data := branch_item.get_block()
+	var act_data := branch_item.get_unit()
 	if not act_data:
 		return
 
@@ -1742,7 +1742,7 @@ func _on_branch_action_add(branch_item: FKBranchUnitUi, event_row: FKEventRowUi)
 func _on_branch_action_edit(action_item: FKActionUnitUi, branch_item: FKBranchUnitUi, 
 event_row: FKEventRowUi) -> void:
 	"""Edit an action inside a branch."""
-	var act_data := action_item.get_block()
+	var act_data := action_item.get_unit()
 	if not act_data:
 		return
 
@@ -1826,20 +1826,20 @@ func _finalize_elseif_creation(inputs: Dictionary) -> void:
 	elseif_data.is_branch = true
 	elseif_data.branch_type = "elseif"
 	elseif_data.branch_id = registry.resolve_branch_id(
-		pending_target_branch.get_block().branch_id if pending_target_branch else "",
-		pending_target_branch.get_block().branch_type if pending_target_branch else ""
+		pending_target_branch.get_unit().branch_id if pending_target_branch else "",
+		pending_target_branch.get_unit().branch_type if pending_target_branch else ""
 	)
 	elseif_data.branch_condition = cond
 	elseif_data.branch_actions = [] as Array[FKActionUnit]
 
 	if pending_target_branch and pending_target_row:
-		var branch_act_data := pending_target_branch.get_block()
+		var branch_act_data := pending_target_branch.get_unit()
 		# Find the array containing this branch (could be nested)
 		var actions_array: Array
 		if pending_target_branch.parent_branch:
-			actions_array = pending_target_branch.parent_branch.get_block().branch_actions
+			actions_array = pending_target_branch.parent_branch.get_unit().branch_actions
 		else:
-			var event_data: FKUnit = pending_target_row.get_block()
+			var event_data: FKUnit = pending_target_row.get_unit()
 			if not event_data:
 				_reset_workflow()
 				return
@@ -1860,7 +1860,7 @@ func _update_branch_condition(expressions: Dictionary) -> void:
 	_push_undo_state()
 
 	if pending_target_branch:
-		var act_data := pending_target_branch.get_block()
+		var act_data := pending_target_branch.get_unit()
 		if act_data:
 			# Check input type to update the right field
 			var bid: String = registry.resolve_branch_id(act_data.branch_id, act_data.branch_type)
@@ -1940,7 +1940,7 @@ func _update_branch_evaluation(expressions: Dictionary) -> void:
 	_push_undo_state()
 
 	if pending_target_branch:
-		var act_data = pending_target_branch.get_block()
+		var act_data = pending_target_branch.get_unit()
 		if act_data:
 			act_data.branch_inputs = expressions
 			pending_target_branch.update_display()
@@ -1960,12 +1960,12 @@ func _finalize_elseif_evaluation_creation(expressions: Dictionary) -> void:
 	elseif_data.branch_actions = [] as Array[FKActionUnit]
 
 	if pending_target_branch and pending_target_row:
-		var branch_act_data := pending_target_branch.get_block()
+		var branch_act_data := pending_target_branch.get_unit()
 		var actions_array: Array
 		if pending_target_branch.parent_branch:
-			actions_array = pending_target_branch.parent_branch.get_block().branch_actions
+			actions_array = pending_target_branch.parent_branch.get_unit().branch_actions
 		else:
-			var event_data: FKUnit = pending_target_row.get_block()
+			var event_data: FKUnit = pending_target_row.get_unit()
 			if not event_data:
 				_reset_workflow()
 				return
@@ -1985,7 +1985,7 @@ func _finalize_elseif_evaluation_creation(expressions: Dictionary) -> void:
 
 func _on_condition_edit_requested(condition_item: FKConditionUnitUi, bound_row) -> void:
 	"""Handle double-click on condition to edit its inputs."""
-	var cond_data := condition_item.get_block()
+	var cond_data := condition_item.get_unit()
 	if not cond_data:
 		return
 	
@@ -2010,7 +2010,7 @@ func _on_condition_edit_requested(condition_item: FKConditionUnitUi, bound_row) 
 
 func _on_action_edit_requested(action_item: FKActionUnitUi, bound_row: FKUnitUi) -> void:
 	"""Handle double-click on action to edit its inputs."""
-	var act_data := action_item.get_block()
+	var act_data := action_item.get_unit()
 	if not act_data:
 		return
 	
@@ -2044,7 +2044,7 @@ target_row: FKEventRowUi) -> void:
 		return
 	
 	# Remove from source
-	var source_data := source_row.get_block()
+	var source_data := source_row.get_unit()
 	if source_data:
 		var idx := source_data.conditions.find(condition_data)
 		if idx >= 0:
@@ -2052,7 +2052,7 @@ target_row: FKEventRowUi) -> void:
 			source_row.update_display()
 	
 	# Add to target
-	var target_data := target_row.get_block()
+	var target_data := target_row.get_unit()
 	if target_data:
 		var cond_copy := condition_data.duplicate_block()
 		
@@ -2066,7 +2066,7 @@ func _on_action_dropped(source_row: FKEventRowUi, action_data: FKActionUnit, tar
 		return
 	
 	# Remove from source (search recursively in case it's inside a branch)
-	var source_data := source_row.get_block()
+	var source_data := source_row.get_unit()
 	if source_data:
 		var idx := source_data.actions.find(action_data)
 		if idx >= 0:
@@ -2076,7 +2076,7 @@ func _on_action_dropped(source_row: FKEventRowUi, action_data: FKActionUnit, tar
 		source_row.update_display()
 	
 	# Add to target
-	var target_data := target_row.get_block()
+	var target_data := target_row.get_unit()
 	if target_data:
 		# Create a copy of the action data
 		var act_copy := FKActionUnit.new()

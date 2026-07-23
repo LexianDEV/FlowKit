@@ -5,33 +5,34 @@ class_name FKSerializationManager
 # want to use in RAM.
 
 # Serialization #
-func capture_state(blocks: Array[FKUnitUi]) -> Array[Dictionary]:
-	"""Capture the state of the passed block Nodes as serialized data."""
-	#print("FKSerializationManager: blocks gotten: " + str(blocks))
+
+## Capture the state of the passed FKUnit Nodes as serialized data.
+func capture_state(unit_arr: Array[FKUnitUi]) -> Array[Dictionary]:
+	#print("FKSerializationManager: units gotten: " + str(unit_arr))
 	var state: Array[Dictionary] = []
 
-	for block_el in blocks:
-		# Double-check the block is still valid and not queued for deletion
-		if not is_instance_valid(block_el) or block_el.is_queued_for_deletion():
+	for unit in unit_arr:
+		# Double-check the unit is still valid and not queued for deletion
+		if not is_instance_valid(unit) or unit.is_queued_for_deletion():
 			continue
 		
-		var serialized := serialize_block(block_el)
+		var serialized := serialize_unit(unit)
 		state.append(serialized)
 			
 	return state
 	
 	
-func serialize_block(block_node: Node) -> Dictionary:
-	# At the time of this writing, all block node classes except group_ui implement FKUnitui
-	print("Serializer working with " + str(block_node))
+func serialize_unit(unit_ui: Node) -> Dictionary:
+	# At the time of this writing, all unit node classes except group_ui implement FKUnitUi
+	print("Serializer working with " + str(unit_ui))
 	var data: FKUnit = null
-	if block_node.has_method("_to_string"):
-		print("Serializing block node of type " + block_node.get_class())
+	if unit_ui.has_method("_to_string"):
+		print("Serializing unit node of type " + unit_ui.get_class())
 		
-	if block_node is FKUnitUi:
-		data = block_node.get_block()
+	if unit_ui is FKUnitUi:
+		data = unit_ui.get_unit()
 	else:
-		printerr("FKSerializationManager serialize_block: Node does not expose block data.")
+		printerr("FKSerializationManager serialize_unit: Node does not expose unit data.")
 		return {}
 
 	return data.serialize()
@@ -42,27 +43,27 @@ func restore_state(state: Array[Dictionary]) -> Array[FKUnit]:
 	var result: Array[FKUnit] = []
 
 	for dict in state:
-		var block := deserialize_block(dict)
-		if block:
-			result.append(block)
+		var unit := deserialize_unit(dict)
+		if unit:
+			result.append(unit)
 			
 	return result
 	
 	
-func deserialize_block(dict: Dictionary) -> FKUnit:
-	var block_type := dict.get("type", "")
+func deserialize_unit(dict: Dictionary) -> FKUnit:
+	var unit_type := dict.get("type", "")
 	
-	print("Deserializing dict with its type being " + block_type)
-	var block := _instantiate_block(block_type)
-	if block == null:
-		printerr("FKSerializationManager deserialize_block: Unknown block type '%s'" % block_type)
+	print("Deserializing dict with its type being " + unit_type)
+	var unit := _instantiate_unit(unit_type)
+	if unit == null:
+		printerr("FKSerializationManager deserialize_unit: Unknown FKUnit type '%s'" % unit_type)
 		return null
 
-	block.deserialize(dict)
-	return block
+	unit.deserialize(dict)
+	return unit
 
-func _instantiate_block(block_type: String) -> FKUnit:
-	match block_type:
+func _instantiate_unit(unit_type: String) -> FKUnit:
+	match unit_type:
 		"event":
 			return FKEventUnit.new()
 		"action": 

@@ -184,7 +184,7 @@ func refresh():
 	if not _id_assigner:
 		_id_assigner = FKIdAssigner.new()
 		
-	_id_assigner.prop_name = "personal_id"
+	_id_assigner.prop_name = "uid"
 	_id_assigner._append_array_as_invalid([0, FKUnit.INVALID_ID])
 
 	_id_assigner.reset_taken_caches()

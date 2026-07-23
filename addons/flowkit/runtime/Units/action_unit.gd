@@ -88,7 +88,7 @@ func duplicate_block() -> FKUnit:
 	#print("[FKActionUnit]: Duplicating!")
 	var copy := FKActionUnit.new()
 	copy.block_type = block_type
-	copy.personal_id = personal_id
+	copy.uid = uid
 	copy.action_id = action_id
 	copy.target_node = target_node
 	copy.inputs = inputs.duplicate(true)

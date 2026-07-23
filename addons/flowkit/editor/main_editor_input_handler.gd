@@ -8,7 +8,7 @@ func initialize(main_ed: FKMainEditor):
 	
 var _editor: FKMainEditor
 var clipboard: FKClipboardManager
-var block_container: FKBlockContainerUi
+var block_container: FKUnitContainerUi
 
 func handle_input(event: InputEvent):
 	var is_left_click: bool = event is InputEventMouseButton and event.pressed and \
@@ -64,7 +64,7 @@ func get_global_mouse_position() -> Vector2:
 	
 func _is_on_event_row(mouse_pos: Vector2) -> bool:
 	"""Check if the mouse position is over any event row."""
-	for block in _editor._get_block_nodes():
+	for block in _editor._get_unit_nodes():
 		var global_rect = block.get_global_rect()
 		if global_rect.has_point(mouse_pos):
 			return true
@@ -151,10 +151,10 @@ func _on_copy_input() -> bool:
 	return copied
 
 func _copy_selected_item():
-	if selected_item.has_method("get_block"):
-		clipboard.copy_action(selected_item.get_block())
-	elif selected_item.has_method("get_block"):
-		clipboard.copy_condition(selected_item.get_block())
+	if selected_item.has_method("get_unit"):
+		clipboard.copy_action(selected_item.get_unit())
+	elif selected_item.has_method("get_unit"):
+		clipboard.copy_condition(selected_item.get_unit())
 
 func _copy_selected_row():
 	if selected_row.has_method("get_event_data"):

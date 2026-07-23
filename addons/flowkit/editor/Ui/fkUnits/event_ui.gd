@@ -21,11 +21,11 @@ signal edit_event_requested(event_node)
 # Block Handling
 # ---------------------------------------------------------
 	
-func _validate_block(to_set: FKUnit) -> bool:
+func _validate_unit(to_set: FKUnit) -> bool:
 	return to_set == null or to_set is FKEventUnit
 
 func get_event() -> FKEventUnit:
-	return _block as FKEventUnit
+	return _unit as FKEventUnit
 
 func _on_contents_changed(node: FKUnitUi) -> void:
 	update_display()
@@ -168,7 +168,7 @@ func _drop_data(at_position: Vector2, data) -> void:
 func _to_string() -> String:
 	var result := "\nFKEventUnitUi"
 	
-	if _block != null:
+	if _unit != null:
 		result += "\nhas block: true"
 	return result
 	

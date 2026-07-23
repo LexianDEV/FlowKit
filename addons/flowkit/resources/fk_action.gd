@@ -15,7 +15,7 @@ func get_inputs() -> Array[FKActionInput]:
 func requires_multi_frames() -> bool:
 	return false
 
-func execute(node: Node, inputs: Dictionary, block_id: int = -1) -> void:
+func execute(node: Node, inputs: Dictionary, unit_id: int = -1) -> void:
 	pass
 
 func get_class() -> String:

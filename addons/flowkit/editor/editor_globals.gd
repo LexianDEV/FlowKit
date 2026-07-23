@@ -38,7 +38,7 @@ var get_main_editor_tree: Callable
 var is_in_undo_redo := false
 var sheet_auto_saver: FKSheetAutoSaver
 var sheet_io: FKSheetIO = FKSheetIO.new()
-var block_container_ui: FKBlockContainerUi
+var block_container_ui: FKUnitContainerUi
 
 var base_control: Control:
 	get:
