@@ -15,6 +15,13 @@ const VALID_KINDS := [
 	KIND_BEHAVIOR,
 ]
 
+## So that the system knows whether this Provider is meant to be 
+## instantiated or used as a base. We need this because 
+## (at the time of this writing) GDScript doesn't have anything
+## like C#'s "abstract" keyword.
+func is_abstract_provider() -> bool:
+	return false
+
 ## Used to identify a provider in the registry. Should be globally unique across 
 ## all providers of the same kind.
 func get_provider_id() -> String:

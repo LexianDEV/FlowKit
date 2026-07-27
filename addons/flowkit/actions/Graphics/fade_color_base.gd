@@ -1,5 +1,8 @@
 extends FKAction
-class_name FadeColorBase
+class_name FKFadeColorBase
+
+func is_abstract_provider() -> bool:
+	return true
 
 func requires_multi_frames() -> bool:
 	return true

@@ -71,7 +71,7 @@ func _instantiate_unit(unit_type: String) -> FKUnit:
 		"comment":
 			return FKComment.new()
 		"group":
-			return FKGroup.new()
+			return FKGroupUnit.new()
 		"condition": 
 			return FKConditionUnit.new()
 		_:

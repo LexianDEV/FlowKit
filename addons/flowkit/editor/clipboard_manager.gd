@@ -47,7 +47,7 @@ func copy_condition(condition_data: FKConditionUnit) -> void:
 	_type = "condition"
 	_condition_data.append(_serialize_condition(condition_data))
 
-func copy_group(group_data: FKGroup) -> void:
+func copy_group(group_data: FKGroupUnit) -> void:
 	clear()
 	_type = "group"
 	_group_data = _serialize_group_block(group_data)
@@ -81,7 +81,7 @@ func paste_condition() -> Array[FKConditionUnit]:
 		result.append(_deserialize_condition(dict))
 	return result
 
-func paste_group() -> FKGroup:
+func paste_group() -> FKGroupUnit:
 	if _type != "group":
 		return null
 	return _deserialize_group_block(_group_data)
@@ -91,21 +91,22 @@ func paste_group() -> FKGroup:
 # INTERNAL SERIALIZATION
 # ===========================
 
-func _serialize_event_block(data: FKEventUnit) -> Dictionary:
+func _serialize_event_block(unit: FKEventUnit) -> Dictionary:
 	var result = {
 		"type": "event",
-		"block_id": data.block_id,
-		"event_id": data.event_id,
-		"target_node": str(data.target_node),
-		"inputs": data.inputs.duplicate(),
+		"uid": unit.uid,
+		"event_id": unit.event_id,
+		"event_provider_id": unit.get_resolved_provider_id(),
+		"target_node": str(unit.target_node),
+		"inputs": unit.inputs.duplicate(),
 		"conditions": [],
 		"actions": []
 	}
 
-	for cond in data.conditions:
+	for cond in unit.conditions:
 		result["conditions"].append(_serialize_condition(cond))
 
-	for act in data.actions:
+	for act in unit.actions:
 		result["actions"].append(_serialize_action(act))
 
 	return result
@@ -114,6 +115,7 @@ func _serialize_event_block(data: FKEventUnit) -> Dictionary:
 func _serialize_condition(cond: FKConditionUnit) -> Dictionary:
 	return {
 		"condition_id": cond.condition_id,
+		"condition_provider_id": cond.get_resolved_provider_id(),
 		"target_node": str(cond.target_node),
 		"inputs": cond.inputs.duplicate(),
 		"negated": cond.negated
@@ -122,12 +124,15 @@ func _serialize_condition(cond: FKConditionUnit) -> Dictionary:
 
 func _serialize_action(act: FKActionUnit) -> Dictionary:
 	var dict = {
-		"action_id": act.action_id,
-		"target_node": str(act.target_node),
-		"inputs": act.inputs.duplicate(),
-		"is_branch": act.is_branch,
-		"branch_type": act.branch_type
-	}
+        "action_id": act.action_id,
+        "action_provider_id": "" if act.is_branch else act.get_resolved_provider_id(),
+        "target_node": str(act.target_node),
+        "inputs": act.inputs.duplicate(),
+        "is_branch": act.is_branch,
+        "branch_type": act.branch_type,
+        "branch_id": act.branch_id,
+        "branch_provider_id": act.get_resolved_provider_id() if act.is_branch else ""
+    }
 
 	if act.is_branch:
 		if act.branch_condition:
@@ -140,7 +145,7 @@ func _serialize_action(act: FKActionUnit) -> Dictionary:
 	return dict
 
 
-func _serialize_group_block(data: FKGroup) -> Dictionary:
+func _serialize_group_block(data: FKGroupUnit) -> Dictionary:
 	var result := {
 		"type": "group",
 		"title": data.title,
@@ -190,9 +195,12 @@ func _serialize_comment_block(data: FKComment) -> Dictionary:
 
 func _deserialize_event_block(dict: Dictionary) -> FKEventUnit:
 	var unit_id: int = dict.get("uid", dict.get("personal_id", -1))
-	var event_id = dict.get("event_id", "")
-	var target_node = NodePath(dict.get("target_node", ""))
+	var event_id: String = dict.get("event_id", "").strip_edges()
+	var fallback_provider_id: String = dict.get("event_provider_id", "").strip_edges()
+	if event_id.is_empty():
+		event_id = fallback_provider_id
 
+	var target_node = NodePath(dict.get("target_node", ""))
 	var data = FKEventUnit.new(event_id, target_node)
 	data.uid = unit_id
 	data.inputs = dict.get("inputs", {}).duplicate()
@@ -210,21 +218,40 @@ func _deserialize_event_block(dict: Dictionary) -> FKEventUnit:
 
 func _deserialize_condition(dict: Dictionary) -> FKConditionUnit:
 	var cond = FKConditionUnit.new()
-	cond.condition_id = dict.get("condition_id", "")
+	var condition_id: String = dict.get("condition_id", "").strip_edges()
+	if condition_id.is_empty():
+		condition_id = dict.get("condition_provider_id", "").strip_edges()
+
+	cond.condition_id = condition_id
 	cond.target_node = NodePath(dict.get("target_node", ""))
 	cond.inputs = dict.get("inputs", {}).duplicate()
 	cond.negated = dict.get("negated", false)
-	cond.actions = [] as Array[FKActionUnit]  # Always empty for conditions
+	cond.actions = [] as Array[FKActionUnit]
 	return cond
 
 
 func _deserialize_action(dict: Dictionary) -> FKActionUnit:
 	var act = FKActionUnit.new()
-	act.action_id = dict.get("action_id", "")
+	act.is_branch = dict.get("is_branch", false)
+
+	var action_id: String = dict.get("action_id", "").strip_edges()
+	var action_provider_id: String = dict.get("action_provider_id", "").strip_edges()
+	var branch_id: String = dict.get("branch_id", "").strip_edges()
+	var branch_provider_id: String = dict.get("branch_provider_id", "").strip_edges()
+
+	if act.is_branch:
+		if branch_id.is_empty():
+			branch_id = branch_provider_id
+		act.branch_id = branch_id
+	else:
+		if action_id.is_empty():
+			action_id = action_provider_id
+		act.action_id = action_id
+
 	act.target_node = NodePath(dict.get("target_node", ""))
 	act.inputs = dict.get("inputs", {}).duplicate()
-	act.is_branch = dict.get("is_branch", false)
 	act.branch_type = dict.get("branch_type", "")
+	act.branch_id = branch_id
 
 	if act.is_branch:
 		var cond_dict = dict.get("branch_condition", null)
@@ -238,8 +265,8 @@ func _deserialize_action(dict: Dictionary) -> FKActionUnit:
 	return act
 
 
-func _deserialize_group_block(dict: Dictionary) -> FKGroup:
-	var data = FKGroup.new()
+func _deserialize_group_block(dict: Dictionary) -> FKGroupUnit:
+	var data = FKGroupUnit.new()
 	data.title = dict.get("title", "Group")
 	data.collapsed = dict.get("collapsed", false)
 	data.color = dict.get("color", Color(0.25, 0.22, 0.35, 1.0))

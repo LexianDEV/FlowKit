@@ -1,4 +1,4 @@
-extends FadeColorBase
+extends FKFadeColorBase
 
 func get_description() -> String:
 	return "Fades the main color of a Node."

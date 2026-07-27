@@ -7,6 +7,7 @@ class_name FKEventUnit
 @export var inputs: Dictionary = {}
 @export var conditions: Array[FKConditionUnit] = []
 @export var actions: Array[FKActionUnit] = []
+@export var event_provider: FKEvent
 
 func may_have_children() -> bool:
 	return true
@@ -53,6 +54,9 @@ func serialize() -> Dictionary:
 func deserialize(dict: Dictionary) -> void:
 	super.deserialize(dict)
 	event_id = dict.get("event_id", "")
+	if event_id.is_empty() and event_provider:
+		event_id = event_provider.get_provider_id().strip_edges()
+		
 	target_node = NodePath(dict.get("target_node", ""))
 	inputs = dict.get("inputs", {}).duplicate()
 
@@ -69,7 +73,7 @@ func deserialize(dict: Dictionary) -> void:
 		actions.append(act)
 
 func get_id() -> String:
-	return "Null"
+	return event_id
 	
 func duplicate_block() -> FKUnit:
 	var copy := self.duplicate(true)
@@ -80,3 +84,6 @@ func get_class() -> String:
 
 func get_real_class() -> String:
 	return self.get_class()
+
+func get_provider() -> FKEvent:
+	return event_provider

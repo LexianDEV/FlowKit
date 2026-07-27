@@ -4,7 +4,7 @@ func get_description() -> String:
 	return "Starts playing the audio."
 
 func get_id() -> String:
-	return "play"
+	return "audio_stream_player_2d_play"
 
 func get_name() -> String:
 	return "Play"

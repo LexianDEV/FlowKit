@@ -60,7 +60,7 @@ const DRAG_THRESHOLD: float = 8.0
 func legitimize(block: FKUnit, editor_globals: FKEditorGlobals):
 	if not is_editor_preview:
 		return
-	var group := block as FKGroup
+	var group := block as FKGroupUnit
 	group.normalize_children()
 	super.legitimize(block, editor_globals)
 # ---------------------------------------------------------
@@ -68,7 +68,7 @@ func legitimize(block: FKUnit, editor_globals: FKEditorGlobals):
 # ---------------------------------------------------------
 
 func _validate_unit(to_set: FKUnit) -> bool:
-	return to_set == null or to_set is FKGroup
+	return to_set == null or to_set is FKGroupUnit
 
 func _on_contents_changed(node: FKUnitUi) -> void:
 	_refresh_display()
@@ -85,9 +85,9 @@ func _update_styling() -> void:
 	else normal_stylebox
 	panel.add_theme_stylebox_override("panel", style)
 
-var _group: FKGroup:
+var _group: FKGroupUnit:
 	get:
-		return _unit as FKGroup
+		return _unit as FKGroupUnit
 
 # ---------------------------------------------------------
 # Lifecycle / subscriptions
@@ -218,7 +218,7 @@ func _rebuild_child_nodes() -> void:
 			var comment := _instantiate_comment(unit)
 			if comment:
 				children_container.add_child(comment)
-		elif unit is FKGroup:
+		elif unit is FKGroupUnit:
 			var nested := _instantiate_group(unit)
 			if nested:
 				children_container.add_child(nested)
@@ -303,7 +303,7 @@ func _connect_comment_signals_to_group_handlers(comment: FKCommentUi, data: FKCo
 	comment.insert_event_above_requested.connect(func(c): insert_event_above_requested.emit(c))
 	comment.insert_event_below_requested.connect(func(c): insert_event_below_requested.emit(c))
 
-func _instantiate_group(data: FKGroup) -> Control:
+func _instantiate_group(data: FKGroupUnit) -> Control:
 	if is_editor_preview:
 		printerr("[FKGroupUi]: Cannot instantiate group in editor preview mode")
 		return null
@@ -315,7 +315,7 @@ func _instantiate_group(data: FKGroup) -> Control:
 	_attach_nested_group_signals(nested, data)
 	return nested
 
-func _attach_nested_group_signals(nested: FKGroupUi, data: FKGroup):
+func _attach_nested_group_signals(nested: FKGroupUi, data: FKGroupUnit):
 	nested.delete_requested.connect(func(n): _on_child_group_delete_requested.bind(data))
 	nested.selected.connect(func(n): selected.emit(n))
 
@@ -363,7 +363,7 @@ func _on_child_row_delete_requested(row: Node, data: FKEventUnit) -> void:
 func _on_child_comment_delete_requested(data: FKComment) -> void:
 	_remove_child_data(data)
 
-func _on_child_group_delete_requested(data: FKGroup) -> void:
+func _on_child_group_delete_requested(data: FKGroupUnit) -> void:
 	_remove_child_data(data)
 
 func _remove_child_data(child_data) -> void:
@@ -854,9 +854,9 @@ func _to_string() -> String:
 func get_class() -> String:
 	return "FKGroupUi"
 
-func get_unit() -> FKGroup:
-	if _unit is FKGroup:
-		return _unit as FKGroup
+func get_unit() -> FKGroupUnit:
+	if _unit is FKGroupUnit:
+		return _unit as FKGroupUnit
 	else:
 		return null
 		

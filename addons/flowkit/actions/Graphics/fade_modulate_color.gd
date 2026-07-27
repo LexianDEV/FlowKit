@@ -1,4 +1,4 @@
-extends FadeColorBase
+extends FKFadeColorBase
 
 func get_description() -> String:
 	return "Changes the Modulate property/color of a Node over time."

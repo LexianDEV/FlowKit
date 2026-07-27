@@ -4,7 +4,7 @@ func get_description() -> String:
 	return "Checks if the timer is paused."
 
 func get_id() -> String:
-	return "is_paused"
+	return "timer_is_paused"
 
 func get_name() -> String:
 	return "Is Paused"

@@ -156,8 +156,14 @@ func _try_instantiate_provider(script: GDScript, kind: String) -> void:
 
 	# can_instantiate() can be false during load-order warmup; try anyway.
 	var instance: Variant = script.new()
+	
 	if instance == null:
 		push_warning("[FlowKit Registry] Skipping provider that returned null on new(): %s" % script.resource_path)
+		return
+
+	var found_abstract_provider: bool = instance is FKProviderBase and \
+	instance.is_abstract_provider()
+	if found_abstract_provider:
 		return
 
 	var prov: FKProviderBase = null

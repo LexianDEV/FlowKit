@@ -60,7 +60,7 @@ func copy_action(act: FKActionUnit) -> FKActionUnit:
 #  GROUP COPY (supports both dict children and FKUnit children)
 # -------------------------------------------------------------------
 
-func copy_group_block(data: FKGroup) -> FKGroup:
+func copy_group_block(data: FKGroupUnit) -> FKGroupUnit:
 	if data == null:
 		return null
 
