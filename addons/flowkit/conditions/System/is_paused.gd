@@ -4,7 +4,7 @@ func get_description() -> String:
 	return "Checks if the game is currently paused."
 
 func get_id() -> String:
-	return "system_is_paused"
+	return "is_paused"
 
 func get_name() -> String:
 	return "Is Paused"

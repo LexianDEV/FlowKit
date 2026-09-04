@@ -869,7 +869,7 @@ func _on_add_group_button_pressed() -> void:
 	"""Add a new group block."""
 	_push_undo_state()
 	
-	var data := FKGroupUnit.new()
+	var data := FKGroup.new()
 	data.title = "New Group"
 	data.collapsed = false
 	data.color = Color(0.25, 0.22, 0.35, 1.0)

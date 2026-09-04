@@ -7,7 +7,6 @@ class_name FKConditionUnit
 @export var inputs: Dictionary = {}
 @export var negated: bool = false
 @export var actions: Array[FKActionUnit] = [] 
-@export var condition_provider: FKCondition 
 
 func _init() -> void:
 	block_type = "condition"
@@ -48,6 +47,3 @@ func get_id() -> String:
 
 func get_class() -> String:
 	return "FKConditionUnit"
-
-func get_provider() -> FKCondition:
-	return condition_provider

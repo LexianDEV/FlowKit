@@ -73,9 +73,7 @@ func duplicate_block() -> FKUnit:
 	return copy
 	
 func get_id() -> String:
-	var prov := get_provider()
-	var result = prov.get_id() if prov else ""
-	return result
+	return ""
 
 static func _duplicate_blocks(to_duplicate: Array[FKUnit]) -> Array[FKUnit]:
 	var result: Array[FKUnit] = []
@@ -106,18 +104,3 @@ func _to_string() -> String:
 	var self_serialized: Dictionary = self.serialize()
 	var result = "(" + self.get_display_name() + ")" + "\n" + JSON.stringify(self_serialized, "\t")
 	return result
-
-func get_resolved_provider_id() -> String:
-	var provider: FKProviderBase = get_provider()
-	var result := ""
-	if provider:
-		result = provider.get_provider_id().strip_edges()
-
-	if not result or result.is_empty():
-		result = get_id() # Fall back to legacy
-
-	return result
-
-## Meant to be overridden by subclasses of FKUnit.
-func get_provider() -> FKProviderBase:
-	return null

@@ -816,7 +816,7 @@ func _extract_ids_from_sheet(sheet: FKEventSheet, used: Dictionary) -> void:
 
 
 ## Extract IDs from a group unit (which can contain events, nested groups, etc.)
-func _extract_ids_from_group(group: FKGroupUnit, used: Dictionary) -> void:
+func _extract_ids_from_group(group: FKGroup, used: Dictionary) -> void:
 	for child in group.children:
 		var child_type: String = child.get("type", "")
 		var child_data = child.get("data", null)
@@ -827,7 +827,7 @@ func _extract_ids_from_group(group: FKGroupUnit, used: Dictionary) -> void:
 				if child_data is FKEventUnit:
 					_extract_ids_from_event_unit(child_data, used)
 			"group":
-				if child_data is FKGroupUnit:
+				if child_data is FKGroup:
 					_extract_ids_from_group(child_data, used)
 
 

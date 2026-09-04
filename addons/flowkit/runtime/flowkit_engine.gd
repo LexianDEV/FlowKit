@@ -401,14 +401,14 @@ func _is_multi_frame_provider(provider: Variant) -> bool:
 
 func _collect_events_from_groups(groups: Array, out_events: Array) -> void:
 	for group in groups:
-		if group is FKGroupUnit:
+		if group is FKGroup:
 			for child_item in group.children:
 				var child_type: String = child_item.get("type", "")
 				var child_data: Variant = child_item.get("data", null)
 				
 				if child_type == "event" and child_data is FKEventUnit:
 					out_events.append(child_data)
-				elif child_type == "group" and child_data is FKGroupUnit:
+				elif child_type == "group" and child_data is FKGroup:
 					# Recursively collect from nested groups
 					_collect_events_from_groups([child_data], out_events)
 

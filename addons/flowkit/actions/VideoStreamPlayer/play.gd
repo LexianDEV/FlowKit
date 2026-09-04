@@ -4,7 +4,7 @@ func get_description() -> String:
 	return "Starts playing the video."
 
 func get_id() -> String:
-	return "video_stream_playerplay"
+	return "play"
 
 func get_name() -> String:
 	return "Play"

@@ -19,7 +19,7 @@ func unit_ui_from(unit: FKUnit, inputs: Dictionary = {}) -> FKUnitUi:
 		result = _create_event_row(unit)
 	elif unit is FKComment:
 		result = _create_comment_ui(unit)
-	elif unit is FKGroupUnit:
+	elif unit is FKGroup:
 		result = _create_group_block(unit)
 		
 	return result
@@ -54,7 +54,7 @@ func _create_comment_ui(data: FKComment) -> FKCommentUi:
 
 const COMMENT_SCENE = preload(FKEditorGlobals.COMMENT_SCENE_PATH)
 
-func _create_group_block(data: FKGroupUnit) -> FKGroupUi:
+func _create_group_block(data: FKGroup) -> FKGroupUi:
 	"""Create group block node from data."""
 	#print("[FKUnitUiFactory]: Creating group block node")
 	var group: FKGroupUi = GROUP_SCENE.instantiate()

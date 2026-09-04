@@ -4,7 +4,7 @@ func get_description() -> String:
 	return "Stops the timer."
 
 func get_id() -> String:
-	return "timer_stop"
+	return "stop"
 
 func get_name() -> String:
 	return "Stop"

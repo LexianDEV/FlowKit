@@ -4,7 +4,7 @@ func get_description() -> String:
 	return "Stops the video playback."
 
 func get_id() -> String:
-	return "video_stream_player_stop"
+	return "stop"
 
 func get_name() -> String:
 	return "Stop"

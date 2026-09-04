@@ -4,7 +4,7 @@ func get_description() -> String:
 	return "Checks if the video is currently playing."
 
 func get_id() -> String:
-	return "video_stream_player_is_playing"
+	return "is_playing"
 
 func get_name() -> String:
 	return "Is Playing"

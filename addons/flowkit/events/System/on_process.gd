@@ -4,7 +4,7 @@ func get_description() -> String:
 	return "Triggers on every process frame (every _process call)."
 
 func get_id() -> String:
-	return "system_on_process"
+	return "on_process"
 
 func get_name() -> String:
 	return "On Process"
