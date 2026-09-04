@@ -3,7 +3,7 @@ extends FKAction
 func get_id() -> String:
 	return "set_flip_v"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Set Flip V"
 
 func get_description() -> String:

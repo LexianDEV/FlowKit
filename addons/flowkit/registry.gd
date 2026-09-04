@@ -346,6 +346,20 @@ func get_action_provider(action_id: String, target_node: Node = null) -> FKActio
 				return provider
 
 	return null
+
+func get_condition_provider(condition_id: String, target_node: Node = null) -> FKCondition:
+	# Canonical IDs must be globally unique.
+	for provider in condition_providers:
+		if provider.get_provider_id().strip_edges() == condition_id:
+			return provider
+
+	# Legacy IDs can be reused, so prefer one compatible with the target node.
+	for provider in condition_providers:
+		if provider.get_id().strip_edges() == condition_id:
+			if target_node == null or provider.supports_node(target_node):
+				return provider
+
+	return null
 	
 func _on_exec_completed():
 	_waiting_on_action = false

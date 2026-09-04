@@ -6,7 +6,7 @@ func get_description() -> String:
 func get_id() -> String:
 	return "compare_node_variable"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Compare Node Variable"
 
 func get_inputs() -> Array[Dictionary]:

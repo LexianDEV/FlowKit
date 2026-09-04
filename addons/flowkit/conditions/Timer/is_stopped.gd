@@ -6,7 +6,7 @@ func get_description() -> String:
 func get_id() -> String:
 	return "is_stopped"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Is Stopped"
 
 func get_inputs() -> Array[Dictionary]:

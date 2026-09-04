@@ -9,7 +9,7 @@ func get_id() -> String:
 func get_provider_id() -> String:
 	return "timer_is_paused"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Is Paused"
 
 func get_inputs() -> Array[Dictionary]:

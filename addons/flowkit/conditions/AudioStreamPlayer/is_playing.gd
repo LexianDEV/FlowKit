@@ -9,7 +9,7 @@ func get_id() -> String:
 func get_provider_id() -> String:
 	return "audio_stream_player_general_is_playing"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Is Playing"
 
 func get_inputs() -> Array[Dictionary]:

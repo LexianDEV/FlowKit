@@ -9,7 +9,7 @@ func get_id() -> String:
 func get_provider_id() -> String:
 	return "timer_stop"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Stop"
 
 func get_supported_types() -> Array[String]:

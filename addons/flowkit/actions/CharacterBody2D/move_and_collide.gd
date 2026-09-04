@@ -6,7 +6,7 @@ func get_description() -> String:
 func get_id() -> String:
 	return "move_and_collide"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Move and Collide"
 
 func get_inputs() -> Array[FKActionInput]:

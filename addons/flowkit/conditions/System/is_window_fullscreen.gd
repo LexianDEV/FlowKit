@@ -6,7 +6,7 @@ func get_description() -> String:
 func get_id() -> String:
 	return "is_window_fullscreen"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Is Window Fullscreen"
 
 func get_supported_types() -> Array[String]:

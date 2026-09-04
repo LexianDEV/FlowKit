@@ -6,7 +6,7 @@ func get_description() -> String:
 func get_id() -> String:
 	return "time_left_less_than"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Time Left < Value"
 
 func get_inputs() -> Array[Dictionary]:

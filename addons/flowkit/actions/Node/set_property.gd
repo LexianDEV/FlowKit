@@ -3,7 +3,7 @@ extends FKAction
 func get_id() -> String:
 	return "set_property"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Set Property"
 
 func get_description() -> String:

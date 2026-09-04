@@ -6,7 +6,7 @@ func get_description() -> String:
 func get_id() -> String:
 	return "set_velocity_x"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Set X Velocity"
 
 func get_inputs() -> Array[FKActionInput]:

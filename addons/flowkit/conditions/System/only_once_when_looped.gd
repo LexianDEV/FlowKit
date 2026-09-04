@@ -10,7 +10,7 @@ func get_description() -> String:
 func get_id() -> String:
 	return "only_once_when_looped"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Only Once When Looped"
 
 func get_inputs() -> Array[Dictionary]:

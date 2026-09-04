@@ -3,7 +3,7 @@ extends FKAction
 func get_id() -> String:
 	return "animatedsprite2d_play"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Play"
 
 func get_description() -> String:

@@ -1745,22 +1745,36 @@ event_row: FKEventRowUi) -> void:
 	var act_data := action_item.get_unit()
 	if not act_data:
 		return
+	
+	var action_provider: FKAction = act_data.action_provider
+	if action_provider == null:
+		var provider_id := act_data.get_resolved_provider_id()
+		action_provider = registry.get_action_provider(provider_id)
+	
+	if action_provider and action_provider.is_abstract_provider():
+		action_provider = null
 
-	var provider_inputs: Array = []
-	for provider in registry.action_providers:
-		if provider.has_method("get_id") and provider.get_id() == act_data.action_id:
-			if provider.has_method("get_inputs"):
-				provider_inputs = provider.get_inputs()
-			break
+	if action_provider == null:
+		var provider_id := act_data.get_resolved_provider_id()
+		action_provider = registry.get_action_provider(provider_id)
+
+	var provider_inputs: Array[FKActionInput] = []
+	if action_provider:
+		provider_inputs = action_provider.get_inputs()
 
 	if provider_inputs.size() > 0:
 		pending_target_row = event_row
 		pending_target_item = action_item
 		pending_target_branch = branch_item
 		pending_block_type = "action_edit"
-		pending_id = act_data.action_id
+		pending_id = act_data.get_resolved_provider_id()
 		pending_node_path = str(act_data.target_node)
-		expression_modal.populate_inputs(str(act_data.target_node), act_data.action_id, provider_inputs, act_data.inputs)
+		expression_modal.populate_inputs(
+			pending_node_path,
+			pending_id,
+			provider_inputs,
+			act_data.inputs
+		)
 		_popup_centered_on_editor(expression_modal)
 	else:
 		print("[FKMainEditor]: Action has no inputs to edit")
@@ -2009,31 +2023,36 @@ func _on_condition_edit_requested(condition_item: FKConditionUnitUi, bound_row) 
 		print("[FKMainEditor]: Condition has no inputs to edit")
 
 func _on_action_edit_requested(action_item: FKActionUnitUi, bound_row: FKUnitUi) -> void:
-	"""Handle double-click on action to edit its inputs."""
 	var act_data := action_item.get_unit()
 	if not act_data:
 		return
-	
-	# Get action provider to check if it has inputs
+
+	var action_provider: FKAction = act_data.action_provider
+	if action_provider == null:
+		var prov_id := act_data.get_resolved_provider_id()
+		action_provider = registry.get_action_provider(prov_id);
+
 	var provider_inputs: Array[FKActionInput] = []
-	for provider in registry.action_providers:
-		if provider.has_method("get_id") and provider.get_id() == act_data.action_id:
-			if provider is FKAction:
-				provider_inputs = provider.get_inputs()
-			break
-	
+	if action_provider:
+		provider_inputs = action_provider.get_inputs()
+
 	if provider_inputs.size() > 0:
 		pending_target_row = bound_row
 		pending_target_item = action_item
 		pending_block_type = "action_edit"
-		pending_id = act_data.action_id
+		pending_id = act_data.get_resolved_provider_id()
 		pending_node_path = str(act_data.target_node)
-		var node_path := str(act_data.target_node)
-		expression_modal.populate_inputs(node_path, act_data.action_id, provider_inputs, \
-		act_data.inputs)
+
+		expression_modal.populate_inputs(
+			pending_node_path,
+			pending_id,
+			provider_inputs,
+			act_data.inputs
+		)
 		_popup_centered_on_editor(expression_modal)
 	else:
 		print("[FKMainEditor]: Action has no inputs to edit")
+
 
 # === Drag and Drop Handlers ===
 

@@ -6,7 +6,7 @@ func get_description() -> String:
 func get_id() -> String:
 	return "center_window"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Center Window"
 
 func get_supported_types() -> Array[String]:

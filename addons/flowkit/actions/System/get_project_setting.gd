@@ -6,7 +6,7 @@ func get_description() -> String:
 func get_id() -> String:
 	return "get_project_setting"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Get Project Setting"
 
 func get_inputs() -> Array[FKActionInput]:

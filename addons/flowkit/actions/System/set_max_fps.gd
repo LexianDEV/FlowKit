@@ -6,7 +6,7 @@ func get_description() -> String:
 func get_id() -> String:
 	return "set_max_fps"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Set Max FPS"
 
 func get_supported_types() -> Array[String]:

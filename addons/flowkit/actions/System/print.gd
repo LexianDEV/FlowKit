@@ -6,7 +6,7 @@ func get_description() -> String:
 func get_id() -> String:
 	return "print"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Print"
 
 func get_inputs() -> Array[FKActionInput]:

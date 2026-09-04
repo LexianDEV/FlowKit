@@ -74,16 +74,19 @@ var _action: FKActionUnit:
 
 ## If none is found, this returns the action id
 func _get_display_name_from_registry() -> String:
-	var id := _action.get_id()
+	var id := _action.get_resolved_provider_id()
 	var display_name := id
-	
-	if registry:
-		for provider in registry.action_providers:
-			if provider.has_method("get_id") and provider.get_id() == id:
-				if provider.has_method("get_name"):
-					display_name = provider.get_name()
-				break
-				
+	var provider: FKAction = _action.action_provider
+
+	if provider and provider.is_abstract_provider():
+		provider = null
+
+	if provider == null and registry:
+		provider = registry.get_action_provider(id)
+
+	if provider:
+		display_name = provider.get_display_name()
+
 	return display_name
 	
 func _get_params_text() -> String:

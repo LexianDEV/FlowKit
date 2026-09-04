@@ -6,7 +6,7 @@ func get_description() -> String:
 func get_id() -> String:
 	return "set_audio_bus_volume"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Set Audio Bus Volume"
 
 func get_supported_types() -> Array[String]:

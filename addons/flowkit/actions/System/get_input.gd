@@ -6,7 +6,7 @@ func get_description() -> String:
 func get_id() -> String:
 	return "get_input_axis_2way"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Get Input Axis (2-Way)"
 
 func get_inputs() -> Array[FKActionInput]:

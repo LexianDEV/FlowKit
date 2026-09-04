@@ -6,7 +6,7 @@ func get_description() -> String:
 func get_id() -> String:
 	return "move_and_slide"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Move and Slide"
 
 func get_supported_types() -> Array[String]:

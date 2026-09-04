@@ -6,7 +6,7 @@ func get_description() -> String:
 func get_id() -> String:
 	return "set_wait_time"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Set Wait Time"
 
 func get_inputs() -> Array[FKActionInput]:

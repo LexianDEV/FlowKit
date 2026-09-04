@@ -6,7 +6,7 @@ func get_description() -> String:
 func get_id() -> String:
 	return "action_release"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Action Release"
 
 func get_supported_types() -> Array[String]:

@@ -65,12 +65,16 @@ func _update_label_text():
 			
 ## If none is found from the registry, this returns the condition's id
 func _get_display_name_from_registry() -> String:
-	var display_name := _cond_block.condition_id
-	if registry:
-		for provider in registry.condition_providers:
-			if provider.get_id() == _cond_block.condition_id:
-				display_name = provider.get_name()
-				break
+	var id := _cond_block.get_resolved_provider_id()
+	var display_name := id
+	var provider: FKCondition = _cond_block.condition_provider
+
+	if provider == null and registry:
+		provider = registry.get_condition_provider(id)
+
+	if provider:
+		display_name = provider.get_display_name()
+
 	return display_name
 
 var _cond_block: FKConditionUnit:
