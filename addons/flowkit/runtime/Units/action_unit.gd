@@ -8,11 +8,13 @@ class_name FKActionUnit
 
 # Branch support
 @export var is_branch: bool = false
-@export var branch_type: String = ""              # "if", "elseif", "else", etc.
-@export var branch_id: String = ""                # Branch provider ID
+@export var branch_type: String = ""			  # "if", "elseif", "else", etc.
+@export var branch_id: String = ""				# Branch provider ID
 @export var branch_condition: FKConditionUnit = null
 @export var branch_inputs: Dictionary = {}
 @export var branch_actions: Array[FKActionUnit] = []
+@export var action_provider: FKAction
+@export var branch_provider: FKBranch
 
 func may_have_children() -> bool:
 	return true
@@ -41,7 +43,6 @@ func serialize() -> Dictionary:
 	_serialize_branch_conds_and_actions(result)
 
 	return result
-
 
 func _serialize_branch_conds_and_actions(result: Dictionary):
 	if is_branch and branch_condition != null:
@@ -82,7 +83,11 @@ func _deserialize_branch_conds_and_actions(dict: Dictionary):
 		branch_actions.append(act)
 	
 func get_id() -> String:
-	return action_id
+	if is_branch:
+		return branch_id
+
+	else:
+		return action_id
 	
 func duplicate_block() -> FKUnit:
 	#print("[FKActionUnit]: Duplicating!")
@@ -98,6 +103,9 @@ func duplicate_block() -> FKUnit:
 	copy.branch_inputs = branch_inputs.duplicate(true)
 	copy.branch_condition = branch_condition.duplicate_block() if branch_condition != null \
 	else null
+
+	copy.action_provider = action_provider
+	copy.branch_provider = branch_provider
 	
 	var branch_actions_copy: Array[FKActionUnit] = []
 	for elem in branch_actions:
@@ -119,3 +127,22 @@ func get_class() -> String:
 
 func get_real_class() -> String:
 	return self.get_class()
+
+func get_provider() -> FKProviderBase:
+	if is_branch:
+		return branch_provider
+	else:
+		return action_provider
+
+func get_resolved_provider_id() -> String:
+	var provider := get_provider()
+	var resolved := ""
+	if provider:
+		resolved = provider.get_provider_id().strip_edges()
+
+	if resolved.is_empty():
+		resolved = branch_id.strip_edges() if is_branch else action_id.strip_edges()
+
+	return resolved
+
+	
