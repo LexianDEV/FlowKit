@@ -6,6 +6,9 @@ func get_description() -> String:
 func get_id() -> String:
 	return "is_playing"
 
+func get_provider_id() -> String:
+	return "audio_stream_player_general_is_playing"
+
 func get_name() -> String:
 	return "Is Playing"
 

@@ -35,10 +35,21 @@ func _provider_id_of(provider: FKProviderBase) -> String:
 	result = result.strip_edges()
 	return result
 
-func _provider_matches_id(provider: Variant, wanted_id: String) -> bool:
-	if wanted_id.is_empty():
+func _provider_matches_id(provider: FKProviderBase, wanted_id: String) -> bool:
+	if provider == null:
 		return false
-	return _provider_id_of(provider) == wanted_id
+
+	var wanted := wanted_id.strip_edges()
+	if wanted.is_empty():
+		return false
+
+	var canonical_id := provider.get_provider_id().strip_edges()
+	if canonical_id == wanted:
+		return true
+
+	# Compatibility with sheets saved before providers got canonical IDs.
+	var legacy_id := provider.get_id().strip_edges()
+	return legacy_id == wanted
 
 func _provider_source_of(provider: Variant) -> String:
 	if provider == null:
@@ -296,33 +307,46 @@ negated: bool = false, scene_root: Node = null, unit_id: int = -1) -> bool:
 
 func execute_action(action_id: String, node: Node, inputs: Dictionary, 
 scene_root: Node = null, unit_id: int = -1) -> Variant:
-	for provider in action_providers:
-		if _provider_matches_id(provider, action_id):
-			if provider.has_method("execute"):
-				# Use scene_root as the base instance so get_node() resolves from the scene root
-				# Pass original node as target_node so n_ variable lookups resolve on the correct node
-				var context = scene_root if scene_root else node
-				var evaluated_inputs: Dictionary = FKExpressionEvaluator.evaluate_inputs(inputs, context, scene_root, node)
-				
-				var is_multi_frame_action: bool = provider.has_method("requires_multi_frames") and provider.requires_multi_frames()
-				if is_multi_frame_action:
-					_waiting_on_action = true
-					provider.exec_completed.connect(_on_exec_completed)
-					# ^Need to listen for the completion signal BEFORE we execute the action.
-					# Otherwise, under circumstances where the action only needs one frame to work,
-					# we'll miss the timing and end up freezing the game.
-					
-				provider.execute(node, evaluated_inputs, unit_id)
-				while _waiting_on_action:
-					await node.get_tree().process_frame
-				
-				if is_multi_frame_action:
-					provider.exec_completed.disconnect(_on_exec_completed) 
-					# ^Signal-hygiene
-					
-				return provider
-	return null
+	var provider := get_action_provider(action_id, node)
+	if not provider or not provider.has_method("execute"):
+		return null
 
+	# Use scene_root as the base instance so get_node() resolves from the scene root.
+	# Pass the original node as target_node so n_ variable lookups resolve on the correct node.
+	var context = scene_root if scene_root else node
+	var evaluated_inputs: Dictionary = FKExpressionEvaluator.evaluate_inputs(inputs, context, 
+	scene_root, node)
+
+	var is_multi_frame_action: bool = provider.has_method("requires_multi_frames") and \
+	provider.requires_multi_frames()
+	if is_multi_frame_action:
+		_waiting_on_action = true
+		provider.exec_completed.connect(_on_exec_completed)
+		# Need to listen for completion before execution, otherwise single-frame actions can freeze.
+
+	provider.execute(node, evaluated_inputs, unit_id)
+	while _waiting_on_action:
+		await node.get_tree().process_frame
+
+	if is_multi_frame_action:
+		provider.exec_completed.disconnect(_on_exec_completed)
+
+	return provider
+
+func get_action_provider(action_id: String, target_node: Node = null) -> FKAction:
+	# Canonical IDs must be globally unique.
+	for provider in action_providers:
+		if provider.get_provider_id().strip_edges() == action_id:
+			return provider
+
+	# Old IDs may collide, so select the compatible provider.
+	for provider in action_providers:
+		if provider.get_id().strip_edges() == action_id:
+			if target_node == null or provider.supports_node(target_node):
+				return provider
+
+	return null
+	
 func _on_exec_completed():
 	_waiting_on_action = false
 

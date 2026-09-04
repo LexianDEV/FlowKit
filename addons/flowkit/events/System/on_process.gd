@@ -6,6 +6,9 @@ func get_description() -> String:
 func get_id() -> String:
 	return "on_process"
 
+func get_provider_id() -> String:
+	return "system_on_process"
+
 func get_name() -> String:
 	return "On Process"
 

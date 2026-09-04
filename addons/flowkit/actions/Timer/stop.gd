@@ -6,6 +6,9 @@ func get_description() -> String:
 func get_id() -> String:
 	return "stop"
 
+func get_provider_id() -> String:
+	return "timer_stop"
+
 func get_name() -> String:
 	return "Stop"
 

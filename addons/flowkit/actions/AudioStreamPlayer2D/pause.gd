@@ -6,6 +6,9 @@ func get_description() -> String:
 func get_id() -> String:
 	return "pause"
 
+func get_provider_id() -> String:
+	return "audio_stream_player_2d_pause"
+
 func get_name() -> String:
 	return "Pause"
 

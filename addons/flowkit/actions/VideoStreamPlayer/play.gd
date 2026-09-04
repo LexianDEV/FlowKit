@@ -6,6 +6,9 @@ func get_description() -> String:
 func get_id() -> String:
 	return "play"
 
+func get_provider_id() -> String:
+	return "video_stream_player_play"
+
 func get_name() -> String:
 	return "Play"
 
