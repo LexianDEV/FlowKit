@@ -128,7 +128,7 @@ func get_class() -> String:
 func get_real_class() -> String:
 	return self.get_class()
 
-func get_provider() -> FKProviderBase:
+func get_provider() -> FKProvider:
 	if is_branch:
 		return branch_provider
 	else:

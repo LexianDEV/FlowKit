@@ -1,4 +1,4 @@
-extends FKProviderBase
+extends FKProvider
 
 ## Base class for FlowKit behaviors
 ## Behaviors are pre-written scripts that can be attached to nodes to add functionality

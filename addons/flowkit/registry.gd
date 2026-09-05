@@ -25,7 +25,7 @@ var event_alias_to_id: Dictionary[String, String] = {}
 var behavior_alias_to_id: Dictionary[String, String] = {}
 var branch_alias_to_id: Dictionary[String, String] = {}
 
-func _provider_id_of(provider: FKProviderBase) -> String:
+func _provider_id_of(provider: FKProvider) -> String:
 	var result := "";
 	if provider == null:
 		return result
@@ -35,7 +35,7 @@ func _provider_id_of(provider: FKProviderBase) -> String:
 	result = result.strip_edges()
 	return result
 
-func _provider_matches_id(provider: FKProviderBase, wanted_id: String) -> bool:
+func _provider_matches_id(provider: FKProvider, wanted_id: String) -> bool:
 	if provider == null:
 		return false
 
@@ -172,12 +172,12 @@ func _try_instantiate_provider(script: GDScript, kind: String) -> void:
 		push_warning("[FlowKit Registry] Skipping provider that returned null on new(): %s" % script.resource_path)
 		return
 
-	var found_abstract_provider: bool = instance is FKProviderBase and \
+	var found_abstract_provider: bool = instance is FKProvider and \
 	instance.is_abstract_provider()
 	if found_abstract_provider:
 		return
 
-	var prov: FKProviderBase = null
+	var prov: FKProvider = null
 	match kind:
 		"action":
 			if instance is FKAction:

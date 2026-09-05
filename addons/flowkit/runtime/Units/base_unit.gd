@@ -108,7 +108,7 @@ func _to_string() -> String:
 	return result
 
 func get_resolved_provider_id() -> String:
-	var provider: FKProviderBase = get_provider()
+	var provider: FKProvider = get_provider()
 	var result := ""
 	if provider:
 		result = provider.get_provider_id().strip_edges()
@@ -119,5 +119,5 @@ func get_resolved_provider_id() -> String:
 	return result
 
 ## Meant to be overridden by subclasses of FKUnit.
-func get_provider() -> FKProviderBase:
+func get_provider() -> FKProvider:
 	return null

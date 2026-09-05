@@ -1,5 +1,5 @@
 extends Resource
-class_name FKProviderBase
+class_name FKProvider
 
 const KIND_CONDITION := "condition"
 const KIND_ACTION := "action"

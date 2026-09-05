@@ -1,4 +1,4 @@
-extends FKProviderBase
+extends FKProvider
 class_name FKCondition
 
 func get_provider_kind() -> String:

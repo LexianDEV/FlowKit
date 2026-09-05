@@ -1,4 +1,4 @@
-extends FKProviderBase
+extends FKProvider
 
 ## Base class for FlowKit branch providers.
 ## Branches define control-flow constructs (if, repeat, etc.) that wrap actions.
