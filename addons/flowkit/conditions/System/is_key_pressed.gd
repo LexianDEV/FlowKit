@@ -6,7 +6,7 @@ func get_description() -> String:
 func get_id() -> String:
 	return "is_key_pressed"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Is Key Pressed"
 
 func get_supported_types() -> Array[String]:
@@ -17,7 +17,7 @@ func get_inputs() -> Array[Dictionary]:
 		{"name": "Key", "type": "String", "description": "The key to check (e.g., 'W', 'A', 'Space', 'Escape', 'Enter')."}
 	]
 
-func check(node: Node, inputs: Dictionary, block_id: String = "") -> bool:
+func check(node: Node, inputs: Dictionary, block_id: int = -1) -> bool:
 	var key_str: String = str(inputs.get("Key", "")).to_upper()
 	if key_str.is_empty():
 		return false

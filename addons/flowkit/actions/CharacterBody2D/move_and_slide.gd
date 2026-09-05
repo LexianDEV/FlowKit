@@ -6,13 +6,13 @@ func get_description() -> String:
 func get_id() -> String:
 	return "move_and_slide"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Move and Slide"
 
 func get_supported_types() -> Array[String]:
 	return ["CharacterBody2D"]
 
-func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
+func execute(node: Node, inputs: Dictionary, block_id: int = -1) -> void:
 	if not node is CharacterBody2D:
 		return
 	

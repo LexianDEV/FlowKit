@@ -6,7 +6,7 @@ func get_description() -> String:
 func get_id() -> String:
 	return "set_window_title"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Set Window Title"
 
 func get_supported_types() -> Array[String]:
@@ -19,6 +19,6 @@ static var _title_input: FKStringActionInput:
 	get:
 		return FKStringActionInput.new("Title", "The title to set for the window.")
 
-func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
+func execute(node: Node, inputs: Dictionary, block_id: int = -1) -> void:
 	var title: String = _title_input.get_val(inputs)
 	DisplayServer.window_set_title(title)

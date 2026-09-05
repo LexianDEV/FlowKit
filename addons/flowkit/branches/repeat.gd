@@ -25,13 +25,13 @@ func get_input_type() -> String:
 func get_inputs() -> Array[Dictionary]:
 	return [{"name": "times", "type": "int"}]
 
-func should_execute(condition_result: bool, inputs: Dictionary, block_id: String = "") -> bool:
+func should_execute(condition_result: bool, inputs: Dictionary, block_id: int = -1) -> bool:
 	var times = inputs.get("times", 0)
 	if times is String:
 		times = int(times)
 	return times > 0
 
-func get_execution_count(inputs: Dictionary, block_id: String = "") -> int:
+func get_execution_count(inputs: Dictionary, block_id: int = -1) -> int:
 	var times = inputs.get("times", 1)
 	if times is String:
 		times = int(times)

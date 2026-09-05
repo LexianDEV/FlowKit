@@ -42,8 +42,8 @@ Branches control conditional/repeated execution of actions within an event block
 - `get_inputs()` → `Array[Dictionary]`: Input definitions for evaluation-type branches (e.g., `[{"name": "times", "type": "int"}]`)
 - `get_type()` → `String`: Either `"single"` (standalone, no chaining) or `"chain"` (allows else-if/else blocks after it)
 - `get_color()` → `Color`: Accent color for the branch in the editor UI (type label, icon). Override to customise per-provider.
-- `should_execute(condition_result: bool, inputs: Dictionary, block_id: String)` → `bool`: For condition-type branches, decides execution based on condition result
-- `get_execution_count(inputs: Dictionary, block_id: String)` → `int`: For evaluation-type branches, returns how many times to execute (0 = skip)
+- `should_execute(condition_result: bool, inputs: Dictionary, block_id: int)` → `bool`: For condition-type branches, decides execution based on condition result
+- `get_execution_count(inputs: Dictionary, block_id: int)` → `int`: For evaluation-type branches, returns how many times to execute (0 = skip)
 
 Branch data is stored on `FKActionUnit` resources via `branch_id: String` and `branch_inputs: Dictionary`. Legacy `branch_type` values ("if"/"elseif"/"else") are resolved to `"if_branch"` via `registry.resolve_branch_id()` for backward compatibility.
 

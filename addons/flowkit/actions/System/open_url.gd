@@ -6,7 +6,7 @@ func get_description() -> String:
 func get_id() -> String:
 	return "open_url"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Open URL"
 
 func get_supported_types() -> Array[String]:
@@ -19,7 +19,7 @@ static var _url_input: FKStringActionInput:
 	get:
 		return FKStringActionInput.new("URL", "The URL to open in the web browser.")
 
-func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
+func execute(node: Node, inputs: Dictionary, block_id: int = -1) -> void:
 	var url: String = _url_input.get_val(inputs)
 	if not url.is_empty():
 		OS.shell_open(url)

@@ -7,7 +7,7 @@ func get_description() -> String:
 func get_id() -> String:
 	return "Print Message"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Print Message"
 
 func get_supported_types() -> Array:
@@ -27,7 +27,7 @@ static var _message_input: FKStringActionInput:
 		return FKStringActionInput.new("Message", 
 		"The message to print. BBCode tags are supported.")
 
-func execute(_node: Node, inputs: Dictionary, _str: String = "") -> void:
+func execute(_node: Node, inputs: Dictionary, _int: int = -1) -> void:
 	var color = _color_input.get_val(inputs)
 	var color_start_tag: String = "[color=" + color + "]"
 	var color_end_tag: String = "[/color]"

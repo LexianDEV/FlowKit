@@ -20,7 +20,7 @@ func get_inputs() -> Array:
 		{"name": "key", "type": "string", "description": "The key to detect (e.g., 'W', 'A', 'Space', 'Escape', 'Enter')."}
 	]
 
-func poll(node: Node, inputs: Dictionary = {}, block_id: String = "") -> bool:
+func poll(node: Node, inputs: Dictionary = {}, block_id: int = -1) -> bool:
 	var key_str: String = str(inputs.get("key", "")).to_upper()
 	if key_str.is_empty():
 		return false

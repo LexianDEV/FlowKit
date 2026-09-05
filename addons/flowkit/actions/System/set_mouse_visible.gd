@@ -6,7 +6,7 @@ func get_description() -> String:
 func get_id() -> String:
 	return "set_mouse_visible"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Set Mouse Visible"
 
 func get_supported_types() -> Array[String]:
@@ -21,7 +21,7 @@ static var _vis_input: FKBoolActionInput:
 		"Whether the mouse cursor should be visible.",
 		true)
 
-func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
+func execute(node: Node, inputs: Dictionary, block_id: int = -1) -> void:
 	var visible: bool = _vis_input.get_val(inputs)
 	if visible:
 		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)

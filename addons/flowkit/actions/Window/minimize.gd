@@ -6,12 +6,12 @@ func get_description() -> String:
 func get_id() -> String:
 	return "minimize"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Minimize"
 
 func get_supported_types() -> Array[String]:
 	return ["Window"]
 
-func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
+func execute(node: Node, inputs: Dictionary, block_id: int = -1) -> void:
 	if node and node is Window:
 		node.mode = Window.MODE_MINIMIZED

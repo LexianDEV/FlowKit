@@ -6,7 +6,7 @@ func get_description() -> String:
 func get_id() -> String:
 	return "get_project_setting"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Get Project Setting"
 
 func get_inputs() -> Array[FKActionInput]:
@@ -24,7 +24,7 @@ static var _store_input: FKStringActionInput:
 func get_supported_types() -> Array[String]:
 	return ["System"]
 
-func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
+func execute(node: Node, inputs: Dictionary, block_id: int = -1) -> void:
 	var path: String = _path_input.get_val(inputs)
 	var store_in: String = _store_input.get_val(inputs)
 

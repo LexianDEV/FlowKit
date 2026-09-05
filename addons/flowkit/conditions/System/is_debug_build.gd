@@ -6,7 +6,7 @@ func get_description() -> String:
 func get_id() -> String:
 	return "is_debug_build"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Is Debug Build"
 
 func get_supported_types() -> Array[String]:
@@ -15,5 +15,5 @@ func get_supported_types() -> Array[String]:
 func get_inputs() -> Array[Dictionary]:
 	return []
 
-func check(node: Node, inputs: Dictionary, block_id: String = "") -> bool:
+func check(node: Node, inputs: Dictionary, block_id: int = -1) -> bool:
 	return OS.is_debug_build()

@@ -1,22 +1,10 @@
-extends Resource
+extends FKProvider
 class_name FKEvent
 
-func get_description() -> String:
-	return "No description provided."
-
-func get_id() -> String:
-	return ""
-
-func get_name() -> String:
-	return ""
-
-func get_supported_types() -> Array[String]:
-	return []
-
-func get_inputs() -> Array:
-	return []
-
-func poll(node: Node, inputs: Dictionary = {}, block_id: String = "") -> bool:
+func get_provider_kind() -> String:
+	return KIND_EVENT
+	
+func poll(node: Node, inputs: Dictionary = {}, unit_id: int = -1) -> bool:
 	return false
 
 ## Override to return true when this event fires via signals instead of polling.
@@ -34,15 +22,15 @@ func is_signal_event() -> bool:
 ## Parameters:
 ##   node: The target node this event block points at.
 ##   trigger_callback: A Callable — call it to execute the block's conditions & actions.
-##   block_id: The unique identifier for this event block instance.
-func setup(node: Node, trigger_callback: Callable, block_id: String = "") -> void:
+##   unit_id: The unique identifier for this FKEventUnit instance.
+func setup(node: Node, trigger_callback: Callable, unit_id: int = -1) -> void:
 	pass
 
 ## Called when the engine unloads an event sheet (e.g. on scene change).
 ## Use this to disconnect signals or clean up any state created in setup().
 ## The default implementation does nothing.
-func teardown(node: Node, block_id: String = "") -> void:
+func teardown(node: Node, unit_id: int = -1) -> void:
 	pass
 	
 func get_class() -> String:
-	return "FKCondition"
+	return "FKEvent"

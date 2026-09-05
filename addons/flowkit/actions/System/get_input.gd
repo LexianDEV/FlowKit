@@ -6,7 +6,7 @@ func get_description() -> String:
 func get_id() -> String:
 	return "get_input_axis_2way"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Get Input Axis (2-Way)"
 
 func get_inputs() -> Array[FKActionInput]:
@@ -28,7 +28,7 @@ static var _store_input: FKStringActionInput:
 func get_supported_types() -> Array[String]:
 	return ["System"]
 
-func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
+func execute(node: Node, inputs: Dictionary, block_id: int = -1) -> void:
 	var negative_action: String = _neg_action_input.get_val(inputs)
 	var positive_action: String = _pos_action_input.get_val(inputs)
 	var store_in: String = _store_input.get_val(inputs)

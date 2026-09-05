@@ -6,7 +6,7 @@ func get_description() -> String:
 func get_id() -> String:
 	return "Wait For Input"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Wait For Input"
 
 func get_supported_types() -> Array:
@@ -23,7 +23,7 @@ static var _name_input: FKStringActionInput:
 		return FKStringActionInput.new("Input Binding Name", 
 		"You can find the binding names in Project->Input Map. Careful not to leave this empty!")
 
-func execute(target_node: Node, inputs: Dictionary, _str := "") -> void:
+func execute(target_node: Node, inputs: Dictionary, _int := -1) -> void:
 	var binding := _name_input.get_val(inputs)
 	var tree := target_node.get_tree()
 	

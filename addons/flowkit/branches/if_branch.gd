@@ -22,8 +22,8 @@ func get_color() -> Color:
 func get_input_type() -> String:
 	return "condition"
 
-func should_execute(condition_result: bool, inputs: Dictionary, block_id: String = "") -> bool:
+func should_execute(condition_result: bool, inputs: Dictionary, block_id: int = -1) -> bool:
 	return condition_result
 
-func get_execution_count(inputs: Dictionary, block_id: String = "") -> int:
+func get_execution_count(inputs: Dictionary, block_id: int = -1) -> int:
 	return 1

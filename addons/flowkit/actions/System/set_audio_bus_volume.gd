@@ -6,7 +6,7 @@ func get_description() -> String:
 func get_id() -> String:
 	return "set_audio_bus_volume"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Set Audio Bus Volume"
 
 func get_supported_types() -> Array[String]:
@@ -25,7 +25,7 @@ static var _volume_input: FKFloatActionInput:
 		return FKFloatActionInput.new("Volume (dB)", 
 		"The volume in decibels (0 = normal, -80 = silent, positive values = louder).")
 
-func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
+func execute(node: Node, inputs: Dictionary, block_id: int = -1) -> void:
 	var bus_name: String = _name_input.get_val(inputs)
 	var volume_db: float = _volume_input.get_val(inputs)
 	

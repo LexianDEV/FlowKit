@@ -10,7 +10,7 @@ class_name FKEventSheet
 @export var events: Array[FKEventUnit] = []
 @export var standalone_conditions: Array[FKConditionUnit] = []
 @export var comments: Array[FKComment] = []
-@export var groups: Array[FKGroup] = []
+@export var groups: Array[FKGroupUnit] = []
 
 ## Stores the display order: [{"type": "event"|"comment"|"group", "index": int}, ...]
 @export var item_order: Array[Dictionary] = []
@@ -53,7 +53,7 @@ func get_all_events() -> Array:
 
 func _collect_events_from_groups(groups: Array, out_events: Array) -> void:
 	for group in groups:
-		if not (group is FKGroup):
+		if not (group is FKGroupUnit):
 			continue
 
 		for child in group.children:
@@ -69,7 +69,7 @@ func _collect_events_from_groups(groups: Array, out_events: Array) -> void:
 			if unit is FKEventUnit:
 				out_events.append(unit)
 
-			elif unit is FKGroup:
+			elif unit is FKGroupUnit:
 				# Recurse into nested groups
 				_collect_events_from_groups([unit], out_events)
 
@@ -128,7 +128,7 @@ func _array_for(unit: FKUnit) -> Array:
 	elif unit is FKComment:
 		result = comments
 		#print("[FKEventSheet] chosen arr: comments")
-	elif unit is FKGroup:
+	elif unit is FKGroupUnit:
 		result = groups
 		#print("[FKEventSheet] chosen arr: groups")
 	elif unit is FKConditionUnit: 
@@ -145,7 +145,7 @@ func rebuild_order_from_items(ordered_items: Array) -> void:
 	"""Rebuild the events, comments, groups arrays and item_order from an ordered list."""
 	events = [] as Array[FKEventUnit]
 	comments = [] as Array[FKComment]
-	groups = [] as Array[FKGroup]
+	groups = [] as Array[FKGroupUnit]
 	item_order = [] as Array[Dictionary]
 	
 	for item in ordered_items:
@@ -162,11 +162,12 @@ func rebuild_order_from_items(ordered_items: Array) -> void:
 					item_order.append({"type": "comment", "index": comments.size()})
 					comments.append(data)
 			"group":
-				if data is FKGroup:
+				if data is FKGroupUnit:
 					item_order.append({"type": "group", "index": groups.size()})
 					groups.append(data)
 
 func on_loaded_from_disk():
+	print("[FKEventSheet]: on_loaded_from_disk called")
 	_call_child_on_loaded_from_disk(events)
 	_call_child_on_loaded_from_disk(standalone_conditions)
 	_call_child_on_loaded_from_disk(comments)
@@ -183,8 +184,10 @@ func refresh():
 	if not _id_assigner:
 		_id_assigner = FKIdAssigner.new()
 		
-	_id_assigner.prop_name = "personal_id"
+	_id_assigner.prop_name = "uid"
 	_id_assigner._append_array_as_invalid([0, FKUnit.INVALID_ID])
+
+	_id_assigner.reset_taken_caches()
 	_refresh_uids()
 
 # For backwards compatibility with older versions of FlowKit

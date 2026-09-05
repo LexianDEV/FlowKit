@@ -1,5 +1,8 @@
 extends FKAction
-class_name FadeColorBase
+class_name FKFadeColorBase
+
+func is_abstract_provider() -> bool:
+	return true
 
 func requires_multi_frames() -> bool:
 	return true
@@ -50,7 +53,7 @@ static var default_wait_for_finish := true
 
 var tween: Tween = null
 
-func execute(targetNode: Node, inputs: Dictionary, _str := "") -> void:
+func execute(targetNode: Node, inputs: Dictionary, _int := -1) -> void:
 	parse_inputs(targetNode, inputs)
 	if tween:
 		tween.cancel_free()

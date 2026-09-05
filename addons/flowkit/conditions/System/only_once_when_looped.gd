@@ -10,7 +10,7 @@ func get_description() -> String:
 func get_id() -> String:
 	return "only_once_when_looped"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Only Once When Looped"
 
 func get_inputs() -> Array[Dictionary]:
@@ -19,7 +19,7 @@ func get_inputs() -> Array[Dictionary]:
 func get_supported_types() -> Array[String]:
 	return ["System"]
 
-func check(node: Node, inputs: Dictionary, block_id: String = "") -> bool:
+func check(node: Node, inputs: Dictionary, block_id: int = -1) -> bool:
 	var current_frame: int = Engine.get_physics_frames()
 	
 	# Initialize state for this block if not present

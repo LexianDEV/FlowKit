@@ -6,7 +6,7 @@ func get_description() -> String:
 func get_id() -> String:
 	return "Wait For Frames"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Wait For Frames"
 
 func get_supported_types() -> Array:
@@ -22,7 +22,7 @@ static var _frame_input: FKIntActionInput:
 	get:
 		return FKIntActionInput.new("Frame Count", "What you'd expect")
 
-func execute(target_node: Node, inputs: Dictionary, _str := "") -> void:
+func execute(target_node: Node, inputs: Dictionary, _str := -1) -> void:
 	var frame_count: float = _frame_input.get_val(inputs)
 	var tree := target_node.get_tree()
 	

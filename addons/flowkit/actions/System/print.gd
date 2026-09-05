@@ -6,7 +6,7 @@ func get_description() -> String:
 func get_id() -> String:
 	return "print"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Print"
 
 func get_inputs() -> Array[FKActionInput]:
@@ -19,6 +19,6 @@ static var _message_input: FKStringActionInput:
 func get_supported_types() -> Array[String]:
 	return ["System"]
 
-func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
+func execute(node: Node, inputs: Dictionary, block_id: int = -1) -> void:
 	var message: Variant = _message_input.get_val(inputs)
 	print(message)

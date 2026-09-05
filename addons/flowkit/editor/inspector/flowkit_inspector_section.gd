@@ -130,7 +130,11 @@ func _populate_behaviors() -> void:
 				break
 		
 		if is_supported:
-			var behavior_name: String = provider.get_name() if provider.has_method("get_name") else provider.get_id()
+			var behavior_name: String = provider.get_display_name() \
+			if provider.has_method("get_name") else provider.get_id()
+			
+			if behavior_name == null || behavior_name.length() == 0:
+				behavior_name = provider.get_provider_id()
 			behavior_dropdown.add_item(behavior_name, idx)
 			available_behaviors.append(provider)
 			idx += 1

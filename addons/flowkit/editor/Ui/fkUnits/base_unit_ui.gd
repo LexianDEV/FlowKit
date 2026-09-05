@@ -11,14 +11,14 @@ signal reorder_requested(source_item: Control, target_item: Control, drop_above:
 
 ## Call this when you want to have an FKUnitUi work properly as
 ## a non-preview instance. This func assumes this instance
-## already has a Block and registry registered.
+## already has an FKUnit and registry registered.
 
-func legitimize(block: FKUnit, editor_globals: FKEditorGlobals):
+func legitimize(unit: FKUnit, editor_globals: FKEditorGlobals):
 	if not is_editor_preview:
 		return
 	is_editor_preview = false
 	self._globals = editor_globals
-	set_block(block)
+	set_unit(unit)
 	_enter_tree()
 	_ready()
 
@@ -94,31 +94,31 @@ func _ready() -> void:
 	update_display.call_deferred()
 	
 ## Returns the FKUnit this is representing.
-func get_block() -> FKUnit:
-	return _block
+func get_unit() -> FKUnit:
+	return _unit
 
-## The Block that this Node represents.
-var _block: FKUnit
+## The FKUnit that this Node represents.
+var _unit: FKUnit
 
-func has_block() -> bool:
-	return _block != null
+func has_unit() -> bool:
+	return _unit != null
 
-func set_block(to_set: FKUnit) -> void:
+func set_unit(to_set: FKUnit) -> void:
 	if is_editor_preview:
 		return
-	var valid := _validate_block(to_set)
+	var valid := _validate_unit(to_set)
 	if not valid:
 		return
 		
 	before_contents_changed.emit(self)
-	_block = to_set
+	_unit = to_set
 	contents_changed.emit(self)
 	
 ## Meant to be overridden by subclasses.
-func _validate_block(to_set: FKUnit) -> bool:
+func _validate_unit(to_set: FKUnit) -> bool:
 	if is_editor_preview:
 		return false
-	_alert_need_for_override("_validate_block")
+	_alert_need_for_override("_validate_unit")
 	return false
 	
 	
@@ -166,8 +166,8 @@ func _exit_tree() -> void:
 func _to_string() -> String:
 	var result := "FKUnitUi"
 	
-	if _block != null:
-		result += "\nhas block: true"
+	if _unit != null:
+		result += "\nhas unit: true"
 	return result
 	
 func get_class() -> String:

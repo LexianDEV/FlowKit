@@ -225,7 +225,7 @@ func get_inputs() -> Array[FKActionInput]:
 func get_supported_types() -> Array[String]:
 	return ["%s"]
 
-func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
+func execute(node: Node, inputs: Dictionary, unit_id: int = -1) -> void:
 	if not node is %s:
 		return
 	
@@ -288,7 +288,7 @@ func get_inputs() -> Array[FKActionInput]:
 func get_supported_types() -> Array[String]:
 	return ["%s"]
 
-func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
+func execute(node: Node, inputs: Dictionary, unit_id: int = -1) -> void:
 	if not node is %s:
 		return
 	
@@ -387,7 +387,7 @@ func get_inputs() -> Array[Dictionary]:
 func get_supported_types() -> Array[String]:
 	return ["%s"]
 
-func check(node: Node, inputs: Dictionary, block_id: String = "") -> bool:
+func check(node: Node, inputs: Dictionary, unit_id: int = -1) -> bool:
 	if not node is %s:
 		return false
 	
@@ -450,7 +450,7 @@ func get_inputs() -> Array[Dictionary]:
 func get_supported_types() -> Array[String]:
 	return ["%s"]
 
-func check(node: Node, inputs: Dictionary, block_id: String = "") -> bool:
+func check(node: Node, inputs: Dictionary, unit_id: int = -1) -> bool:
 	if not node is %s:
 		return false
 	
@@ -527,28 +527,29 @@ func is_signal_event() -> bool:
 	return true
 
 # Store connections so we can disconnect in teardown.
-# Key: block_id -> Callable
+# Key: unit_id -> Callable
 var _connections: Dictionary = {}
 
-func setup(node: Node, trigger_callback: Callable, block_id: String = "") -> void:
+func setup(node: Node, trigger_callback: Callable, unit_id: int = -1) -> void:
 	if not node or not node.is_inside_tree():
 		return
 	if not node.has_signal("%s"):
 		return
 
 	var cb: Callable = func(%s): trigger_callback.call()
-	_connections[block_id] = cb
+	_connections[str(unit_id)] = cb
 	node.%s.connect(cb)
 
-func teardown(node: Node, block_id: String = "") -> void:
+func teardown(node: Node, unit_id: int = -1) -> void:
+	var id_str := str(unit_id)
 	if not node or not is_instance_valid(node):
-		_connections.erase(block_id)
+		_connections.erase(id_str)
 		return
-	if _connections.has(block_id):
-		var cb: Callable = _connections[block_id]
+	if _connections.has(id_str):
+		var cb: Callable = _connections[id_str]
 		if node.has_signal("%s") and node.%s.is_connected(cb):
 			node.%s.disconnect(cb)
-		_connections.erase(block_id)
+		_connections.erase(id_str)
 """ % [
 		event_id,
 		event_name,
@@ -806,16 +807,16 @@ func _scan_used_provider_ids() -> Dictionary:
 ## Extract all provider IDs from a single event sheet.
 func _extract_ids_from_sheet(sheet: FKEventSheet, used: Dictionary) -> void:
 	# Process top-level events
-	for event_block in sheet.events:
-		_extract_ids_from_event_block(event_block, used)
+	for event_unit in sheet.events:
+		_extract_ids_from_event_unit(event_unit, used)
 
 	# Process events inside groups (recursively)
 	for group in sheet.groups:
 		_extract_ids_from_group(group, used)
 
 
-## Extract IDs from a group block (which can contain events, nested groups, etc.)
-func _extract_ids_from_group(group: FKGroup, used: Dictionary) -> void:
+## Extract IDs from a group unit (which can contain events, nested groups, etc.)
+func _extract_ids_from_group(group: FKGroupUnit, used: Dictionary) -> void:
 	for child in group.children:
 		var child_type: String = child.get("type", "")
 		var child_data = child.get("data", null)
@@ -824,24 +825,24 @@ func _extract_ids_from_group(group: FKGroup, used: Dictionary) -> void:
 		match child_type:
 			"event":
 				if child_data is FKEventUnit:
-					_extract_ids_from_event_block(child_data, used)
+					_extract_ids_from_event_unit(child_data, used)
 			"group":
-				if child_data is FKGroup:
+				if child_data is FKGroupUnit:
 					_extract_ids_from_group(child_data, used)
 
 
-## Extract IDs from a single event block and all its contents.
-func _extract_ids_from_event_block(block: FKEventUnit, used: Dictionary) -> void:
+## Extract IDs from a single event unit and all its contents.
+func _extract_ids_from_event_unit(unit: FKEventUnit, used: Dictionary) -> void:
 	# Event provider
-	if block.event_id and not block.event_id.is_empty():
-		used.event_ids[block.event_id] = true
+	if unit.event_id and not unit.event_id.is_empty():
+		used.event_ids[unit.event_id] = true
 
-	# Conditions on the block
-	for cond in block.conditions:
+	# Conditions on the unit (which may themselves contain nested actions)
+	for cond in unit.conditions:
 		_extract_ids_from_condition(cond, used)
 
-	# Actions on the block
-	for action in block.actions:
+	# Actions on the unit
+	for action in unit.actions:
 		_extract_ids_from_action(action, used)
 
 

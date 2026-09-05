@@ -17,10 +17,10 @@ func is_signal_event() -> bool:
 
 var _callback: Callable
 
-func setup(target_node: Node, trigger_callback: Callable, instance_id: String = "") -> void:
+func setup(target_node: Node, trigger_callback: Callable, instance_id: int = -1) -> void:
 	_callback = func(): trigger_callback.call()
 	target_node.pressed.connect(_callback)
 
-func teardown(target_node: Node, instance_id: String = "") -> void:
+func teardown(target_node: Node, instance_id: int = -1) -> void:
 	if is_instance_valid(target_node) and target_node.pressed.is_connected(_callback):
 		target_node.pressed.disconnect(_callback)

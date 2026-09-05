@@ -6,7 +6,10 @@ func get_description() -> String:
 func get_id() -> String:
 	return "is_paused"
 
-func get_name() -> String:
+func get_provider_id() -> String:
+	return "timer_is_paused"
+
+func get_display_name() -> String:
 	return "Is Paused"
 
 func get_inputs() -> Array[Dictionary]:
@@ -15,7 +18,7 @@ func get_inputs() -> Array[Dictionary]:
 func get_supported_types() -> Array[String]:
 	return ["Timer"]
 
-func check(node: Node, inputs: Dictionary, block_id: String = "") -> bool:
+func check(node: Node, inputs: Dictionary, block_id: int = -1) -> bool:
 	if node and node is Timer:
 		return node.paused
 	return false

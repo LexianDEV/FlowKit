@@ -6,7 +6,7 @@ func get_description() -> String:
 func get_id() -> String:
 	return "set_time_scale"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Set Time Scale"
 
 func get_supported_types() -> Array[String]:
@@ -21,6 +21,6 @@ static var _scale_input: FKFloatActionInput:
 		"The time scale multiplier (1.0 = normal speed).",
 		1.0)
 
-func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
+func execute(node: Node, inputs: Dictionary, block_id: int = -1) -> void:
 	var scale: float = _scale_input.get_val(inputs)
 	Engine.time_scale = scale

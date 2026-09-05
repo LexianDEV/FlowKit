@@ -6,7 +6,7 @@ func get_description() -> String:
 func get_id() -> String:
 	return "action_press"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Action Press"
 
 func get_supported_types() -> Array[String]:
@@ -25,7 +25,7 @@ static var _strength_input: FKFloatActionInput:
 		"The strength of the action press (0.0 to 1.0).",
 		1.0)
 
-func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
+func execute(node: Node, inputs: Dictionary, block_id: int = -1) -> void:
 	var action_name: String = _action_input.get_val(inputs)
 	var strength: float = _strength_input.get_val(inputs)
 	strength = clampf(strength, 0.0, 1.0)

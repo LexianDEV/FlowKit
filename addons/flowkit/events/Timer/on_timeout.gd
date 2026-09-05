@@ -17,10 +17,10 @@ func is_signal_event() -> bool:
 
 var _callback: Callable
 
-func setup(node: Node, trigger_callback: Callable, _block_id: String = "") -> void:
+func setup(node: Node, trigger_callback: Callable, _block_id: int = -1) -> void:
 	_callback = func(): trigger_callback.call()
 	node.timeout.connect(_callback)
 
-func teardown(node: Node, _block_id: String = "") -> void:
+func teardown(node: Node, _block_id: int = -1) -> void:
 	if is_instance_valid(node) and node.timeout.is_connected(_callback):
 		node.timeout.disconnect(_callback)

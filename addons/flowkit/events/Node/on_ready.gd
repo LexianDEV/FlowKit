@@ -18,5 +18,5 @@ func get_inputs() -> Array:
 func is_signal_event() -> bool:
 	return true
 
-func setup(node: Node, trigger_callback: Callable, block_id: String = "") -> void:
+func setup(node: Node, trigger_callback: Callable, block_id: int = -1) -> void:
 	trigger_callback.call()

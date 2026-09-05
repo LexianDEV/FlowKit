@@ -6,7 +6,7 @@ func get_description() -> String:
 func get_id() -> String:
 	return "compare_node_variable"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Compare Node Variable"
 
 func get_inputs() -> Array[Dictionary]:
@@ -19,7 +19,7 @@ func get_inputs() -> Array[Dictionary]:
 func get_supported_types() -> Array[String]:
 	return ["Node"]
 
-func check(node: Node, inputs: Dictionary, block_id: String = "") -> bool:
+func check(node: Node, inputs: Dictionary, block_id: int = -1) -> bool:
 	# Note: inputs are pre-evaluated by the registry, so Property is already the value
 	var current_value: Variant = inputs.get("Property", null)
 	var comparison: String = str(inputs.get("Comparison", "=="))

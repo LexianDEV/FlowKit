@@ -6,7 +6,7 @@ func get_description() -> String:
 func get_id() -> String:
 	return "set_clipboard"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Set Clipboard"
 
 func get_supported_types() -> Array[String]:
@@ -19,6 +19,6 @@ static var _text_input: FKStringActionInput:
 	get:
 		return FKStringActionInput.new("Text", "The text to copy to the clipboard.")
 
-func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
+func execute(node: Node, inputs: Dictionary, block_id: int = -1) -> void:
 	var text: String = _text_input.get_val(inputs)
 	DisplayServer.clipboard_set(text)

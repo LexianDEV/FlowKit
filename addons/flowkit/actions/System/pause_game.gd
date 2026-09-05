@@ -6,13 +6,13 @@ func get_description() -> String:
 func get_id() -> String:
 	return "pause_game"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Pause Game"
 
 func get_supported_types() -> Array[String]:
 	return ["System"]
 
-func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
+func execute(node: Node, inputs: Dictionary, block_id: int = -1) -> void:
 	if not node or not node.is_inside_tree():
 		return
 	node.get_tree().paused = true

@@ -6,12 +6,15 @@ func get_description() -> String:
 func get_id() -> String:
 	return "stop"
 
-func get_name() -> String:
+func get_provider_id() -> String:
+	return "timer_stop"
+
+func get_display_name() -> String:
 	return "Stop"
 
 func get_supported_types() -> Array[String]:
 	return ["Timer"]
 
-func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
+func execute(node: Node, inputs: Dictionary, block_id: int = -1) -> void:
 	if node and node is Timer:
 		node.stop()

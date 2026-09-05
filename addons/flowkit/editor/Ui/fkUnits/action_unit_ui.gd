@@ -20,15 +20,15 @@ var drop_above := true
 # Block Handling
 # ---------------------------------------------------------
 
-func _validate_block(to_set: FKUnit) -> bool:
+func _validate_unit(to_set: FKUnit) -> bool:
 	return to_set == null or to_set is FKActionUnit
 
 func get_action() -> FKActionUnit:
-	return _block as FKActionUnit
+	return _unit as FKActionUnit
 
-func get_block() -> FKActionUnit:
-	if _block is FKActionUnit:
-		return _block as FKActionUnit
+func get_unit() -> FKActionUnit:
+	if _unit is FKActionUnit:
+		return _unit as FKActionUnit
 	else:
 		return null
 
@@ -67,23 +67,26 @@ func _update_label() -> void:
 
 var _action: FKActionUnit:
 	get:
-		if _block is FKActionUnit:
-			return _block as FKActionUnit
+		if _unit is FKActionUnit:
+			return _unit as FKActionUnit
 		else:
 			return null
 
 ## If none is found, this returns the action id
 func _get_display_name_from_registry() -> String:
-	var id := _action.get_id()
+	var id := _action.get_resolved_provider_id()
 	var display_name := id
-	
-	if registry:
-		for provider in registry.action_providers:
-			if provider.has_method("get_id") and provider.get_id() == id:
-				if provider.has_method("get_name"):
-					display_name = provider.get_name()
-				break
-				
+	var provider: FKAction = _action.action_provider
+
+	if provider and provider.is_abstract_provider():
+		provider = null
+
+	if provider == null and registry:
+		provider = registry.get_action_provider(id)
+
+	if provider:
+		display_name = provider.get_display_name()
+
 	return display_name
 	
 func _get_params_text() -> String:
@@ -276,7 +279,7 @@ func _notification(what: int) -> void:
 func _to_string() -> String:
 	var result := "FKActionUnitUi"
 	
-	if _block != null:
+	if _unit != null:
 		result += "\nhas block: true"
 	return result
 

@@ -6,7 +6,7 @@ func get_description() -> String:
 func get_id() -> String:
 	return "set_velocity_y"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Set Y Velocity"
 
 func get_inputs() -> Array[FKActionInput]:
@@ -20,7 +20,7 @@ static var _value_input: FKFloatActionInput:
 func get_supported_types() -> Array[String]:
 	return ["CharacterBody2D"]
 
-func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
+func execute(node: Node, inputs: Dictionary, block_id: int = -1) -> void:
 	if not node is CharacterBody2D:
 		return
 	

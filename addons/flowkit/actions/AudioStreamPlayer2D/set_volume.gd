@@ -6,7 +6,7 @@ func get_description() -> String:
 func get_id() -> String:
 	return "set_volume"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Set Volume"
 
 func get_inputs() -> Array[FKActionInput]:
@@ -20,7 +20,7 @@ static var _volume_input: FKFloatActionInput:
 func get_supported_types() -> Array[String]:
 	return ["AudioStreamPlayer2D"]
 
-func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
+func execute(node: Node, inputs: Dictionary, block_id: int = -1) -> void:
 	if node and (node is AudioStreamPlayer2D):
 		var volume_db: float = _volume_input.get_val(inputs)
 		node.volume_db = volume_db

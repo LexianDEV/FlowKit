@@ -327,7 +327,7 @@ func _connect_nested_branch_signals(nested: FKBranchUnitUi) -> void:
 
 func _on_sub_action_delete(item: FKUnitUi) -> void:
 	before_contents_changed.emit(item)
-	var data: FKUnit = item.get_block()
+	var data: FKUnit = item.get_unit()
 	if data and _action:
 		var idx := _action.branch_actions.find(data)
 		if idx >= 0:
@@ -339,8 +339,8 @@ func _on_sub_action_reorder(source_item, target_item, drop_above: bool) -> void:
 	if not _action:
 		return
 
-	var source_data: FKUnit = source_item.get_block()
-	var target_data: FKUnit = target_item.get_block()
+	var source_data: FKUnit = source_item.get_unit()
+	var target_data: FKUnit = target_item.get_unit()
 
 	var source_idx := _action.branch_actions.find(source_data)
 	var target_idx := _action.branch_actions.find(target_data)
@@ -477,7 +477,7 @@ func _on_mouse_exited() -> void:
 func _to_string() -> String:
 	var result := "FKBranchUnitUi"
 	
-	if _block != null:
+	if _unit != null:
 		result += "\nhas block: true"
 	return result
 	

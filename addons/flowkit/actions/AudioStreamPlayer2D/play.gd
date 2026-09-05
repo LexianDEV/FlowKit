@@ -6,12 +6,15 @@ func get_description() -> String:
 func get_id() -> String:
 	return "play"
 
-func get_name() -> String:
+func get_provider_id() -> String:
+	return "audio_stream_player_2d_play"
+	
+func get_display_name() -> String:
 	return "Play"
 
 func get_supported_types() -> Array[String]:
 	return ["AudioStreamPlayer2D"]
 
-func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
+func execute(node: Node, inputs: Dictionary, block_id: int = -1) -> void:
 	if node and (node is AudioStreamPlayer2D):
 		node.play()

@@ -6,7 +6,7 @@ func get_description() -> String:
 func get_id() -> String:
 	return "Set Text"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Set Text"
 	
 func get_inputs() -> Array[FKActionInput]:
@@ -20,7 +20,7 @@ static var _new_text_input: FKStringActionInput:
 func get_supported_types() -> Array:
 	return ["Label", "RichTextLabel", "Button", "TextEdit", "LineEdit"]
 
-func execute(target_node: Node, inputs: Dictionary, _str := "") -> void:
+func execute(target_node: Node, inputs: Dictionary, _int := -1) -> void:
 	var new_text: String = _new_text_input.get_val(inputs)
 	var has_text: Variant = target_node
 	var prev_text: String = has_text.text

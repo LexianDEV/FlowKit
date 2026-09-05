@@ -20,11 +20,11 @@ var drop_above := true
 # Block Handling
 # ---------------------------------------------------------
 
-func _validate_block(to_set: FKUnit) -> bool:
+func _validate_unit(to_set: FKUnit) -> bool:
 	return to_set == null or to_set is FKConditionUnit
 
-func get_block() -> FKConditionUnit:
-	return _block as FKConditionUnit
+func get_unit() -> FKConditionUnit:
+	return _unit as FKConditionUnit
 
 # ---------------------------------------------------------
 # Registry Handling
@@ -50,7 +50,7 @@ func _update_styling() -> void:
 	panel.add_theme_stylebox_override("panel", style)
 
 func _update_label() -> void:
-	if not _block:
+	if not _unit:
 		return
 	
 	_update_label_text()
@@ -65,19 +65,22 @@ func _update_label_text():
 			
 ## If none is found from the registry, this returns the condition's id
 func _get_display_name_from_registry() -> String:
-	var display_name := _cond_block.condition_id
-	if registry:
-		for provider in registry.condition_providers:
-			if provider.has_method("get_id") and provider.get_id() == _cond_block.condition_id:
-				if provider.has_method("get_name"):
-					display_name = provider.get_name()
-				break
+	var id := _cond_block.get_resolved_provider_id()
+	var display_name := id
+	var provider: FKCondition = _cond_block.condition_provider
+
+	if provider == null and registry:
+		provider = registry.get_condition_provider(id)
+
+	if provider:
+		display_name = provider.get_display_name()
+
 	return display_name
 
 var _cond_block: FKConditionUnit:
 	get:
-		if _block is FKConditionUnit:
-			return _block as FKConditionUnit
+		if _unit is FKConditionUnit:
+			return _unit as FKConditionUnit
 		else:
 			return null
 			
@@ -110,7 +113,7 @@ func show_context_menu(global_pos: Vector2) -> void:
 	if not context_menu:
 		return
 	
-	var c := get_block()
+	var c := get_unit()
 	if c:
 		context_menu.set_item_checked(2, c.negated)
 
@@ -174,13 +177,13 @@ func _on_mouse_exited() -> void:
 # ---------------------------------------------------------
 
 func _get_drag_data(at_position: Vector2) -> FKDragData:
-	if not _block:
+	if not _unit:
 		return null
 
 	var preview := _create_drag_preview()
 	set_drag_preview(preview)
 
-	return FKDragData.new(DragTarget.Type.CONDITION_ITEM, self, _block)
+	return FKDragData.new(DragTarget.Type.CONDITION_ITEM, self, _unit)
 
 func _create_drag_preview() -> Control:
 	var preview_label := Label.new()
@@ -269,7 +272,7 @@ func _notification(what: int) -> void:
 func _to_string() -> String:
 	var result := "FKConditionUnitUi"
 	
-	if _block != null:
+	if _unit != null:
 		result += "\nhas block: true"
 	return result
 

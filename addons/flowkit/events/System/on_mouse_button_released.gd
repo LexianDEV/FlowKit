@@ -20,7 +20,7 @@ func get_inputs() -> Array:
 		{"name": "button", "type": "string", "description": "The mouse button to detect: 'left', 'right', 'middle'."}
 	]
 
-func poll(node: Node, inputs: Dictionary = {}, block_id: String = "") -> bool:
+func poll(node: Node, inputs: Dictionary = {}, block_id: int = -1) -> bool:
 	var button_str: String = str(inputs.get("button", "left")).to_lower()
 	var button: MouseButton = _string_to_button(button_str)
 	

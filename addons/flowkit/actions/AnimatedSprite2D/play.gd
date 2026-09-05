@@ -3,7 +3,7 @@ extends FKAction
 func get_id() -> String:
 	return "animatedsprite2d_play"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Play"
 
 func get_description() -> String:
@@ -23,7 +23,7 @@ static var _from_end_input: FKActionInput:
 func get_supported_types() -> Array[String]:
 	return ["AnimatedSprite2D"]
 
-func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
+func execute(node: Node, inputs: Dictionary, block_id: int = -1) -> void:
 	if not node is AnimatedSprite2D:
 		return
 	

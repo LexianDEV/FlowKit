@@ -1,23 +1,17 @@
-extends Resource
-class_name FKBranch
+extends FKProvider
 
 ## Base class for FlowKit branch providers.
 ## Branches define control-flow constructs (if, repeat, etc.) that wrap actions.
 ## Extend this class to create custom branch types that appear in the "Add..." menu.
+class_name FKBranch
 
-func get_description() -> String:
-	return "No description provided."
-
-func get_id() -> String:
-	return ""
-
-func get_name() -> String:
-	return ""
+func get_provider_kind() -> String:
+	return KIND_BRANCH
 
 func get_type() -> String:
 	## Returns "single" or "chain".
-	## "single" — the branch stands alone; no else-if / else blocks can follow.
-	## "chain" — else-if / else blocks can be appended after this branch.
+	## "single" — the branch stands alone; no else-if / else units can follow.
+	## "chain" — else-if / else units can be appended after this branch.
 	return "single"
 
 func get_color() -> Color:
@@ -38,14 +32,14 @@ func get_inputs() -> Array[Dictionary]:
 	## These appear as fields in the expression editor modal.
 	return []
 
-func should_execute(condition_result: bool, inputs: Dictionary, block_id: String = "") -> bool:
+func should_execute(condition_result: bool, inputs: Dictionary, unit_id: int = -1) -> bool:
 	## Determines whether the branch body should run.
 	## For "condition" type: condition_result is the FKCondition check (negation already applied).
 	## For "evaluation" type: inputs holds the evaluated expression values;
 	##   condition_result is always false and should be ignored.
 	return condition_result
 
-func get_execution_count(inputs: Dictionary, block_id: String = "") -> int:
+func get_execution_count(inputs: Dictionary, unit_id: int = -1) -> int:
 	## How many times the branch body executes when should_execute() is true.
 	## Default is 1 (standard if-style). Override for repeat-style branches.
 	return 1

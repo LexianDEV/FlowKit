@@ -7,6 +7,7 @@ class_name FKConditionUnit
 @export var inputs: Dictionary = {}
 @export var negated: bool = false
 @export var actions: Array[FKActionUnit] = [] 
+@export var condition_provider: FKCondition 
 
 func _init() -> void:
 	block_type = "condition"
@@ -32,20 +33,14 @@ func serialize() -> Dictionary:
 	return result
 
 func deserialize(dict: Dictionary) -> void:
+	super.deserialize(dict)
 	condition_id = dict.get("condition_id", "")
 	target_node = NodePath(dict.get("target_node", ""))
 	inputs = dict.get("inputs", {}).duplicate()
 	negated = dict.get("negated", false)
 
 func duplicate_block() -> FKUnit:
-	#print("[FKConditionUnit]: Duplicating!")
-	var result: FKConditionUnit = FKConditionUnit.new()
-	result.condition_id = condition_id
-	result.target_node = str(target_node)
-	result.inputs = inputs.duplicate()
-	result.negated = negated
-	result.actions = [] as Array[FKActionUnit]
-	
+	var result := self.duplicate(true)
 	return result
 	
 func get_id() -> String:
@@ -53,3 +48,6 @@ func get_id() -> String:
 
 func get_class() -> String:
 	return "FKConditionUnit"
+
+func get_provider() -> FKCondition:
+	return condition_provider

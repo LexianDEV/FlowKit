@@ -6,7 +6,10 @@ func get_description() -> String:
 func get_id() -> String:
 	return "is_playing"
 
-func get_name() -> String:
+func get_provider_id() -> String:
+	return "audio_stream_player_general_is_playing"
+
+func get_display_name() -> String:
 	return "Is Playing"
 
 func get_inputs() -> Array[Dictionary]:
@@ -15,7 +18,7 @@ func get_inputs() -> Array[Dictionary]:
 func get_supported_types() -> Array[String]:
 	return ["AudioStreamPlayer", "AudioStreamPlayer2D", "AudioStreamPlayer3D"]
 
-func check(node: Node, inputs: Dictionary, block_id: String = "") -> bool:
+func check(node: Node, inputs: Dictionary, block_id: int = -1) -> bool:
 	if node and (node is AudioStreamPlayer or node is AudioStreamPlayer2D or node is AudioStreamPlayer3D):
 		return node.playing
 	return false

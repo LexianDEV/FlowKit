@@ -8,20 +8,20 @@ const INVALID_ID := 0
 
 ## This is meant to be relative to the Event Sheet it belongs to, as opposed
 ## to being globally exclusive.
-@export var personal_id: int = INVALID_ID:
+@export var uid: int = INVALID_ID:
 	set(value):
-		if personal_id == null: # This is expected after reading older FKUnits from disk
-			personal_id = INVALID_ID
+		if uid == null: # This is expected after reading older FKUnits from disk
+			uid = INVALID_ID
 
 		if value < INVALID_ID:
-			print("[FKUnit] I was passed a negative personal_id. It may be a sign of an "+\
+			print("[FKUnit] I was passed a negative uid. It may be a sign of an "+\
 			"issue elsewhere.")
-			personal_id = INVALID_ID
+			uid = INVALID_ID
 			return
 
-		personal_id = value
+		uid = value
 	get:
-		return personal_id
+		return uid
 
 func may_have_children():
 	return false 
@@ -56,17 +56,15 @@ func get_display_name() -> String:
 
 # Subclasses override this to return a Dictionary representation.
 func serialize() -> Dictionary:
-	print("Serializing an FKUnit")
 	var result: Dictionary = {
 		"type": block_type,
-		"personal_id": personal_id
+		"uid": uid
 	}
 	return result
 
 ## Subclasses override this to populate themselves from a Dictionary.
 func deserialize(dict: Dictionary) -> void:
-	print("Deserializing fk unit base")
-	personal_id = dict.get("personal_id")
+	uid = dict.get("uid", dict.get("personal_id", INVALID_ID))
 
 # Deep-copy contract for undo/redo and clipboard.
 func duplicate_block() -> FKUnit:
@@ -75,7 +73,9 @@ func duplicate_block() -> FKUnit:
 	return copy
 	
 func get_id() -> String:
-	return ""
+	var prov := get_provider()
+	var result = prov.get_id() if prov else ""
+	return result
 
 static func _duplicate_blocks(to_duplicate: Array[FKUnit]) -> Array[FKUnit]:
 	var result: Array[FKUnit] = []
@@ -106,3 +106,18 @@ func _to_string() -> String:
 	var self_serialized: Dictionary = self.serialize()
 	var result = "(" + self.get_display_name() + ")" + "\n" + JSON.stringify(self_serialized, "\t")
 	return result
+
+func get_resolved_provider_id() -> String:
+	var provider: FKProvider = get_provider()
+	var result := ""
+	if provider:
+		result = provider.get_provider_id().strip_edges()
+
+	if not result or result.is_empty():
+		result = get_id() # Fall back to legacy
+
+	return result
+
+## Meant to be overridden by subclasses of FKUnit.
+func get_provider() -> FKProvider:
+	return null

@@ -6,7 +6,7 @@ func get_description() -> String:
 func get_id() -> String:
 	return "set_wait_time"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Set Wait Time"
 
 func get_inputs() -> Array[FKActionInput]:
@@ -21,7 +21,7 @@ static var _wait_time_input: FKFloatActionInput:
 func get_supported_types() -> Array[String]:
 	return ["Timer"]
 
-func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
+func execute(node: Node, inputs: Dictionary, block_id: int = -1) -> void:
 	if node and node is Timer:
 		var wait_time: float = _wait_time_input.get_val(inputs)
 		node.wait_time = wait_time

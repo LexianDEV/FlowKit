@@ -6,7 +6,7 @@ func get_description() -> String:
 func get_id() -> String:
 	return "set_variable"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Set Variable"
 
 func get_inputs() -> Array[FKActionInput]:
@@ -22,7 +22,7 @@ static var _val_input: FKActionInput:
 func get_supported_types() -> Array[String]:
 	return ["System"]
 
-func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
+func execute(node: Node, inputs: Dictionary, block_id: int = -1) -> void:
 	var name: String = _name_input.get_val(inputs)
 	var value: Variant = _val_input.get_val(inputs)
 	

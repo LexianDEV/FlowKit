@@ -2,12 +2,12 @@
 extends FKUnit
 class_name FKEventUnit
 
-@export var block_id: String  # Unique identifier for this specific block instance
 @export var event_id: String  # Type of event (e.g., "on_ready", "on_process")
 @export var target_node: NodePath
 @export var inputs: Dictionary = {}
 @export var conditions: Array[FKConditionUnit] = []
 @export var actions: Array[FKActionUnit] = []
+@export var event_provider: FKEvent
 
 func may_have_children() -> bool:
 	return true
@@ -18,14 +18,9 @@ func get_children() -> Array[FKUnit]:
 	defensive_copy.append_array(actions)
 	return defensive_copy
 
-func _init(p_block_id: String = "", p_event_id: String = "", 
-p_target_node: NodePath = NodePath()) -> void:
+func _init(p_event_id: String = "", p_target_node: NodePath = NodePath()) -> void:
 	block_type = "event"
 	
-	if p_block_id.is_empty():
-		block_id = _generate_unique_id()
-	else:
-		block_id = p_block_id
 	event_id = p_event_id
 	target_node = p_target_node
 
@@ -35,15 +30,10 @@ func _generate_unique_id() -> String:
 	# event_id can be stuff like "on_ready" and "on_process"
 	return "%s_%d_%d" % [event_id if event_id else "event", int(timestamp), randi()]
 
-func ensure_block_id() -> void:
-	"""Ensure this block has a unique ID (called when loading from old saved sheets)."""
-	if block_id.is_empty():
-		block_id = _generate_unique_id()
 		
 func serialize() -> Dictionary:
 	var result := super.serialize()
 	var our_added_fields := {
-		"block_id": block_id,
 		"event_id": event_id,
 		"target_node": str(target_node),
 		"inputs": inputs.duplicate(),
@@ -62,8 +52,11 @@ func serialize() -> Dictionary:
 
 
 func deserialize(dict: Dictionary) -> void:
-	block_id = dict.get("block_id", "")
+	super.deserialize(dict)
 	event_id = dict.get("event_id", "")
+	if event_id.is_empty() and event_provider:
+		event_id = event_provider.get_provider_id().strip_edges()
+		
 	target_node = NodePath(dict.get("target_node", ""))
 	inputs = dict.get("inputs", {}).duplicate()
 
@@ -80,24 +73,17 @@ func deserialize(dict: Dictionary) -> void:
 		actions.append(act)
 
 func get_id() -> String:
-	return block_id
+	return event_id
 	
 func duplicate_block() -> FKUnit:
-	var copy := FKEventUnit.new()
-	copy.block_type = block_type
-	copy.event_id = event_id
-	copy.target_node = target_node
-	copy.inputs = inputs.duplicate(true)
-	
-	var duplicated_conds: Array[FKConditionUnit] = ArrayUtils.make_fk_condition_dupes(self.conditions)
-	copy.conditions.clear()
-	copy.conditions.append_array(duplicated_conds)
-
-	var duplicated_acts: Array[FKActionUnit] = ArrayUtils.make_fk_action_dupes(self.actions)
-	copy.actions.clear()
-	copy.actions.append_array(duplicated_acts)
-
+	var copy := self.duplicate(true)
 	return copy
 	
 func get_class() -> String:
 	return "FKEventUnit"
+
+func get_real_class() -> String:
+	return self.get_class()
+
+func get_provider() -> FKEvent:
+	return event_provider

@@ -17,7 +17,7 @@ func get_inputs() -> Array:
 		{"name": "action",	"type": "string", "description": "The name of the input action (defined in InputMap)."}
 	]
 
-func poll(node: Node, inputs: Dictionary = {}, block_id: String = "") -> bool:
+func poll(node: Node, inputs: Dictionary = {}, block_id: int = -1) -> bool:
 	var action_name: String = inputs.get("action", "")
 	if action_name == "":
 		return false

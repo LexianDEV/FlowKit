@@ -1,16 +1,17 @@
 @tool
 extends FKUnit
-class_name FKGroup
 
 ## A group container for organizing events, comments, and nested groups in FlowKit.
 ## Groups provide visual organization and can be collapsed/expanded.
 ## Children used to be stored as dictionaries with "type" and "data" keys.
 ## Now, they are stored as FKUnit subresources.
+class_name FKGroupUnit
 
 @export var title: String = "Group"
 @export var collapsed: bool = false
 @export var color: Color = Color(0.25, 0.22, 0.35, 1.0)
 
+## If accessing from outside FKGroupUnit, best use get_children instead.
 @export var children: Array = []
 
 static var _serialization_manager := FKSerializationManager.new()
@@ -87,7 +88,7 @@ func serialize() -> Dictionary:
 
 	return result
 
-static func _get_serialized_children(block: FKGroup) -> Array:
+static func _get_serialized_children(block: FKGroupUnit) -> Array:
 	var result: Array = []
 	for unit in block.children:
 		if unit:
@@ -96,31 +97,30 @@ static func _get_serialized_children(block: FKGroup) -> Array:
 	return result
 
 func deserialize(dict: Dictionary) -> void:
-	print("Deserializing fk group")
 	super.deserialize(dict)
 	title = dict.get("title", "Group")
 	collapsed = dict.get("collapsed", false)
 	color = dict.get("color", Color(0.25, 0.22, 0.35, 1.0))
 
-	children = []
+	children.clear()
 
 	for child_dict in dict.get("children", []):
-		var child_block := _serialization_manager.deserialize_block(child_dict)
+		var child_block := _serialization_manager.deserialize_unit(child_dict)
 		if child_block:
 			children.append(child_block)
 
 	normalize_children(true)
 
-func copy_deep() -> FKGroup:
+func copy_deep() -> FKGroupUnit:
 	var result := duplicate_block()
 	return result
 
-func duplicate_block() -> FKGroup:
-	#print("[FKGroup] Duplicating!")
+func duplicate_block() -> FKGroupUnit:
+	#print("[FKGroupUnit] Duplicating!")
 	# Make sure we're working with FKUnits, not legacy dicts
 	normalize_children(true)
 
-	var copy := FKGroup.new()
+	var copy := FKGroupUnit.new()
 	copy.block_type = block_type
 	copy.title = title
 	copy.collapsed = collapsed
@@ -134,4 +134,4 @@ func duplicate_block() -> FKGroup:
 	return copy
 
 func get_class() -> String:
-	return "FKGroup"
+	return "FKGroupUnit"

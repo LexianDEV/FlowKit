@@ -10,7 +10,7 @@
 
 [sub_resource type="Resource" id="Resource_ju1rn"]
 script = ExtResource("1_ju1rn")
-_latest_id_given = 7
+_latest_id_given = 8
 
 [sub_resource type="Resource" id="Resource_5poua"]
 script = ExtResource("3_5poua")
@@ -21,7 +21,7 @@ inputs = {
 "Width": "1280"
 }
 block_type = "action"
-personal_id = 1
+uid = 2
 
 [sub_resource type="Resource" id="Resource_ayedq"]
 script = ExtResource("3_5poua")
@@ -31,7 +31,7 @@ inputs = {
 "Mode": "\"windowed\""
 }
 block_type = "action"
-personal_id = 2
+uid = 3
 
 [sub_resource type="Resource" id="Resource_np8on"]
 script = ExtResource("3_5poua")
@@ -42,7 +42,7 @@ inputs = {
 "Message": "\"This is a message printed with the default color.\""
 }
 block_type = "action"
-personal_id = 3
+uid = 4
 
 [sub_resource type="Resource" id="Resource_v1ajb"]
 script = ExtResource("3_5poua")
@@ -53,7 +53,7 @@ inputs = {
 "message": "\"This is a message printed in red text.\""
 }
 block_type = "action"
-personal_id = 4
+uid = 5
 
 [sub_resource type="Resource" id="Resource_e46t1"]
 script = ExtResource("3_5poua")
@@ -64,7 +64,7 @@ inputs = {
 "message": "\"[i]This is a message printed in green italicized text.[/i]\""
 }
 block_type = "action"
-personal_id = 5
+uid = 6
 
 [sub_resource type="Resource" id="Resource_5spa6"]
 script = ExtResource("3_5poua")
@@ -75,7 +75,7 @@ inputs = {
 "message": "\"[b]Yellow bold text.[/b]\""
 }
 block_type = "action"
-personal_id = 6
+uid = 7
 
 [sub_resource type="Resource" id="Resource_a8al3"]
 script = ExtResource("3_5poua")
@@ -86,15 +86,15 @@ inputs = {
 "message": "\"[wave][color=#FF0000]W[/color][color=#FF5500]a[/color][color=#FFAA00]v[/color][color=#FFFF00]y[/color] [color=#54FF00]r[/color][color=#00FF00]a[/color][color=#00FF55]i[/color][color=#00FFAA]n[/color][color=#00FEFF]b[/color][color=#00A9FF]o[/color][color=#0054FF]w[/color] [color=#5500FF]t[/color][color=#AA00FF]e[/color][color=#FF00FE]x[/color][color=#FF00AA]t[/color][color=#FF0054]![/color][/wave]\""
 }
 block_type = "action"
-personal_id = 7
+uid = 8
 
 [sub_resource type="Resource" id="Resource_xle1s"]
 script = ExtResource("2_ju1rn")
-block_id = "event_1784484136_4040628200"
 event_id = "on_ready"
 target_node = NodePath(".")
 actions = Array[ExtResource("3_5poua")]([SubResource("Resource_5poua"), SubResource("Resource_ayedq"), SubResource("Resource_np8on"), SubResource("Resource_v1ajb"), SubResource("Resource_e46t1"), SubResource("Resource_5spa6"), SubResource("Resource_a8al3")])
 block_type = "event"
+uid = 1
 
 [resource]
 script = ExtResource("6_v1ajb")

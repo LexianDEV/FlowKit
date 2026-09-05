@@ -6,6 +6,9 @@ func get_description() -> String:
 func get_id() -> String:
 	return "on_process"
 
+func get_provider_id() -> String:
+	return "system_on_process"
+
 func get_name() -> String:
 	return "On Process"
 
@@ -15,6 +18,6 @@ func get_supported_types() -> Array[String]:
 func get_inputs() -> Array:
 	return []
 
-func poll(node: Node, inputs: Dictionary = {}, block_id: String = "") -> bool:
+func poll(node: Node, inputs: Dictionary = {}, block_id: int = -1) -> bool:
 	# Always triggers on every frame
 	return true

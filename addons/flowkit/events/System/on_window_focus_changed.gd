@@ -17,7 +17,7 @@ func get_supported_types() -> Array[String]:
 func get_inputs() -> Array:
 	return []
 
-func poll(node: Node, inputs: Dictionary = {}, block_id: String = "") -> bool:
+func poll(node: Node, inputs: Dictionary = {}, block_id: int = -1) -> bool:
 	var current_focused: bool = DisplayServer.window_is_focused()
 	
 	if current_focused != previous_focused:

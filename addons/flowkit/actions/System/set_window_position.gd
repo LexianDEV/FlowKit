@@ -6,7 +6,7 @@ func get_description() -> String:
 func get_id() -> String:
 	return "set_window_position"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Set Window Position"
 
 func get_supported_types() -> Array[String]:
@@ -22,7 +22,7 @@ static var _y_input: FKIntActionInput:
 	get:
 		return FKIntActionInput.new("Y", "The Y position of the window in pixels.")
 
-func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
+func execute(node: Node, inputs: Dictionary, block_id: int = -1) -> void:
 	var x: int = _x_input.get_val(inputs)
 	var y: int = _y_input.get_val(inputs)
 	DisplayServer.window_set_position(Vector2i(x, y))

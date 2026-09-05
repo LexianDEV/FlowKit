@@ -6,7 +6,7 @@ func get_description() -> String:
 func get_id() -> String:
 	return "set_window_size"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Set Window Size"
 
 func get_supported_types() -> Array[String]:
@@ -22,7 +22,7 @@ static var _height_input: FKIntActionInput:
 	get:
 		return FKIntActionInput.new("Height", "The height of the window in pixels.", 720)
 
-func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
+func execute(node: Node, inputs: Dictionary, block_id: int = -1) -> void:
 	var width: int = _width_input.get_val(inputs)
 	var height: int = _height_input.get_val(inputs)
 	var size: Vector2i = Vector2i(width, height)

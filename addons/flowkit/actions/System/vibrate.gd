@@ -6,7 +6,7 @@ func get_description() -> String:
 func get_id() -> String:
 	return "vibrate"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Vibrate"
 
 func get_supported_types() -> Array[String]:
@@ -21,6 +21,6 @@ static var _duration_input: FKIntActionInput:
 		"Duration of vibration in milliseconds.",
 		200)
 
-func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
+func execute(node: Node, inputs: Dictionary, block_id: int = -1) -> void:
 	var duration_ms: int = _duration_input.get_val(inputs)
 	Input.vibrate_handheld(duration_ms)

@@ -6,7 +6,7 @@ func get_description() -> String:
 func get_id() -> String:
 	return "warp_mouse"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Warp Mouse"
 
 func get_supported_types() -> Array[String]:
@@ -22,7 +22,7 @@ static var _y_input: FKFloatActionInput:
 	get:
 		return FKFloatActionInput.new("Y", "The Y position to move the mouse to.")
 
-func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
+func execute(node: Node, inputs: Dictionary, block_id: int = -1) -> void:
 	var x: float = _x_input.get_val(inputs)
 	var y: float = _y_input.get_val(inputs)
 	var pos: Vector2 = Vector2(x, y)

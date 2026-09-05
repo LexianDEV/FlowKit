@@ -6,7 +6,7 @@ func get_description() -> String:
 func get_id() -> String:
 	return "set_title"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Set Title"
 
 func get_inputs() -> Array[FKActionInput]:
@@ -19,7 +19,7 @@ static var _title_input: FKStringActionInput:
 func get_supported_types() -> Array[String]:
 	return ["Window"]
 
-func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
+func execute(node: Node, inputs: Dictionary, block_id: int = -1) -> void:
 	if node and node is Window:
 		var title: String = _title_input.get_val(inputs)
 		node.title = title

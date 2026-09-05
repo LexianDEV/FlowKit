@@ -6,7 +6,7 @@ func get_description() -> String:
 func get_id() -> String:
 	return "Wait For Seconds"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Wait For Seconds"
 
 func get_supported_types() -> Array:
@@ -22,7 +22,7 @@ static var _duration_input: FKFloatActionInput:
 	get:
 		return FKFloatActionInput.new("Duration", "What you'd expect.")
 
-func execute(target_node: Node, inputs: Dictionary, _str := "") -> void:
+func execute(target_node: Node, inputs: Dictionary, _int := -1) -> void:
 	var duration: float = _duration_input.get_val(inputs)
 	var valid_input := duration > 0
 	var tree := target_node.get_tree()

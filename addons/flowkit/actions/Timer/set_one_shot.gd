@@ -6,7 +6,7 @@ func get_description() -> String:
 func get_id() -> String:
 	return "set_one_shot"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Set One Shot"
 
 func get_inputs() -> Array[FKActionInput]:
@@ -20,7 +20,7 @@ static var _one_shot_input: FKBoolActionInput:
 func get_supported_types() -> Array[String]:
 	return ["Timer"]
 
-func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
+func execute(node: Node, inputs: Dictionary, block_id: int = -1) -> void:
 	if node and node is Timer:
 		var one_shot: bool = _one_shot_input.get_val(inputs)
 		node.one_shot = one_shot

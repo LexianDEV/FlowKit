@@ -15,7 +15,7 @@ func get_supported_types() -> Array:
 func is_signal_event() -> bool:
 	return true
 
-func setup(target_node: Node, trigger_callback: Callable, instance_id: String = "") -> void:
+func setup(target_node: Node, trigger_callback: Callable, instance_id: int = -1) -> void:
 	# Note that this will _not_ execute before the OnReady in the same Event Sheet this is
 	# in, unless enough waiting happens there for this func to start. That's why in the 
 	# quiz game demo scene, we added a 1-frame wait Action so that we can listen _before_
@@ -58,7 +58,7 @@ func _global_text_change_response(new_text: String, prev_text: String, target: V
 		return
 	_exec_actions.call()
 	
-func teardown(target_node: Node, instance_id: String = "") -> void:
+func teardown(target_node: Node, instance_id: int = -1) -> void:
 	if !is_instance_valid(target_node):
 		return
 		

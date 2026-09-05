@@ -3,7 +3,7 @@ extends FKAction
 func get_id() -> String:
 	return "set_flip_v"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Set Flip V"
 
 func get_description() -> String:
@@ -18,7 +18,7 @@ static var _value_input: FKBoolActionInput:
 func get_supported_types() -> Array[String]:
 	return ["AnimatedSprite2D"]
 
-func execute(node: Node, inputs: Dictionary, block_id: String = "") -> void:
+func execute(node: Node, inputs: Dictionary, block_id: int = -1) -> void:
 	if not node is AnimatedSprite2D:
 		return
 	

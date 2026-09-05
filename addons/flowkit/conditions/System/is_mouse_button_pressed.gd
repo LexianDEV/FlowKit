@@ -6,7 +6,7 @@ func get_description() -> String:
 func get_id() -> String:
 	return "is_mouse_button_pressed"
 
-func get_name() -> String:
+func get_display_name() -> String:
 	return "Is Mouse Button Pressed"
 
 func get_supported_types() -> Array[String]:
@@ -17,7 +17,7 @@ func get_inputs() -> Array[Dictionary]:
 		{"name": "Button", "type": "String", "description": "The mouse button to check: 'left', 'right', 'middle', 'wheel_up', 'wheel_down'."}
 	]
 
-func check(node: Node, inputs: Dictionary, block_id: String = "") -> bool:
+func check(node: Node, inputs: Dictionary, block_id: int = -1) -> bool:
 	var button_str: String = str(inputs.get("Button", "left")).to_lower()
 	var button: MouseButton = _string_to_button(button_str)
 	
