@@ -8,11 +8,11 @@
 [ext_resource type="Script" path="res://addons/flowkit/runtime/Units/group_unit.gd" id="5_3014d"]
 [ext_resource type="Script" uid="uid://bumsyiqkp46l1" path="res://addons/flowkit/resources/event_sheet.gd" id="6_0vfw8"]
 
-[sub_resource type="Resource" id="Resource_7puo2"]
+[sub_resource type="Resource" id="Resource_o0xcg"]
 script = ExtResource("1_o0xcg")
-_latest_id_given = 8
+_latest_id_given = 9
 
-[sub_resource type="Resource" id="Resource_ko5ym"]
+[sub_resource type="Resource" id="Resource_7puo2"]
 script = ExtResource("3_7puo2")
 action_id = "set_window_mode"
 target_node = NodePath("System")
@@ -20,9 +20,9 @@ inputs = {
 "Mode": "\"windowed\""
 }
 block_type = "action"
-personal_id = 1
+uid = 2
 
-[sub_resource type="Resource" id="Resource_3014d"]
+[sub_resource type="Resource" id="Resource_ko5ym"]
 script = ExtResource("3_7puo2")
 action_id = "set_window_size"
 target_node = NodePath("System")
@@ -31,9 +31,9 @@ inputs = {
 "Width": "1280"
 }
 block_type = "action"
-personal_id = 2
+uid = 3
 
-[sub_resource type="Resource" id="Resource_0vfw8"]
+[sub_resource type="Resource" id="Resource_3014d"]
 script = ExtResource("3_7puo2")
 action_id = "set_variable"
 target_node = NodePath("System")
@@ -42,9 +42,9 @@ inputs = {
 "Value": "1"
 }
 block_type = "action"
-personal_id = 3
+uid = 4
 
-[sub_resource type="Resource" id="Resource_v5tg8"]
+[sub_resource type="Resource" id="Resource_0vfw8"]
 script = ExtResource("3_7puo2")
 action_id = "Print Message"
 target_node = NodePath(".")
@@ -55,9 +55,9 @@ inputs = {
 "message": "\"Counting from 1 to 10\""
 }
 block_type = "action"
-personal_id = 4
+uid = 5
 
-[sub_resource type="Resource" id="Resource_l83bg"]
+[sub_resource type="Resource" id="Resource_v5tg8"]
 script = ExtResource("3_7puo2")
 action_id = "Print Message"
 target_node = NodePath(".")
@@ -66,9 +66,9 @@ inputs = {
 "message": "system.get_var(\"times\")"
 }
 block_type = "action"
-personal_id = 6
+uid = 7
 
-[sub_resource type="Resource" id="Resource_5nvf0"]
+[sub_resource type="Resource" id="Resource_l83bg"]
 script = ExtResource("3_7puo2")
 action_id = "set_variable"
 target_node = NodePath("System")
@@ -77,9 +77,9 @@ inputs = {
 "Value": "system.get_var(\"times\")+1"
 }
 block_type = "action"
-personal_id = 7
+uid = 8
 
-[sub_resource type="Resource" id="Resource_u4oon"]
+[sub_resource type="Resource" id="Resource_5nvf0"]
 script = ExtResource("3_7puo2")
 is_branch = true
 branch_type = "if"
@@ -87,11 +87,11 @@ branch_id = "repeat"
 branch_inputs = {
 "times": "10"
 }
-branch_actions = Array[ExtResource("3_7puo2")]([SubResource("Resource_l83bg"), SubResource("Resource_5nvf0")])
+branch_actions = Array[ExtResource("3_7puo2")]([SubResource("Resource_v5tg8"), SubResource("Resource_l83bg")])
 block_type = "action"
-personal_id = 5
+uid = 6
 
-[sub_resource type="Resource" id="Resource_lus8n"]
+[sub_resource type="Resource" id="Resource_u4oon"]
 script = ExtResource("3_7puo2")
 action_id = "Print Message"
 target_node = NodePath(".")
@@ -100,21 +100,21 @@ inputs = {
 "message": "\"Done!\""
 }
 block_type = "action"
-personal_id = 8
+uid = 9
 
-[sub_resource type="Resource" id="Resource_6ufis"]
+[sub_resource type="Resource" id="Resource_lus8n"]
 script = ExtResource("2_o0xcg")
-block_id = "event_1784483667_3370641260"
 event_id = "on_ready"
 target_node = NodePath(".")
-actions = Array[ExtResource("3_7puo2")]([SubResource("Resource_ko5ym"), SubResource("Resource_3014d"), SubResource("Resource_0vfw8"), SubResource("Resource_v5tg8"), SubResource("Resource_u4oon"), SubResource("Resource_lus8n")])
+actions = Array[ExtResource("3_7puo2")]([SubResource("Resource_7puo2"), SubResource("Resource_ko5ym"), SubResource("Resource_3014d"), SubResource("Resource_0vfw8"), SubResource("Resource_5nvf0"), SubResource("Resource_u4oon")])
 block_type = "event"
+uid = 1
 
 [resource]
 script = ExtResource("6_0vfw8")
-events = Array[ExtResource("2_o0xcg")]([SubResource("Resource_6ufis")])
+events = Array[ExtResource("2_o0xcg")]([SubResource("Resource_lus8n")])
 item_order = Array[Dictionary]([{
 "index": 0,
 "type": "event"
 }])
-_id_assigner = SubResource("Resource_7puo2")
+_id_assigner = SubResource("Resource_o0xcg")

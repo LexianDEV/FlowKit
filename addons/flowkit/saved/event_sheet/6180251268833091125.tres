@@ -16,7 +16,7 @@ _latest_id_given = 17
 script = ExtResource("1_t5adf")
 text = "Can make for good reference for a pre-title sequence"
 block_type = "comment"
-personal_id = 17
+uid = 17
 
 [sub_resource type="Resource" id="Resource_rm0fh"]
 script = ExtResource("3_ytm5k")
@@ -26,7 +26,7 @@ inputs = {
 "Mode": "\"windowed\""
 }
 block_type = "action"
-personal_id = 2
+uid = 2
 
 [sub_resource type="Resource" id="Resource_iynvq"]
 script = ExtResource("3_ytm5k")
@@ -37,7 +37,7 @@ inputs = {
 "Width": "1280"
 }
 block_type = "action"
-personal_id = 3
+uid = 3
 
 [sub_resource type="Resource" id="Resource_1sc5p"]
 script = ExtResource("3_ytm5k")
@@ -51,7 +51,7 @@ inputs = {
 "Wait For Finish": ""
 }
 block_type = "action"
-personal_id = 4
+uid = 4
 
 [sub_resource type="Resource" id="Resource_ejtba"]
 script = ExtResource("3_ytm5k")
@@ -65,7 +65,7 @@ inputs = {
 "Wait For Finish": ""
 }
 block_type = "action"
-personal_id = 5
+uid = 5
 
 [sub_resource type="Resource" id="Resource_kbegb"]
 script = ExtResource("3_ytm5k")
@@ -79,7 +79,7 @@ inputs = {
 "Wait For Finish": "true"
 }
 block_type = "action"
-personal_id = 6
+uid = 6
 
 [sub_resource type="Resource" id="Resource_2i0f5"]
 script = ExtResource("3_ytm5k")
@@ -93,7 +93,7 @@ inputs = {
 "Wait For Finish": ""
 }
 block_type = "action"
-personal_id = 7
+uid = 7
 
 [sub_resource type="Resource" id="Resource_8saiw"]
 script = ExtResource("3_ytm5k")
@@ -107,7 +107,7 @@ inputs = {
 "Wait For Finish": ""
 }
 block_type = "action"
-personal_id = 8
+uid = 8
 
 [sub_resource type="Resource" id="Resource_vta5f"]
 script = ExtResource("3_ytm5k")
@@ -117,7 +117,7 @@ inputs = {
 "Input Binding Name": "\"ui_accept\""
 }
 block_type = "action"
-personal_id = 9
+uid = 9
 
 [sub_resource type="Resource" id="Resource_a77t4"]
 script = ExtResource("3_ytm5k")
@@ -131,7 +131,7 @@ inputs = {
 "Wait For Finish": ""
 }
 block_type = "action"
-personal_id = 10
+uid = 10
 
 [sub_resource type="Resource" id="Resource_g2c3u"]
 script = ExtResource("3_ytm5k")
@@ -145,7 +145,7 @@ inputs = {
 "Wait For Finish": ""
 }
 block_type = "action"
-personal_id = 11
+uid = 11
 
 [sub_resource type="Resource" id="Resource_li7lq"]
 script = ExtResource("3_ytm5k")
@@ -155,7 +155,7 @@ inputs = {
 "Input Binding Name": "\"ui_accept\""
 }
 block_type = "action"
-personal_id = 12
+uid = 12
 
 [sub_resource type="Resource" id="Resource_b3hw7"]
 script = ExtResource("3_ytm5k")
@@ -169,7 +169,7 @@ inputs = {
 "Wait For Finish": ""
 }
 block_type = "action"
-personal_id = 13
+uid = 13
 
 [sub_resource type="Resource" id="Resource_1qadt"]
 script = ExtResource("3_ytm5k")
@@ -183,7 +183,7 @@ inputs = {
 "Wait For Finish": ""
 }
 block_type = "action"
-personal_id = 14
+uid = 14
 
 [sub_resource type="Resource" id="Resource_cdt56"]
 script = ExtResource("3_ytm5k")
@@ -193,7 +193,7 @@ inputs = {
 "Input Binding Name": "\"ui_accept\""
 }
 block_type = "action"
-personal_id = 15
+uid = 15
 
 [sub_resource type="Resource" id="Resource_ioy8n"]
 script = ExtResource("3_ytm5k")
@@ -207,15 +207,15 @@ inputs = {
 "Wait For Finish": ""
 }
 block_type = "action"
-personal_id = 16
+uid = 16
 
 [sub_resource type="Resource" id="Resource_jon7v"]
 script = ExtResource("2_s7o4u")
-block_id = "event_1784483670_1262272698"
 event_id = "on_ready"
 target_node = NodePath("Timers")
 actions = Array[ExtResource("3_ytm5k")]([SubResource("Resource_rm0fh"), SubResource("Resource_iynvq"), SubResource("Resource_1sc5p"), SubResource("Resource_ejtba"), SubResource("Resource_kbegb"), SubResource("Resource_2i0f5"), SubResource("Resource_8saiw"), SubResource("Resource_vta5f"), SubResource("Resource_a77t4"), SubResource("Resource_g2c3u"), SubResource("Resource_li7lq"), SubResource("Resource_b3hw7"), SubResource("Resource_1qadt"), SubResource("Resource_cdt56"), SubResource("Resource_ioy8n")])
 block_type = "event"
+uid = 1
 
 [resource]
 script = ExtResource("6_1sc5p")

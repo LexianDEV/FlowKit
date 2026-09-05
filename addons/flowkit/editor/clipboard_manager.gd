@@ -47,7 +47,7 @@ func copy_condition(condition_data: FKConditionUnit) -> void:
 	_type = "condition"
 	_condition_data.append(_serialize_condition(condition_data))
 
-func copy_group(group_data: FKGroup) -> void:
+func copy_group(group_data: FKGroupUnit) -> void:
 	clear()
 	_type = "group"
 	_group_data = _serialize_group_block(group_data)
@@ -81,7 +81,7 @@ func paste_condition() -> Array[FKConditionUnit]:
 		result.append(_deserialize_condition(dict))
 	return result
 
-func paste_group() -> FKGroup:
+func paste_group() -> FKGroupUnit:
 	if _type != "group":
 		return null
 	return _deserialize_group_block(_group_data)
@@ -145,7 +145,7 @@ func _serialize_action(act: FKActionUnit) -> Dictionary:
 	return dict
 
 
-func _serialize_group_block(data: FKGroup) -> Dictionary:
+func _serialize_group_block(data: FKGroupUnit) -> Dictionary:
 	var result := {
 		"type": "group",
 		"title": data.title,
@@ -265,8 +265,8 @@ func _deserialize_action(dict: Dictionary) -> FKActionUnit:
 	return act
 
 
-func _deserialize_group_block(dict: Dictionary) -> FKGroup:
-	var data = FKGroup.new()
+func _deserialize_group_block(dict: Dictionary) -> FKGroupUnit:
+	var data = FKGroupUnit.new()
 	data.title = dict.get("title", "Group")
 	data.collapsed = dict.get("collapsed", false)
 	data.color = dict.get("color", Color(0.25, 0.22, 0.35, 1.0))

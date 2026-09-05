@@ -2,7 +2,7 @@ extends GutTest
 
 
 func test_group_basic_serialization():
-	var grp := FKGroup.new()
+	var grp := FKGroupUnit.new()
 	grp.uid = 5
 	grp.title = "MyGroup"
 	grp.collapsed = true
@@ -42,7 +42,7 @@ func _make_child_units() -> Array[FKUnit]:
 	return [cond, act, ev]
 
 func test_group_roundtrip():
-	var grp := FKGroup.new()
+	var grp := FKGroupUnit.new()
 	grp.uid = 77
 	grp.title = "RoundTrip"
 	grp.collapsed = false
@@ -54,7 +54,7 @@ func test_group_roundtrip():
 
 	var json := grp.serialize()
 
-	var restored := FKGroup.new()
+	var restored := FKGroupUnit.new()
 	restored.deserialize(json)
 
 	assert_eq(restored.title, "RoundTrip")
@@ -68,7 +68,7 @@ func test_group_roundtrip():
 
 
 func test_group_deep_duplication():
-	var grp := FKGroup.new()
+	var grp := FKGroupUnit.new()
 	grp.uid = 123
 	grp.title = "DeepCopy"
 	grp.collapsed = true

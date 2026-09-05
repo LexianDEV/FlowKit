@@ -5,7 +5,7 @@ extends FKUnit
 ## Groups provide visual organization and can be collapsed/expanded.
 ## Children used to be stored as dictionaries with "type" and "data" keys.
 ## Now, they are stored as FKUnit subresources.
-class_name FKGroup
+class_name FKGroupUnit
 
 @export var title: String = "Group"
 @export var collapsed: bool = false
@@ -88,7 +88,7 @@ func serialize() -> Dictionary:
 
 	return result
 
-static func _get_serialized_children(block: FKGroup) -> Array:
+static func _get_serialized_children(block: FKGroupUnit) -> Array:
 	var result: Array = []
 	for unit in block.children:
 		if unit:
@@ -111,16 +111,16 @@ func deserialize(dict: Dictionary) -> void:
 
 	normalize_children(true)
 
-func copy_deep() -> FKGroup:
+func copy_deep() -> FKGroupUnit:
 	var result := duplicate_block()
 	return result
 
-func duplicate_block() -> FKGroup:
-	#print("[FKGroup] Duplicating!")
+func duplicate_block() -> FKGroupUnit:
+	#print("[FKGroupUnit] Duplicating!")
 	# Make sure we're working with FKUnits, not legacy dicts
 	normalize_children(true)
 
-	var copy := FKGroup.new()
+	var copy := FKGroupUnit.new()
 	copy.block_type = block_type
 	copy.title = title
 	copy.collapsed = collapsed
@@ -134,4 +134,4 @@ func duplicate_block() -> FKGroup:
 	return copy
 
 func get_class() -> String:
-	return "FKGroup"
+	return "FKGroupUnit"
