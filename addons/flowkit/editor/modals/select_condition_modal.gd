@@ -121,7 +121,7 @@ func populate_conditions(node_path: String, node_class: String) -> void:
 	for condition in available_conditions:
 		var supported_types = condition.get_supported_types()
 		if _is_node_compatible(node_class, supported_types):
-			var condition_name = condition.get_name()
+			var condition_name = condition.get_display_name()
 			var condition_id = condition.get_id()
 			
 			_all_items_cache.append({
@@ -185,7 +185,7 @@ func _on_item_activated(index: int) -> void:
 	var condition_name = ""
 	for condition in available_conditions:
 		if condition.get_id() == condition_id:
-			condition_name = condition.get_name()
+			condition_name = condition.get_display_name()
 			break
 	
 	print("[FKSelectConditionModal]: Condition selected: ", condition_id, " for node: ", selected_node_path)

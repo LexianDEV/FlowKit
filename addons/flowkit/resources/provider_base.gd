@@ -40,7 +40,7 @@ func get_name() -> String:
 	return "Invalid" 
 
 func get_display_name() -> String:
-	return "Invalid" 
+	return get_name() # For backwards compat
 
 func get_description() -> String:
 	return "No description provided."

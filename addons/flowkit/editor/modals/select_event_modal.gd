@@ -121,7 +121,7 @@ func populate_events(node_path: String, node_class: String) -> void:
 			# New FKEvent pattern
 			var supported_types = event.get_supported_types()
 			if _is_node_compatible(node_class, supported_types):
-				var event_name = event.get_name()
+				var event_name = event.get_display_name()
 				var event_id = event.get_id()
 				
 				_all_items_cache.append({
@@ -196,8 +196,8 @@ func _on_item_activated(index: int) -> void:
 		if event.has_method("get_id") and event.get_id() == event_id:
 			if event.has_method("get_inputs"):
 				event_inputs = event.get_inputs()
-			if event.has_method("get_name"):
-				event_name = event.get_name()
+			if event.has_method("get_display_name"):
+				event_name = event.get_display_name()
 			break
 	
 	print("[FKSelectEventModal]: Event selected: ", event_id, " for node: ", selected_node_path, " with inputs: ", event_inputs)

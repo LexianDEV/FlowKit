@@ -113,7 +113,7 @@ func populate_actions(node_path: String, node_class: String) -> void:
 	for action in available_actions:
 		var supported_types = action.get_supported_types()
 		if _is_node_compatible(node_class, supported_types):
-			var action_name = action.get_name()
+			var action_name = action.get_display_name()
 			var action_id = action.get_id()
 			
 			_all_items_cache.append({
@@ -177,7 +177,7 @@ func _on_item_activated(index: int) -> void:
 	var action_name = ""
 	for action in available_actions:
 		if action.get_id() == action_id:
-			action_name = action.get_name()
+			action_name = action.get_display_name()
 			break
 	
 	print("[FKSelectActionModal]: Action selected: ", action_id, " for node: ", selected_node_path)
