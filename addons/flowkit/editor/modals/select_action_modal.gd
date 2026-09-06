@@ -4,7 +4,7 @@ class_name FKSelectActionModal
 
 var selected_node_path: String = ""
 var selected_node_class: String = ""
-var available_actions: Array = []
+var available_actions: Array[FKAction] = []
 
 @export var search_box: LineEdit
 @export var item_list: ItemList
@@ -69,7 +69,7 @@ func _toggle_subs(should_sub: bool):
 func _load_available_actions() -> void:
 	"""Load all action scripts from the actions folder."""
 	available_actions.clear()
-	var actions_path: String = "res://addons/flowkit/actions"
+	var actions_path: String = "res://addons/flowkit/actions";
 	_scan_directory_recursive(actions_path)
 	print("[FKSelectActionModal]: Loaded ", available_actions.size(), " actions")
 
@@ -113,8 +113,8 @@ func populate_actions(node_path: String, node_class: String) -> void:
 	for action in available_actions:
 		var supported_types = action.get_supported_types()
 		if _is_node_compatible(node_class, supported_types):
-			var action_name = action.get_display_name()
-			var action_id = action.get_id()
+			var action_name := action.get_display_name()
+			var action_id := action.get_provider_id()
 			
 			_all_items_cache.append({
 				"name": action_name,
@@ -126,12 +126,12 @@ func populate_actions(node_path: String, node_class: String) -> void:
 
 func _update_list(filter_text: String = "") -> void:
 	item_list.clear()
-	var filter_lower = filter_text.to_lower()
+	var filter_lower := filter_text.to_lower()
 	
 	for item in _all_items_cache:
 		if filter_text.is_empty() or filter_lower in item["name"].to_lower():
 			item_list.add_item(item["name"])
-			var index = item_list.item_count - 1
+			var index := item_list.item_count - 1
 			item_list.set_item_metadata(index, item["metadata"])
 	
 	if item_list.item_count == 0:
@@ -170,13 +170,13 @@ func _on_item_activated(index: int) -> void:
 		return
 	
 	var metadata = item_list.get_item_metadata(index)
-	var action_id = metadata["id"]
-	var inputs = metadata["inputs"]
+	var action_id: String = metadata["id"];
+	var inputs = metadata["inputs"];
 	
 	# Find action name for recent items
-	var action_name = ""
+	var action_name := "";
 	for action in available_actions:
-		if action.get_id() == action_id:
+		if action.get_provider_id() == action_id:
 			action_name = action.get_display_name()
 			break
 	
@@ -188,15 +188,15 @@ func _on_item_activated(index: int) -> void:
 func _on_item_selected(index: int) -> void:
 	"""Update description when item is selected."""
 	if item_list.is_item_disabled(index):
-		description_label.text = ""
+		description_label.text = "";
 		return
 	
 	var metadata = item_list.get_item_metadata(index)
-	var action_id = metadata["id"]
+	var action_id: String = metadata["id"];
 	
 	# Find the action and get description
 	for action in available_actions:
-		if action.get_id() == action_id:
+		if action.get_provider_id() == action_id:
 			description_label.text = action.get_description()
 			break
 
@@ -212,7 +212,7 @@ func _populate_recent_list() -> void:
 	recent_item_list.clear()
 	
 	# Filter recent actions for current node type
-	var recent_for_type = []
+	var recent_for_type = [];
 	for recent_action in _recent_items_manager.recent_actions:
 		if recent_action["node_class"] == selected_node_class:
 			recent_for_type.append(recent_action)
@@ -224,7 +224,7 @@ func _populate_recent_list() -> void:
 	
 	for recent_action in recent_for_type:
 		recent_item_list.add_item(recent_action["name"])
-		var index = recent_item_list.item_count - 1
+		var index := recent_item_list.item_count - 1;
 		recent_item_list.set_item_metadata(index, recent_action)
 
 func _on_recent_item_activated(index: int) -> void:
@@ -233,12 +233,12 @@ func _on_recent_item_activated(index: int) -> void:
 		return
 	
 	var recent_action = recent_item_list.get_item_metadata(index)
-	var action_id = recent_action["id"]
+	var action_id: String = recent_action["id"];
 	
 	# Find the action to get its inputs
-	var action_inputs: Array = []
+	var action_inputs: Array[FKActionInput] = [];
 	for action in available_actions:
-		if action.get_id() == action_id:
+		if action.get_provider_id() == action_id:
 			action_inputs = action.get_inputs()
 			break
 	

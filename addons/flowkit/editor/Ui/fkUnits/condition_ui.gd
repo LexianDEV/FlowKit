@@ -10,7 +10,7 @@ signal edit_condition_requested(condition_node)
 signal selected(block_node)
 
 var condition_data: FKConditionUnit
-var registry: Node
+var registry: FKRegistry
 var is_selected: bool = false
 
 @export_category("Controls")
@@ -93,9 +93,8 @@ func _decide_display_name() -> String:
 		
 	if registry:
 		for provider in registry.condition_providers:
-			if provider.has_method("get_id") and provider.get_id() == condition_data.condition_id:
-				if provider.has_method("get_name"):
-					display_name = provider.get_name()
+			if provider.get_provider_id() == condition_data.condition_id:
+				display_name = provider.get_display_name()
 				break
 				
 	return display_name

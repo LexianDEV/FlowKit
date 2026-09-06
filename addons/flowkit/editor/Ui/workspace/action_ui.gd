@@ -9,7 +9,7 @@ signal edit_action_requested(action_node)
 signal selected(block_node)
 
 var action_data: FKActionUnit
-var registry: Node
+var registry: FKRegistry
 var is_selected: bool = false
 
 @export_category("Controls")
@@ -85,9 +85,8 @@ var label_text_format: String = "%s on %s%s"
 func _try_get_provider_display_name() -> String:
 	var result: String = ""
 	for provider in registry.action_providers:
-		if provider.has_method("get_id") and provider.get_id() == action_data.action_id:
-			if provider.has_method("get_name"):
-				result = provider.get_name()
+		if provider.get_provider_id() == action_data.action_id:
+			result = provider.get_display_name()
 			break
 	return result
 

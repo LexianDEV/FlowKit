@@ -942,7 +942,7 @@ func _filter_scripts_by_usage(
 
 	for script in all_scripts:
 		var instance = script.new()
-		if instance.has_method("get_id"):
+		if instance.has_method("get_provider_id"):
 			providers.append(script)
 		else:
 			base_classes.append(script)

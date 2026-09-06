@@ -2,7 +2,7 @@
 extends FKModalWindow
 class_name FKSelectNodeModal
 
-var available_events: Array = []
+var available_events: Array[FKEvent] = []
 
 @export var search_box: LineEdit  
 @export var item_list: ItemList
@@ -68,8 +68,8 @@ func _scan_directory_recursive(path: String) -> void:
 		elif is_event_script:
 			var event_script: Variant = load(full_path)
 			if event_script:
-				var event_instance: Variant = event_script.new()
-				available_events.append(event_instance)
+				var event_instance: FKEvent = event_script.new();
+				available_events.append(event_instance);
 		
 		file_name = dir.get_next()
 	
@@ -184,10 +184,9 @@ func _on_search_text_changed(new_text: String) -> void:
 func _has_compatible_event(node_class: String) -> bool:
 	"""Check if any available event supports this node type."""
 	for event in available_events:
-		if event.has_method("get_supported_types"):
-			var supported_types = event.get_supported_types()
-			if _is_node_compatible(node_class, supported_types):
-				return true
+		var supported_types = event.get_supported_types()
+		if _is_node_compatible(node_class, supported_types):
+			return true
 	return false
 
 func _is_node_compatible(node_class: String, supported_types: Array) -> bool:

@@ -221,25 +221,24 @@ func _show_add_action_context_menu() -> void:
 	popup.add_item("Add Action", 0)
 	popup.add_separator()
 
-	var branches: Array = []
-	if registry:
-		branches = registry.branch_providers
+	var branches: Array[FKBranch] = registry.branch_providers if registry != null \
+	else []
 
 	for i in range(branches.size()):
-		var branch_provider = branches[i]
-		if branch_provider.has_method("get_name"):
-			popup.add_item("Add %s" % branch_provider.get_name(), 100 + i)
+		var branch_provider = branches[i];
+		popup.add_item("Add %s" % branch_provider.get_display_name(), 100 + i)
 
 	popup.id_pressed.connect(func(id):
 		if id == MenuChoices.ADD_EVENT_BELOW:
-			add_action_requested.emit(self)
+			add_action_requested.emit(self);
 		elif id >= 100:
-			var branch_idx = id - 100
+			var branch_idx = id - 100;
 			if branch_idx < branches.size():
-				var bid = branches[branch_idx].get_id()
+				var current_branch := branches[branch_idx];
+				var bid = current_branch.get_provider_id();
 				add_branch_requested.emit(self, bid)
-		popup.queue_free()
-	)
+		popup.queue_free();
+	);
 
 	add_child(popup)
 	popup.position = DisplayServer.mouse_get_position()
@@ -355,9 +354,8 @@ func _provider_name_from_registry(e: FKEventUnit) -> String:
 	var result: String = ""
 	if registry:
 		for provider in registry.event_providers:
-			if provider.has_method("get_id") and provider.get_id() == e.event_id:
-				if provider.has_method("get_name"):
-					result = provider.get_name()
+			if provider.get_provider_id() == e.event_id:
+				result = provider.get_display_name()
 				break
 	return result
 

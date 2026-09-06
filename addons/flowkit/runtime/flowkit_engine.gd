@@ -466,11 +466,9 @@ func _process_behaviors(delta: float, is_physics: bool) -> void:
 		
 		# Call the appropriate process method
 		if is_physics:
-			if behavior.has_method("physics_process"):
-				behavior.physics_process(node, delta, inputs)
+			behavior.physics_process(node, delta, inputs)
 		else:
-			if behavior.has_method("process"):
-				behavior.process(node, delta, inputs)
+			behavior.process(node, delta, inputs)
 
 func get_class() -> String:
 	return "FlowKitEngine"

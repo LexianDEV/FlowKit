@@ -19,7 +19,7 @@ var content_container: VBoxContainer = null
 var behavior_section: VBoxContainer = null
 var behavior_dropdown: OptionButton = null
 var behavior_params_container: VBoxContainer = null
-var available_behaviors: Array = []
+var available_behaviors: Array[FKBehavior] = []
 
 func _ready() -> void:
 	_build_ui()
@@ -117,9 +117,6 @@ func _populate_behaviors() -> void:
 	# Get available behaviors for this node type
 	var idx: int = 1
 	for provider in registry.behavior_providers:
-		if not provider.has_method("get_supported_types"):
-			continue
-		
 		var supported_types: Array = provider.get_supported_types()
 		var is_supported: bool = false
 		
@@ -130,8 +127,7 @@ func _populate_behaviors() -> void:
 				break
 		
 		if is_supported:
-			var behavior_name: String = provider.get_display_name() \
-			if provider.has_method("get_name") else provider.get_id()
+			var behavior_name: String = provider.get_display_name();
 			
 			if behavior_name == null || behavior_name.length() == 0:
 				behavior_name = provider.get_provider_id()
@@ -163,7 +159,7 @@ func _load_current_behavior() -> void:
 	# Find and select the behavior in dropdown
 	for i in range(available_behaviors.size()):
 		var provider = available_behaviors[i]
-		if provider.has_method("get_id") and provider.get_id() == behavior_id:
+		if provider.get_provider_id() == behavior_id:
 			behavior_dropdown.select(i + 1)  # +1 because of "None" option
 			_show_behavior_params(provider, behavior_data.get("inputs", {}))
 			return
@@ -189,17 +185,16 @@ func _on_behavior_selected(index: int) -> void:
 	if behavior_index < 0 or behavior_index >= available_behaviors.size():
 		return
 	
-	var provider = available_behaviors[behavior_index]
-	var behavior_id: String = provider.get_id() if provider.has_method("get_id") else ""
+	var provider := available_behaviors[behavior_index]
+	var behavior_id: String = provider.get_provider_id();
 	
 	# Get default inputs
 	var default_inputs: Dictionary = {}
-	if provider.has_method("get_inputs"):
-		for input_def in provider.get_inputs():
-			var input_name: String = input_def.get("name", "")
-			var default_value: Variant = input_def.get("default", "")
-			if not input_name.is_empty():
-				default_inputs[input_name] = default_value
+	for input_def in provider.get_inputs():
+		var input_name: String = input_def.get("name", "");
+		var default_value: Variant = input_def.get("default", "");
+		if not input_name.is_empty():
+			default_inputs[input_name] = default_value;
 	
 	# Save behavior to node metadata
 	var behavior_data: Dictionary = {
@@ -219,13 +214,10 @@ func _clear_behavior_params() -> void:
 	for child in behavior_params_container.get_children():
 		child.queue_free()
 
-func _show_behavior_params(provider: Variant, current_inputs: Dictionary) -> void:
+func _show_behavior_params(provider: FKProvider, current_inputs: Dictionary) -> void:
 	_clear_behavior_params()
 	
-	if not provider.has_method("get_inputs"):
-		return
-	
-	var inputs: Array = provider.get_inputs()
+	var inputs: Array = provider.get_inputs();
 	if inputs.is_empty():
 		return
 	

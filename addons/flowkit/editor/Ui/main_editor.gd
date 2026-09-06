@@ -1575,9 +1575,8 @@ func _on_row_edit(signal_row, bound_row: FKEventRowUi) -> void:
 	# Get event provider to check if it has inputs
 	var provider_inputs = []
 	for provider in registry.event_providers:
-		if provider.has_method("get_id") and provider.get_id() == data.event_id:
-			if provider.has_method("get_inputs"):
-				provider_inputs = provider.get_inputs()
+		if provider.get_provider_id() == data.event_id:
+			provider_inputs = provider.get_inputs()
 			break
 	
 	if provider_inputs.size() > 0:
@@ -1631,8 +1630,7 @@ func _on_branch_add_elseif(branch_item: FKBranchUnitUi, event_row: FKUnitUi) -> 
 	if input_type == "condition":
 		_start_add_workflow("elseif_condition", event_row)
 	else:
-		var branch_inputs_def = branch_provider.get_inputs() if branch_provider and \
-		branch_provider.has_method("get_inputs") \
+		var branch_inputs_def = branch_provider.get_inputs() if branch_provider \
 		else []
 		pending_block_type = "elseif_evaluation"
 		if branch_inputs_def.size() > 0:
@@ -1706,9 +1704,8 @@ func _on_branch_condition_edit(branch_item: FKBranchUnitUi, event_row: FKEventRo
 		var cond := act_data.branch_condition
 		var provider_inputs = []
 		for provider in registry.condition_providers:
-			if provider.has_method("get_id") and provider.get_id() == cond.condition_id:
-				if provider.has_method("get_inputs"):
-					provider_inputs = provider.get_inputs()
+			if provider.get_provider_id() == cond.condition_id:
+				provider_inputs = provider.get_inputs()
 				break
 
 		pending_block_type = "branch_condition_edit"
@@ -1919,8 +1916,7 @@ func _start_branch_workflow(branch_id: String, target_row) -> void:
 		_start_add_workflow("branch_condition", target_row)
 	else:
 		# Evaluation type — skip node selector, go directly to expression modal
-		var branch_inputs_def: Array = branch_provider.get_inputs() if branch_provider.has_method("get_inputs") \
-		else []
+		var branch_inputs_def: Array = branch_provider.get_inputs()
 		pending_block_type = "branch_evaluation"
 		pending_target_row = target_row
 		if branch_inputs_def.size() > 0:
@@ -2006,9 +2002,8 @@ func _on_condition_edit_requested(condition_item: FKConditionUnitUi, bound_row) 
 	# Get condition provider to check if it has inputs
 	var provider_inputs: Array = []
 	for provider in registry.condition_providers:
-		if provider.has_method("get_id") and provider.get_id() == cond_data.condition_id:
-			if provider.has_method("get_inputs"):
-				provider_inputs = provider.get_inputs()
+		if provider.get_provider_id() == cond_data.condition_id:
+			provider_inputs = provider.get_inputs()
 			break
 	
 	if provider_inputs.size() > 0:
@@ -2030,7 +2025,7 @@ func _on_action_edit_requested(action_item: FKActionUnitUi, bound_row: FKUnitUi)
 	var action_provider: FKAction = act_data.action_provider
 	if action_provider == null:
 		var prov_id := act_data.get_resolved_provider_id()
-		action_provider = registry.get_action_provider(prov_id);
+		action_provider = registry.get_action_provider(prov_id)
 
 	var provider_inputs: Array[FKActionInput] = []
 	if action_provider:
