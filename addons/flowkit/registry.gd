@@ -1,8 +1,7 @@
 extends Node
 class_name FKRegistry
 
-# Preload the expression evaluator
-const FKExpressionEvaluator = preload("res://addons/flowkit/runtime/expression_evaluator.gd")
+var _provider_executor: FKProviderExecutor
 
 var action_providers: Array[FKAction] = []
 var condition_providers: Array[FKCondition] = []
@@ -21,6 +20,9 @@ var condition_alias_to_id: Dictionary[String, String] = {}
 var event_alias_to_id: Dictionary[String, String] = {}
 var behavior_alias_to_id: Dictionary[String, String] = {}
 var branch_alias_to_id: Dictionary[String, String] = {}
+
+func _enter_tree() -> void:
+	_provider_executor = FKProviderExecutor.new(self)
 
 func _provider_id_of(provider: FKProvider) -> String:
 	var result := "";
@@ -97,14 +99,7 @@ func get_events_for_node_class(node_class: String) -> Array[FKEvent]:
 
 func poll_event(event_id: String, node: Node, inputs: Dictionary = {}, unit_id: int = -1, 
 scene_root: Node = null) -> bool:
-	for provider in event_providers:
-		if _provider_matches_id(provider, event_id):
-			if provider.has_method("poll"):
-				# Evaluate expressions in inputs before polling
-				var evaluated_inputs: Dictionary 
-				evaluated_inputs = FKExpressionEvaluator.evaluate_inputs(inputs, node, scene_root)
-				return provider.poll(node, evaluated_inputs, unit_id)
-	return false
+	return _provider_executor.poll_event(event_id, node, inputs, unit_id, scene_root)
 
 ## Returns the event provider instance for the given event_id, or null.
 func get_event_provider(event_id: String) -> Variant:
@@ -124,64 +119,23 @@ func create_event_instance(event_id: String) -> Variant:
 ## Call setup() on an event provider so it can connect to signals on the target node.
 ## trigger_callback is a Callable the provider can call to fire the unit immediately.
 func setup_event(event_id: String, node: Node, trigger_callback: Callable, unit_id: int = -1) -> void:
-	var provider: Variant = get_event_provider(event_id)
-	if provider and provider.has_method("setup"):
-		provider.setup(node, trigger_callback, unit_id)
+	_provider_executor.setup_event(event_id, node, trigger_callback, unit_id)
 
 ## Call teardown() on an event provider so it can disconnect signals / clean up.
 func teardown_event(event_id: String, node: Node, unit_id: int = -1) -> void:
-	var provider: Variant = get_event_provider(event_id)
-	if provider and provider.has_method("teardown"):
-		provider.teardown(node, unit_id)
+	_provider_executor.teardown_event(event_id, node, unit_id)
 
 ## Returns true if the event provider with the given id is a signal-based event.
 func is_signal_event(event_id: String) -> bool:
-	var provider: Variant = get_event_provider(event_id)
-	if provider and provider.has_method("is_signal_event"):
-		return provider.is_signal_event()
-	return false
+	return _provider_executor.is_signal_event(event_id)
 
 func check_condition(condition_id: String, node: Node, inputs: Dictionary, 
 negated: bool = false, scene_root: Node = null, unit_id: int = -1) -> bool:
-	for provider in condition_providers:
-		if _provider_matches_id(provider, condition_id):
-			if provider.has_method("check"):
-				# Evaluate expressions in inputs before checking
-				# Use node as context for variable resolution (not scene_root)
-				# Pass node as target_node so n_ variable lookups resolve on the correct node
-				var context = node
-				var evaluated_inputs: Dictionary = FKExpressionEvaluator.evaluate_inputs(inputs, context, scene_root, node)
-				var result = provider.check(node, evaluated_inputs, unit_id)
-				return not result if negated else result
-	return false
+	return _provider_executor.check_condition(condition_id, node, inputs, negated, scene_root, unit_id)
 
 func execute_action(action_id: String, node: Node, inputs: Dictionary, 
 scene_root: Node = null, unit_id: int = -1) -> Variant:
-	var provider := get_action_provider(action_id, node)
-	if not provider or not provider.has_method("execute"):
-		return null
-
-	# Use scene_root as the base instance so get_node() resolves from the scene root.
-	# Pass the original node as target_node so n_ variable lookups resolve on the correct node.
-	var context = scene_root if scene_root else node
-	var evaluated_inputs: Dictionary = FKExpressionEvaluator.evaluate_inputs(inputs, context, 
-	scene_root, node)
-
-	var is_multi_frame_action: bool = provider.has_method("requires_multi_frames") and \
-	provider.requires_multi_frames()
-	if is_multi_frame_action:
-		_waiting_on_action = true
-		provider.exec_completed.connect(_on_exec_completed)
-		# Need to listen for completion before execution, otherwise single-frame actions can freeze.
-
-	provider.execute(node, evaluated_inputs, unit_id)
-	while _waiting_on_action:
-		await node.get_tree().process_frame
-
-	if is_multi_frame_action:
-		provider.exec_completed.disconnect(_on_exec_completed)
-
-	return provider
+	return await _provider_executor.execute_action(action_id, node, inputs, scene_root, unit_id)
 
 func get_action_provider(action_id: String, target_node: Node = null) -> FKAction:
 	# Canonical IDs must be globally unique.
@@ -233,11 +187,6 @@ func get_condition_provider_for_node_class(condition_id: String, node_class: Str
 
 	return null
 	
-func _on_exec_completed():
-	_waiting_on_action = false
-
-var _waiting_on_action: bool = false
-
 func get_behavior(behavior_id: String) -> FKBehavior:
 	for provider in behavior_providers:
 		if _provider_matches_id(provider, behavior_id):
@@ -245,17 +194,10 @@ func get_behavior(behavior_id: String) -> FKBehavior:
 	return null
 
 func apply_behavior(behavior_id: String, node: Node, inputs: Dictionary = {}, scene_root: Node = null) -> void:
-	var behavior: Variant = get_behavior(behavior_id)
-	if behavior and behavior.has_method("apply"):
-		# Use scene_root as context if provided, otherwise use the node
-		var context = scene_root if scene_root else node
-		var evaluated_inputs: Dictionary = FKExpressionEvaluator.evaluate_inputs(inputs, context, scene_root)
-		behavior.apply(node, evaluated_inputs)
+	_provider_executor.apply_behavior(behavior_id, node, inputs, scene_root)
 
 func remove_behavior(behavior_id: String, node: Node) -> void:
-	var behavior: Variant = get_behavior(behavior_id)
-	if behavior and behavior.has_method("remove"):
-		behavior.remove(node)
+	_provider_executor.remove_behavior(behavior_id, node)
 
 # --- Branch providers -------------------------------------------------------
 
@@ -279,7 +221,4 @@ func resolve_branch_id(act_branch_id: String, act_branch_type: String) -> String
 
 ## Evaluate branch inputs through the expression evaluator.
 func evaluate_branch_inputs(inputs: Dictionary, scene_root: Node) -> Dictionary:
-	if inputs.is_empty():
-		return {}
-	var context = scene_root if scene_root else null
-	return FKExpressionEvaluator.evaluate_inputs(inputs, context, scene_root)
+	return _provider_executor.evaluate_branch_inputs(inputs, scene_root)
