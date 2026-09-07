@@ -1,10 +1,21 @@
 extends Node
 class_name FlowKitEngine
+const ExpressionEvaluator = preload("res://addons/flowkit/runtime/expression_evaluator.gd");
 
-const ExpressionEvaluator = preload("res://addons/flowkit/runtime/expression_evaluator.gd")
+class SheetEntry:
+	var sheet: FKEventSheet
+	var root: Node
+	var scene_name: String
+	var uid: int
+
+	func _init(p_sheet: FKEventSheet, p_root: Node, p_scene_name: String, p_uid: int) -> void:
+		sheet = p_sheet
+		root = p_root
+		scene_name = p_scene_name
+		uid = p_uid
 
 var registry: FKRegistry
-var active_sheets: Array = []  # Each entry: {"sheet": FKEventSheet, "root": Node, "scene_name": String, "uid": int}
+var active_sheets: Array[SheetEntry] = []
 var last_scene: Node = null
 var active_behavior_nodes: Array = []  # Track nodes with active behaviors
 var _event_unit_providers: Dictionary = {}  # FKUnit uid -> per-unit event provider instance
@@ -125,7 +136,7 @@ func _load_sheets_for_scene(scene_root: Node) -> void:
 			var sheet: FKEventSheet = load(sheet_path)
 			if sheet:
 				sheet.on_loaded_from_disk()
-				var entry := {"sheet": sheet, "root": node_root, "scene_name": scene_name, "uid": uid}
+				var entry := SheetEntry.new(sheet, node_root, scene_name, uid)
 				active_sheets.append(entry)
 				# Create per-unit event provider instances (each unit gets its own)
 				_create_unit_providers(entry)
@@ -159,21 +170,18 @@ func _collect_node_paths(node: Node, uid_to_node: Dictionary) -> void:
 
 ## Create a new event provider instance for each FKEventUnit in a sheet entry.
 ## This ensures each of those has its own isolated state.
-func _create_unit_providers(entry: Dictionary) -> void:
-	var sheet: FKEventSheet = entry.get("sheet", null)
-	if not sheet:
-		return
-
+func _create_unit_providers(entry: SheetEntry) -> void:
+	var sheet: FKEventSheet = entry.sheet
 	var log_message: String = ""
-	var sheet_uid: int = entry.get("uid", -1)
+	var sheet_uid: int = entry.uid
 	if sheet_uid < 0:
-		log_message = "[FlowKit] Invalid sheet UID for entry: %s" % str(entry)
+		log_message = "[FlowKit] Invalid sheet UID for scene: %s" % entry.scene_name
 		push_warning(log_message)
 		return
 
 	var all_events: Array = sheet.get_all_events()
 	
-	var sheet_label: String = str(entry.get("scene_name", "unknown_scene"))
+	var sheet_label: String = entry.scene_name
 	if sheet is Resource and not sheet.resource_path.is_empty():
 		sheet_label = sheet.resource_path.get_file()
 	for unit in all_events:
@@ -207,14 +215,9 @@ func _get_all_events(sheet: FKEventSheet) -> Array:
 	_collect_events_from_groups(sheet.groups, events)
 	return events
 
-func _run_sheet(entry: Dictionary) -> void:
-	# Entry is a dictionary with keys: "sheet" and "root"
-	var sheet: FKEventSheet = entry.get("sheet", null)
-	var root_node: Node = entry.get("root", null)
-
-	if not sheet:
-		return
-
+func _run_sheet(entry: SheetEntry) -> void:
+	var sheet: FKEventSheet = entry.sheet
+	var root_node: Node = entry.root
 	# Root node for resolving node paths in this sheet
 	var current_root: Node = root_node
 	if not current_root or not is_instance_valid(current_root):
@@ -247,7 +250,7 @@ func _run_sheet(entry: Dictionary) -> void:
 
 	# Collect all events from the sheet (both top-level and nested in groups)
 	var all_events: Array = sheet.get_all_events()
-	var sheet_uid: int = entry.get("uid", -1)
+	var sheet_uid: int = entry.uid
 
 	# Process each event unit individually
 	for unit in all_events:
@@ -298,11 +301,11 @@ func _run_sheet(entry: Dictionary) -> void:
 ## Set up signal-based events for a loaded sheet entry.
 ## For each FKEventUnit, calls provider.setup() with a trigger callback
 ## so signal events can connect to Godot signals and fire immediately.
-func _setup_signal_events(entry: Dictionary) -> void:
-	var sheet: FKEventSheet = entry.get("sheet", null)
-	var root_node: Node = entry.get("root", null)
-	var sheet_uid: int = entry.get("uid", -1)
-	if not sheet or not root_node or not is_instance_valid(root_node) or sheet_uid < 0:
+func _setup_signal_events(entry: SheetEntry) -> void:
+	var sheet: FKEventSheet = entry.sheet
+	var root_node: Node = entry.root
+	var sheet_uid: int = entry.uid
+	if not root_node or not is_instance_valid(root_node) or sheet_uid < 0:
 		return
 
 	var all_events: Array = sheet.get_all_events()
@@ -333,10 +336,10 @@ func _setup_signal_events(entry: Dictionary) -> void:
 ## Teardown all signal events across every active sheet.
 func _teardown_all_signal_events() -> void:
 	for entry in active_sheets:
-		var sheet: FKEventSheet = entry.get("sheet", null)
-		var root_node: Node = entry.get("root", null)
-		var sheet_uid: int = entry.get("uid", -1)
-		if not sheet or not root_node or not is_instance_valid(root_node) or sheet_uid < 0:
+		var sheet: FKEventSheet = entry.sheet
+		var root_node: Node = entry.root
+		var sheet_uid: int = entry.uid
+		if not root_node or not is_instance_valid(root_node) or sheet_uid < 0:
 			continue
 
 		var all_events: Array = sheet.get_all_events()
@@ -466,9 +469,11 @@ func _process_behaviors(delta: float, is_physics: bool) -> void:
 		
 		# Call the appropriate process method
 		if is_physics:
-			behavior.physics_process(node, delta, inputs)
+			if behavior.has_method("physics_process"):
+				behavior.physics_process(node, delta, inputs)
 		else:
-			behavior.process(node, delta, inputs)
+			if behavior.has_method("process"):
+				behavior.process(node, delta, inputs)
 
 func get_class() -> String:
 	return "FlowKitEngine"
