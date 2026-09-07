@@ -2,8 +2,6 @@
 extends FKModalWindow
 class_name FKSelectNodeModal
 
-var available_events: Array[FKEvent] = []
-
 @export var search_box: LineEdit  
 @export var item_list: ItemList
 @export var recent_item_list: ItemList
@@ -39,41 +37,7 @@ func _toggle_subs(should_sub: bool):
 func _ready() -> void:
 	if is_editor_preview:
 		return
-	# Load all available events to check compatibility
-	_load_available_event_scripts()
 	_populate_recent_list()
-
-func _load_available_event_scripts() -> void:
-	"""Load all event scripts from the events folder."""
-	available_events.clear()
-	var path := FKEditorGlobals.PATH_TO_EVENTS_FOLDER
-	_scan_directory_recursive(path)
-
-func _scan_directory_recursive(path: String) -> void:
-	"""Recursively scan directories for event scripts."""
-	var dir: DirAccess = DirAccess.open(path)
-	if not dir:
-		return
-	
-	dir.list_dir_begin()
-	var file_name: String = dir.get_next()
-	
-	while file_name != "":
-		var full_path: String = path + "/" + file_name
-		var is_subdir: bool = dir.current_is_dir() and not file_name.begins_with(".")
-		var is_event_script: bool = file_name.ends_with(".gd") and not file_name.ends_with(".gd.uid")
-		
-		if is_subdir:
-			_scan_directory_recursive(full_path)
-		elif is_event_script:
-			var event_script: Variant = load(full_path)
-			if event_script:
-				var event_instance: FKEvent = event_script.new();
-				available_events.append(event_instance);
-		
-		file_name = dir.get_next()
-	
-	dir.list_dir_end()
 
 func _populate_recent_list() -> void:
 	"""Populate the recent items list."""
@@ -182,32 +146,8 @@ func _on_search_text_changed(new_text: String) -> void:
 	_update_list(new_text)
 
 func _has_compatible_event(node_class: String) -> bool:
-	"""Check if any available event supports this node type."""
-	for event in available_events:
-		var supported_types = event.get_supported_types()
-		if _is_node_compatible(node_class, supported_types):
-			return true
-	return false
-
-func _is_node_compatible(node_class: String, supported_types: Array) -> bool:
-	"""Check if a node class is compatible with the supported types."""
-	if supported_types.is_empty():
-		return false
-	
-	# Check for exact match
-	if node_class in supported_types:
-		return true
-	
-	# Check for "Node" which should match all nodes
-	if "Node" in supported_types:
-		return true
-	
-	# Check inheritance
-	for supported_type in supported_types:
-		if ClassDB.is_parent_class(node_class, supported_type):
-			return true
-	
-	return false
+	var registry := _get_registry()
+	return registry != null and not registry.get_events_for_node_class(node_class).is_empty()
 
 func _on_item_activated(index: int) -> void:
 	# Don't allow selecting disabled items

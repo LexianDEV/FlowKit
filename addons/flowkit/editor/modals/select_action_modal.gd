@@ -4,7 +4,6 @@ class_name FKSelectActionModal
 
 var selected_node_path: String = ""
 var selected_node_class: String = ""
-var available_actions: Array[FKAction] = []
 
 @export var search_box: LineEdit
 @export var item_list: ItemList
@@ -23,7 +22,6 @@ func _enter_tree() -> void:
 		return
 		
 	_recent_items_manager = FKRecentItemsManagerUi.new()
-	_load_available_actions()
 
 func _ensure_export_fields_filled():
 	var path: String
@@ -65,38 +63,6 @@ func _toggle_subs(should_sub: bool):
 		recent_item_list.item_activated.disconnect(_on_recent_item_activated)
 		
 	_is_subbed = should_sub
-	
-func _load_available_actions() -> void:
-	"""Load all action scripts from the actions folder."""
-	available_actions.clear()
-	var actions_path: String = "res://addons/flowkit/actions";
-	_scan_directory_recursive(actions_path)
-	print("[FKSelectActionModal]: Loaded ", available_actions.size(), " actions")
-
-func _scan_directory_recursive(path: String) -> void:
-	"""Recursively scan directories for action scripts."""
-	var dir: DirAccess = DirAccess.open(path)
-	if not dir:
-		return
-	
-	dir.list_dir_begin()
-	var file_name: String = dir.get_next()
-	
-	while file_name != "":
-		var full_path: String = path + "/" + file_name
-		
-		if dir.current_is_dir() and not file_name.begins_with("."):
-			# Recursively scan subdirectory
-			_scan_directory_recursive(full_path)
-		elif file_name.ends_with(".gd") and not file_name.ends_with(".gd.uid"):
-			var action_script: Variant = load(full_path)
-			if action_script:
-				var action_instance: Variant = action_script.new()
-				available_actions.append(action_instance)
-		
-		file_name = dir.get_next()
-	
-	dir.list_dir_end()
 
 func populate_actions(node_path: String, node_class: String) -> void:
 	"""Populate the list with actions compatible with the selected node."""
@@ -110,15 +76,12 @@ func populate_actions(node_path: String, node_class: String) -> void:
 	description_label.text = ""
 	
 	# Filter actions that support this node type
-	for action in available_actions:
-		var supported_types = action.get_supported_types()
-		if _is_node_compatible(node_class, supported_types):
-			var action_name := action.get_display_name()
-			var action_id := action.get_provider_id()
-			
+	var registry := _get_registry()
+	if registry:
+		for action in registry.get_actions_for_node_class(node_class):
 			_all_items_cache.append({
-				"name": action_name,
-				"metadata": {"id": action_id, "inputs": action.get_inputs()}
+				"name": action.get_display_name(),
+				"metadata": {"id": action.get_provider_id(), "inputs": action.get_inputs()}
 			})
 			
 	_update_list()
@@ -144,26 +107,6 @@ func _update_list(filter_text: String = "") -> void:
 func _on_search_text_changed(new_text: String) -> void:
 	_update_list(new_text)
 
-func _is_node_compatible(node_class: String, supported_types: Array) -> bool:
-	"""Check if a node class is compatible with the supported types."""
-	if supported_types.is_empty():
-		return false
-	
-	# Check for exact match
-	if node_class in supported_types:
-		return true
-	
-	# Check for "Node" which should match all nodes
-	if "Node" in supported_types:
-		return true
-	
-	# Check inheritance
-	for supported_type in supported_types:
-		if ClassDB.is_parent_class(node_class, supported_type):
-			return true
-	
-	return false
-
 func _on_item_activated(index: int) -> void:
 	"""Handle action selection."""
 	if item_list.is_item_disabled(index):
@@ -175,10 +118,11 @@ func _on_item_activated(index: int) -> void:
 	
 	# Find action name for recent items
 	var action_name := "";
-	for action in available_actions:
-		if action.get_provider_id() == action_id:
-			action_name = action.get_display_name()
-			break
+	var registry := _get_registry()
+	var action: FKAction = registry.get_action_provider_for_node_class(action_id, selected_node_class) if registry else null
+	if not action:
+		return
+	action_name = action.get_display_name()
 	
 	print("[FKSelectActionModal]: Action selected: ", action_id, " for node: ", selected_node_path)
 	_recent_items_manager.add_recent_action(action_id, action_name, selected_node_class)
@@ -195,10 +139,9 @@ func _on_item_selected(index: int) -> void:
 	var action_id: String = metadata["id"];
 	
 	# Find the action and get description
-	for action in available_actions:
-		if action.get_provider_id() == action_id:
-			description_label.text = action.get_description()
-			break
+	var registry := _get_registry()
+	var action: FKAction = registry.get_action_provider_for_node_class(action_id, selected_node_class) if registry else null
+	description_label.text = action.get_description() if action else ""
 
 func _on_popup_hide() -> void:
 	if search_box:
@@ -237,10 +180,11 @@ func _on_recent_item_activated(index: int) -> void:
 	
 	# Find the action to get its inputs
 	var action_inputs: Array[FKActionInput] = [];
-	for action in available_actions:
-		if action.get_provider_id() == action_id:
-			action_inputs = action.get_inputs()
-			break
+	var registry := _get_registry()
+	var action: FKAction = registry.get_action_provider_for_node_class(action_id, selected_node_class) if registry else null
+	if not action:
+		return
+	action_inputs = action.get_inputs()
 	
 	print("[FKSelectActionModal]: Recent action selected: ", action_id, " for node: ", \
 	selected_node_path)

@@ -4,7 +4,6 @@ class_name FKSelectEventModal
 
 var selected_node_path: String = "";
 var selected_node_class: String = "";
-var available_events: Array[FKEvent] = [];
 
 @export_category("UI")
 @export var search_box: LineEdit;
@@ -25,7 +24,6 @@ func _enter_tree() -> void:
 		return
 		
 	_recent_items_manager = FKRecentItemsManagerUi.new()
-	_load_available_events()
 
 var _recent_items_manager: Variant = null
 
@@ -70,38 +68,6 @@ func _toggle_subs(on: bool):
 		return
 		
 	_is_subbed = on
-	
-func _load_available_events() -> void:
-	"""Load all event scripts from the events folder."""
-	available_events.clear()
-	var events_path: String = FKEditorGlobals.PATH_TO_EVENTS_FOLDER;
-	_scan_directory_recursive(events_path)
-	print("[FKSelectEventModal]: Loaded ", available_events.size(), " events")
-
-func _scan_directory_recursive(path: String) -> void:
-	"""Recursively scan directories for event scripts."""
-	var dir: DirAccess = DirAccess.open(path)
-	if not dir:
-		return
-	
-	dir.list_dir_begin()
-	var file_name: String = dir.get_next()
-	
-	while file_name != "":
-		var full_path: String = path + "/" + file_name;
-		
-		if dir.current_is_dir() and not file_name.begins_with("."):
-			# Recursively scan subdirectory
-			_scan_directory_recursive(full_path)
-		elif file_name.ends_with(".gd") and not file_name.ends_with(".gd.uid"):
-			var event_script: Variant = load(full_path)
-			if event_script:
-				var event_instance: Variant = event_script.new()
-				available_events.append(event_instance)
-		
-		file_name = dir.get_next()
-	
-	dir.list_dir_end()
 
 func populate_events(node_path: String, node_class: String) -> void:
 	"""Populate the list with events compatible with the selected node."""
@@ -115,17 +81,12 @@ func populate_events(node_path: String, node_class: String) -> void:
 	description_label.text = "";
 	
 	# Filter events that support this node type
-	for event in available_events:
-		# Check if this is the new FKEvent pattern or old FKEventProvider pattern
-		# New FKEvent pattern
-		var supported_types = event.get_supported_types()
-		if _is_node_compatible(node_class, supported_types):
-			var event_name := event.get_display_name()
-			var event_id := event.get_provider_id()
-			
+	var registry := _get_registry()
+	if registry:
+		for event in registry.get_events_for_node_class(node_class):
 			_all_items_cache.append({
-				"name": event_name,
-				"metadata": event_id
+				"name": event.get_display_name(),
+				"metadata": event.get_provider_id()
 			})
 	
 	_update_list()
@@ -151,26 +112,6 @@ func _update_list(filter_text: String = "") -> void:
 func _on_search_text_changed(new_text: String) -> void:
 	_update_list(new_text)
 
-func _is_node_compatible(node_class: String, supported_types: Array) -> bool:
-	"""Check if a node class is compatible with the supported types."""
-	if supported_types.is_empty():
-		return false
-	
-	# Check for exact match
-	if node_class in supported_types:
-		return true
-	
-	# Check for "Node" which should match all nodes
-	if "Node" in supported_types:
-		return true
-	
-	# Check inheritance
-	for supported_type in supported_types:
-		if ClassDB.is_parent_class(node_class, supported_type):
-			return true
-	
-	return false
-
 func _on_item_activated(index: int) -> void:
 	"""Handle event selection."""
 	if item_list.is_item_disabled(index):
@@ -181,11 +122,12 @@ func _on_item_activated(index: int) -> void:
 	# Find the event provider to get its inputs and name
 	var event_inputs: Array = [];
 	var event_name = "";
-	for event in available_events:
-		if event.get_id() == event_id:
-			event_inputs = event.get_inputs()
-			event_name = event.get_display_name()
-			break
+	var registry := _get_registry()
+	var event: FKEvent = registry.get_event_provider(event_id) if registry else null
+	if not event:
+		return
+	event_inputs = event.get_inputs()
+	event_name = event.get_display_name()
 	
 	print("[FKSelectEventModal]: Event selected: ", event_id, " for node: ",
 	selected_node_path, " with inputs: ", event_inputs)
@@ -202,10 +144,9 @@ func _on_item_selected(index: int) -> void:
 	var event_id = item_list.get_item_metadata(index)
 	
 	# Find the event and get description
-	for event in available_events:
-		if event.get_provider_id() == event_id:
-			description_label.text = event.get_description()
-			break
+	var registry := _get_registry()
+	var event: FKEvent = registry.get_event_provider(event_id) if registry else null
+	description_label.text = event.get_description() if event else ""
 
 func _on_popup_hide() -> void:
 	if search_box:
@@ -244,10 +185,11 @@ func _on_recent_item_activated(index: int) -> void:
 	
 	# Find the event to get its inputs
 	var event_inputs: Array = []
-	for event in available_events:
-		if event.get_provider_id() == event_id:
-			event_inputs = event.get_inputs()
-			break
+	var registry := _get_registry()
+	var event: FKEvent = registry.get_event_provider(event_id) if registry else null
+	if not event:
+		return
+	event_inputs = event.get_inputs()
 	
 	print("[FKSelectEventModal]: Recent event selected: ", event_id, " for node: ", \
 	selected_node_path)

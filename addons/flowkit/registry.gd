@@ -74,6 +74,27 @@ func load_providers() -> void:
 	# Alias for load_all() for backward compatibility
 	load_all()
 
+func get_actions_for_node_class(node_class: String) -> Array[FKAction]:
+	var result: Array[FKAction] = []
+	for provider in action_providers:
+		if provider.supports_node_class(node_class):
+			result.append(provider)
+	return result
+
+func get_conditions_for_node_class(node_class: String) -> Array[FKCondition]:
+	var result: Array[FKCondition] = []
+	for provider in condition_providers:
+		if provider.supports_node_class(node_class):
+			result.append(provider)
+	return result
+
+func get_events_for_node_class(node_class: String) -> Array[FKEvent]:
+	var result: Array[FKEvent] = []
+	for provider in event_providers:
+		if provider.supports_node_class(node_class):
+			result.append(provider)
+	return result
+
 func poll_event(event_id: String, node: Node, inputs: Dictionary = {}, unit_id: int = -1, 
 scene_root: Node = null) -> bool:
 	for provider in event_providers:
@@ -176,6 +197,17 @@ func get_action_provider(action_id: String, target_node: Node = null) -> FKActio
 
 	return null
 
+func get_action_provider_for_node_class(action_id: String, node_class: String) -> FKAction:
+	for provider in action_providers:
+		if provider.get_provider_id().strip_edges() == action_id:
+			return provider
+
+	for provider in action_providers:
+		if provider.get_id().strip_edges() == action_id and provider.supports_node_class(node_class):
+			return provider
+
+	return null
+
 func get_condition_provider(condition_id: String, target_node: Node = null) -> FKCondition:
 	# Canonical IDs must be globally unique.
 	for provider in condition_providers:
@@ -187,6 +219,17 @@ func get_condition_provider(condition_id: String, target_node: Node = null) -> F
 		if provider.get_id().strip_edges() == condition_id:
 			if target_node == null or provider.supports_node(target_node):
 				return provider
+
+	return null
+
+func get_condition_provider_for_node_class(condition_id: String, node_class: String) -> FKCondition:
+	for provider in condition_providers:
+		if provider.get_provider_id().strip_edges() == condition_id:
+			return provider
+
+	for provider in condition_providers:
+		if provider.get_id().strip_edges() == condition_id and provider.supports_node_class(node_class):
+			return provider
 
 	return null
 	

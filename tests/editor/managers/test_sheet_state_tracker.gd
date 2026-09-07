@@ -1,8 +1,12 @@
 extends GutTest
 
-func test_undo_basic_behavior():
-	var state_tracker := FKSheetStateTracker.new()
+var state_tracker: FKSheetStateTracker
 
+func before_each() -> void:
+	state_tracker = FKSheetStateTracker.new()
+	state_tracker.enabled = true
+
+func test_undo_basic_behavior():
 	var firstSnapshot: Array[FKUnit] = [FKEventUnit.new()]
 	var secondSnapshot: Array[FKUnit] = [FKEventUnit.new(), FKConditionUnit.new()]
 
@@ -13,7 +17,7 @@ func test_undo_basic_behavior():
 
 	var result := state_tracker.get_previous_snapshot(secondSnapshot)
 
-	# Should return the previous snapshot (s1)
+	# Should return the most recently recorded snapshot (s2).
 	assert_eq(result.size(), secondSnapshot.size())
 	assert_true(result[0] is FKEventUnit)
 
@@ -21,8 +25,6 @@ func test_undo_basic_behavior():
 	assert_true(state_tracker.has_next())
 
 func test_undo_manager_deep_copy():
-	var state_tracker := FKSheetStateTracker.new()
-
 	var evBlock := FKEventUnit.new()
 	evBlock.inputs = {"x": 1}
 	var state: Array[FKUnit] = [evBlock]
@@ -41,10 +43,7 @@ func test_undo_manager_deep_copy():
 	var deep_copy_success := not is_same(popped[0], evBlock)
 	assert_true(deep_copy_success)
 
-
 func test_redo_restores_state():
-	var state_tracker := FKSheetStateTracker.new()
-
 	var firstSnapshot: Array[FKUnit] = [FKEventUnit.new()]
 	var secondSnapshot: Array[FKUnit] = [FKEventUnit.new(), FKActionUnit.new()]
 
@@ -60,3 +59,10 @@ func test_redo_restores_state():
 	var redo_result := state_tracker.get_next_snapshot(undo_result)
 	assert_eq(redo_result.size(), secondSnapshot.size())
 	assert_true(redo_result[1] is FKActionUnit)
+
+func test_disabled_tracker_does_not_record_history():
+	var disabled_tracker := FKSheetStateTracker.new()
+
+	disabled_tracker.record_snapshot([FKEventUnit.new()])
+
+	assert_false(disabled_tracker.has_previous())

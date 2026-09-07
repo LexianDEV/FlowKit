@@ -71,19 +71,17 @@ func supports_node_class(node_class: String) -> bool:
 	if node_class.is_empty():
 		return false
 
-	var supported := get_supported_types()
+	var supported: Array = get_supported_types()
 	if supported.is_empty():
 		return false
 
-	if "Node" in supported:
-		return true
-
-	if node_class in supported:
+	if "Node" in supported or node_class in supported:
 		return true
 
 	for supported_type in supported:
-		if ClassDB.class_exists(supported_type) and ClassDB.is_parent_class(node_class, supported_type):
-			return true
+		if supported_type is String and ClassDB.class_exists(supported_type):
+			if ClassDB.is_parent_class(node_class, supported_type):
+				return true
 
 	return false
 

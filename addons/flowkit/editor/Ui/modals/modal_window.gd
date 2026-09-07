@@ -63,3 +63,5 @@ func _exit_tree() -> void:
 func _ready() -> void:
 	pass
 	
+func _get_registry() -> FKRegistry:
+	return editor_globals.registry if editor_globals else null
