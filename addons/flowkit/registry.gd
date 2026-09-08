@@ -21,7 +21,7 @@ var event_alias_to_id: Dictionary[String, String] = {}
 var behavior_alias_to_id: Dictionary[String, String] = {}
 var branch_alias_to_id: Dictionary[String, String] = {}
 
-func _enter_tree() -> void:
+func _init() -> void:
 	_provider_executor = FKProviderExecutor.new(self)
 
 func _provider_id_of(provider: FKProvider) -> String:
