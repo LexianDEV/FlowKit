@@ -18,13 +18,13 @@ func get_inputs() -> Array[FKActionInput]:
 
 static var _color_input: FKStringActionInput:
 	get:
-		return FKStringActionInput.new("Color",
+		return FKStringActionInput.new("color",
 		"Decides what BBCode color the message is wrapped in. Default: white.",
 		"white")
 
 static var _message_input: FKStringActionInput:
 	get:
-		return FKStringActionInput.new("Message", 
+		return FKStringActionInput.new("message", 
 		"The message to print. BBCode tags are supported.")
 
 func execute(_node: Node, inputs: Dictionary, _int: int = -1) -> void:
