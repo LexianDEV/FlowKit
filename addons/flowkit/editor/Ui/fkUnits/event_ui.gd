@@ -66,9 +66,8 @@ func _resolve_display_name(e: FKEventUnit) -> String:
 
 	if registry:
 		for provider in registry.event_providers:
-			if provider.has_method("get_id") and provider.get_id() == e.event_id:
-				if provider.has_method("get_name"):
-					name = provider.get_name()
+			if provider.get_provider_id() == e.event_id:
+				name = provider.get_display_name()
 				break
 
 	return name

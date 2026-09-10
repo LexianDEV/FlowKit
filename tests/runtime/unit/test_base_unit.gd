@@ -9,7 +9,7 @@ func test_fkunit_basic_serialization():
 	var json := unit.serialize()
 
 	assert_eq(json["type"], "event")
-	assert_eq(json["personal_id"], expected_id)
+	assert_eq(json["uid"], expected_id)
 
 
 func test_fkunit_roundtrip():

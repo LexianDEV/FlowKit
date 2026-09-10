@@ -89,8 +89,7 @@ func _show_context_menu() -> void:
 	context_menu.clear()
 
 	var provider = _get_branch_provider()
-	var input_type = provider.get_input_type() if provider and provider.has_method("get_input_type") \
-	else "condition"
+	var input_type = provider.get_input_type()
 
 	if _action.branch_type != "else":
 		if input_type == "condition":
@@ -159,11 +158,10 @@ func _show_add_action_context_menu() -> void:
 	add_action_context_menu.add_item("Add Action", 0)
 	add_action_context_menu.add_separator()
 
-	var branches: Array = registry.branch_providers if registry else []
+	var branches: Array[FKBranch] = registry.branch_providers if registry else []
 	for i in range(branches.size()):
 		var provider = branches[i]
-		if provider.has_method("get_name"):
-			add_action_context_menu.add_item("Add %s" % provider.get_name(), 100 + i)
+		add_action_context_menu.add_item("Add %s" % provider.get_display_name(), 100 + i)
 
 	add_action_context_menu.position = DisplayServer.mouse_get_position()
 	add_action_context_menu.popup()
@@ -172,10 +170,11 @@ func _on_add_action_context_menu_id_pressed(id: int) -> void:
 	if id == 0:
 		add_branch_action_requested.emit(self)
 	elif id >= 100:
-		var branches: Array = registry.branch_providers if registry else []
+		var branches: Array[FKBranch] = registry.branch_providers if registry else []
 		var idx := id - 100
 		if idx < branches.size():
-			add_nested_branch_requested.emit(self, branches[idx].get_id())
+			var current_branch := branches[idx];
+			add_nested_branch_requested.emit(self, current_branch.get_provider_id())
 
 func _on_add_action_hover(is_hovering: bool) -> void:
 	var color_to_use = Color(0.6, 0.65, 0.62, 1) if is_hovering \
@@ -199,7 +198,7 @@ func _update_header() -> void:
 
 func _update_type_label() -> void:
 	var provider = _get_branch_provider()
-	var name: String = provider.get_name().to_upper() if provider and provider.has_method("get_name") else "IF"
+	var name: String = provider.get_display_name().to_upper() if provider != null else "IF"
 
 	match _action.branch_type:
 		"if": type_label.text = name
@@ -234,10 +233,9 @@ func _update_condition_desc() -> void:
 		var display_name := cond.condition_id
 
 		if registry:
-			for p in registry.condition_providers:
-				if p.has_method("get_id") and p.get_id() == cond.condition_id:
-					if p.has_method("get_name"):
-						display_name = p.get_name()
+			for prov in registry.condition_providers:
+				if prov.get_provider_id() == cond.condition_id:
+					display_name = prov.get_display_name()
 					break
 
 		var neg := "NOT " if cond.negated else ""
@@ -260,15 +258,16 @@ func _update_condition_desc() -> void:
 	else:
 		condition_label.text = "(no inputs set)"
 
-func _get_branch_provider():
+func _get_branch_provider() -> FKBranch:
 	if not _action or not registry:
 		return null
 
 	var bid := _action.branch_id
 	if bid.is_empty() and _action.branch_type in ["if", "elseif", "else"]:
-		bid = "if_branch"
+		bid = "if_branch";
 
-	return registry.get_branch_provider(bid)
+	var result := registry.get_branch_provider(bid)
+	return result;
 
 # ---------------------------------------------------------
 # Branch Actions Rendering
@@ -383,9 +382,9 @@ func _get_drag_data(at_position: Vector2) -> FKDragData:
 
 func _create_drag_preview() -> Control:
 	var lbl := Label.new()
-	var provider = _get_branch_provider()
-	var name: String = provider.get_name() if provider and provider.has_method("get_name") else \
-	"Branch"
+	var provider := _get_branch_provider()
+	var name: String = provider.get_provider_name() if provider != null \
+	else "Branch"
 	lbl.text = "%s Branch" % name
 
 	var color: Color = provider.get_color() if provider and provider.has_method("get_color") else \

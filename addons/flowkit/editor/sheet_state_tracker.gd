@@ -2,6 +2,7 @@ extends RefCounted
 class_name FKSheetStateTracker
 
 const MAX_HISTORY := 50
+const DEBUG_MESSAGES := false
 var enabled: bool = false
 
 var _history: Array = [] # Past snapshots
