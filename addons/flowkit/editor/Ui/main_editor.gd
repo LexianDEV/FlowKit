@@ -728,6 +728,11 @@ func _save_sheet() -> FKEventSheet:
 		push_warning("[FKMainEditor] No scene open to save event sheet.")
 		return
 
+	if not sheet_auto_saver.enabled: 
+		# ^At one point, we might want to set up the auto saver to respond to some things that 
+		# we currently call _save_sheet for.
+		return
+
 	var units := blocks_container.units
 		
 	var sheet := FKEventSheet.from_units(units)

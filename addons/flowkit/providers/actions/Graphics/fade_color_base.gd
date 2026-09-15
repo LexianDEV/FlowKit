@@ -4,7 +4,7 @@ class_name FKFadeColorBase
 func is_abstract_provider() -> bool:
 	return true
 
-func requires_multi_frames() -> bool:
+func may_need_multi_frames() -> bool:
 	return true
 	
 func get_inputs() -> Array[FKActionInput]:

@@ -1,5 +1,18 @@
 extends GutTest
 
+func test_event_count_includes_top_level_and_nested_group_events() -> void:
+	var sheet := FKEventSheet.new()
+	sheet.events.append(FKEventUnit.new("top_level", NodePath("Root")))
+
+	var nested_group := FKGroupUnit.new()
+	nested_group.add_child_unit(FKEventUnit.new("nested", NodePath("Root")))
+
+	var group := FKGroupUnit.new()
+	group.add_child_unit(nested_group)
+	sheet.groups.append(group)
+
+	assert_eq(sheet.get_event_count(), 2)
+
 
 func test_group_basic_serialization():
 	var grp := FKGroupUnit.new()

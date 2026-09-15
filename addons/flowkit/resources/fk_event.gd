@@ -1,9 +1,6 @@
 extends FKProvider
 class_name FKEvent
 
-func get_provider_kind() -> String:
-	return KIND_EVENT
-	
 func poll(node: Node, inputs: Dictionary = {}, unit_id: int = -1) -> bool:
 	return false
 

@@ -10,30 +10,8 @@ var event_providers: Array[FKEvent] = []
 var behavior_providers: Array[FKBehavior] = []
 var branch_providers: Array[FKBranch] = []
 
-var actions_by_id: Dictionary[String, FKAction] = {}
-var conditions_by_id: Dictionary[String, FKCondition] = {}
-var events_by_id: Dictionary[String, FKEvent] = {}
-var behaviors_by_id: Dictionary[String, FKBehavior] = {}
-var branches_by_id: Dictionary[String, FKBranch] = {}
-
-var action_alias_to_id: Dictionary[String, String] = {}
-var condition_alias_to_id: Dictionary[String, String] = {}
-var event_alias_to_id: Dictionary[String, String] = {}
-var behavior_alias_to_id: Dictionary[String, String] = {}
-var branch_alias_to_id: Dictionary[String, String] = {}
-
 func _init() -> void:
 	_provider_executor = FKProviderExecutor.new(self)
-
-func _provider_id_of(provider: FKProvider) -> String:
-	var result := "";
-	if provider == null:
-		return result
-
-	result = provider.get_provider_id()
-	result = provider.get_id() if result.is_empty() else result
-	result = result.strip_edges()
-	return result
 
 func _provider_matches_id(provider: FKProvider, wanted_id: String) -> bool:
 	if provider == null:
@@ -107,7 +85,7 @@ scene_root: Node = null) -> bool:
 	return _provider_executor.poll_event(event_id, node, inputs, unit_id, scene_root)
 
 ## Returns the event provider instance for the given event_id, or null.
-func get_event_provider(event_id: String) -> Variant:
+func get_event_provider(event_id: String) -> FKEvent:
 	for provider in event_providers:
 		if _provider_matches_id(provider, event_id):
 			return provider
@@ -115,7 +93,7 @@ func get_event_provider(event_id: String) -> Variant:
 
 ## Create a new, independent instance of the event provider for the given event_id.
 ## Each event unit should get its own instance to avoid shared state bugs.
-func create_event_instance(event_id: String) -> Variant:
+func create_event_instance(event_id: String) -> FKEvent:
 	for provider in event_providers:
 		if _provider_matches_id(provider, event_id):
 			return provider.get_script().new()

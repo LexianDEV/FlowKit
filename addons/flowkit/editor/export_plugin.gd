@@ -9,19 +9,9 @@ class_name FKExportPlugin
 
 const MANIFEST_PATH = "res://addons/flowkit/saved/provider_manifest.tres"
 
-# Provider directories whose files are candidates for exclusion
-const PROVIDER_DIRS: Array[String] = [
-	"res://addons/flowkit/actions/",
-	"res://addons/flowkit/conditions/",
-	"res://addons/flowkit/events/",
-	"res://addons/flowkit/behaviors/",
-	"res://addons/flowkit/branches/",
-]
-
 var _excluded_paths: Dictionary = {}  # path -> true, for O(1) lookups
 var _exclude_count: int = 0
 var _generator = null  # FKGenerator reference for auto-generation
-
 
 ## Store a reference to the generator so we can auto-create the manifest.
 func set_generator(gen) -> void:

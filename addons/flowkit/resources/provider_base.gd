@@ -1,20 +1,6 @@
 extends Resource
 class_name FKProvider
 
-const KIND_CONDITION := "condition"
-const KIND_ACTION := "action"
-const KIND_EVENT := "event"
-const KIND_BRANCH := "branch"
-const KIND_BEHAVIOR := "behavior"
-
-const VALID_KINDS := [
-	KIND_CONDITION,
-	KIND_ACTION,
-	KIND_EVENT,
-	KIND_BRANCH,
-	KIND_BEHAVIOR,
-]
-
 ## So that the system knows whether this Provider is meant to be 
 ## instantiated or used as a base. We need this because 
 ## (at the time of this writing) GDScript doesn't have anything
@@ -28,10 +14,7 @@ func get_provider_id() -> String:
 	# Backward-compatible bridge: existing providers override get_id()
 	return get_id()
 
-func get_provider_kind() -> String:
-	return ""
-
-## [Deprecated] Best use get_provider_id() and get_provider_kind() instead. 
+## [Deprecated] Best use get_provider_id() instead. 
 func get_id() -> String:
 	return ""
 
@@ -55,13 +38,6 @@ func get_inputs() -> Array:
 ## e.g., ["CharacterBody2D"] or ["Node2D", "Node3D"]
 func get_supported_types() -> Array[String]:
 	return []
-
-func get_canonical_id() -> String:
-	var kind := get_provider_kind().strip_edges()
-	var pid := get_provider_id().strip_edges()
-	if kind.is_empty() or pid.is_empty():
-		return ""
-	return "%s:%s" % [kind, pid]
 
 func supports_node(node: Node) -> bool:
 	if not node:
@@ -106,32 +82,25 @@ func validate_definition() -> Array[String]:
 	var errors: Array[String] = []
 
 	var pid := get_provider_id().strip_edges()
-	var kind := get_provider_kind().strip_edges()
 
 	if pid.is_empty():
 		errors.append("Provider id is empty.")
 
-	if kind.is_empty():
-		errors.append("Provider kind is empty.")
-	elif not VALID_KINDS.has(kind):
-		errors.append("Provider kind '%s' is invalid." % kind)
-
 	var inputs := get_input_definitions()
 	for i in range(inputs.size()):
 		var input_def = inputs[i]
-		var has_name := input_def.has("name") and input_def["name"] is String and not String(input_def["name"]).is_empty()
-		var has_type := input_def.has("type") and input_def["type"] is String and not String(input_def["type"]).is_empty()
+		var has_name := input_def.has("name") and input_def["name"] is String \
+		and not String(input_def["name"]).is_empty()
+		var has_type := input_def.has("type") and input_def["type"] is String \
+		and not String(input_def["type"]).is_empty()
 		if not has_name:
 			errors.append("Input #%d is missing a valid 'name'." % i)
 		if not has_type:
 			errors.append("Input #%d is missing a valid 'type'." % i)
 
-	for t in get_supported_types():
-		if not (t is String):
+	for type_el in get_supported_types():
+		if not (type_el is String):
 			errors.append("supported_types must contain only String values.")
 			break
 
 	return errors
-
-func get_real_class() -> String:
-	return self.get_class()

@@ -45,24 +45,3 @@ func copy_event_block(data: FKEventUnit) -> FKEventUnit:
 		return null
 
 	return data.duplicate_block()
-
-# -------------------------------------------------------------------
-#  ACTION COPY (supports nested branches)
-# -------------------------------------------------------------------
-
-func copy_action(act: FKActionUnit) -> FKActionUnit:
-	if act == null:
-		return null
-	
-	return act.duplicate_block()
-
-# -------------------------------------------------------------------
-#  GROUP COPY (supports both dict children and FKUnit children)
-# -------------------------------------------------------------------
-
-func copy_group_block(data: FKGroupUnit) -> FKGroupUnit:
-	if data == null:
-		return null
-
-	var result := data.duplicate_block()
-	return result

@@ -5,9 +5,6 @@ extends FKProvider
 ## without requiring the user to write code.
 class_name FKBehavior
 
-func get_provider_kind() -> String:
-	return KIND_BEHAVIOR
-
 ## Returns an array of input definitions
 ## Each dictionary should have:
 ## - "name": String - the input parameter name

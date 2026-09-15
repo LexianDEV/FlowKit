@@ -24,13 +24,6 @@ func _init(p_event_id: String = "", p_target_node: NodePath = NodePath()) -> voi
 	event_id = p_event_id
 	target_node = p_target_node
 
-func _generate_unique_id() -> String:
-	"""Generate a unique ID for this block using timestamp and random component."""
-	var timestamp = Time.get_unix_time_from_system()
-	# event_id can be stuff like "on_ready" and "on_process"
-	return "%s_%d_%d" % [event_id if event_id else "event", int(timestamp), randi()]
-
-		
 func serialize() -> Dictionary:
 	var result := super.serialize()
 	var our_added_fields := {

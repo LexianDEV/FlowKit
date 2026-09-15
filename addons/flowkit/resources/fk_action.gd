@@ -1,19 +1,20 @@
 extends FKProvider
 class_name FKAction
 
-func get_provider_kind() -> String:
-	return KIND_ACTION
-
-signal exec_completed
-
 func get_description() -> String:
 	return "No description provided."
 
 func get_inputs() -> Array[FKActionInput]:
 	return []
 
-func requires_multi_frames() -> bool:
+## Whether or not this Action might need more than one frame to finish doing its thing.
+func may_need_multi_frames() -> bool:
 	return false
+
+# If may_need_multi_frames is true, you'll want to make sure to emit this when 
+# this FKAction is done doing its thing. The executor will then only move on
+## to the next action when this is emitted.
+signal exec_completed
 
 func execute(node: Node, inputs: Dictionary, unit_id: int = -1) -> void:
 	pass

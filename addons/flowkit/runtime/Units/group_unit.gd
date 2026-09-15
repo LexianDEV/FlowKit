@@ -62,12 +62,16 @@ func remove_child_at(index: int) -> void:
 func get_child_count() -> int:
 	return children.size()
 
+## More performant alternative to calling get_children and then getting the 
+## unit through its result.
 func get_child_unit(index: int) -> FKUnit:
 	var valid_index: bool = index >= 0 and index < children.size()
 	if valid_index:
 		return children[index]
 	return null
 
+## More performant alternative to calling get_children and then getting the 
+## index through its result.
 func find_child_index(unit: FKUnit) -> int:
 	for i in range(children.size()):
 		if children[i] == unit:

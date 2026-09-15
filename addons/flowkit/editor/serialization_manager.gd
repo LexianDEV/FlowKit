@@ -26,9 +26,7 @@ func serialize_unit(unit_ui: Node) -> Dictionary:
 	# At the time of this writing, all unit node classes except group_ui implement FKUnitUi
 	print("Serializer working with " + str(unit_ui))
 	var data: FKUnit = null
-	if unit_ui.has_method("_to_string"):
-		print("Serializing unit node of type " + unit_ui.get_class())
-		
+	
 	if unit_ui is FKUnitUi:
 		data = unit_ui.get_unit()
 	else:

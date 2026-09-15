@@ -142,7 +142,7 @@ func _load_sheets_for_scene(scene_root: Node) -> void:
 				_create_unit_providers(entry)
 				# Setup signal-based events so they can connect to node signals
 				_setup_signal_events(entry)
-				print("[FlowKit] Loaded event sheet for scene: ", scene_name, " (node: ", node_root.name, ") with ", sheet.events.size(), " events")
+				print("[FlowKit] Loaded event sheet for scene: ", scene_name, " (node: ", node_root.name, ") with ", sheet.get_event_count(), " events")
 			else:
 				print("[FlowKit] Failed to load sheet resource at: ", sheet_path)
 		else:
@@ -202,18 +202,12 @@ func _create_unit_providers(entry: SheetEntry) -> void:
 
 		var key := _event_provider_key(sheet_uid, unit_id)
 		if not _event_unit_providers.has(key):
-			var instance = registry.create_event_instance(event_unit.event_id)
+			var instance := registry.create_event_instance(event_unit.event_id)
 			if instance:
 				_event_unit_providers[key] = instance
 
 func _event_provider_key(sheet_uid: int, event_unit_id: int) -> String:
 	return "%d:%d" % [sheet_uid, event_unit_id]
-
-func _get_all_events(sheet: FKEventSheet) -> Array:
-	var events: Array = []
-	events.append_array(sheet.events)
-	_collect_events_from_groups(sheet.groups, events)
-	return events
 
 func _run_sheet(entry: SheetEntry) -> void:
 	var sheet: FKEventSheet = entry.sheet
@@ -269,12 +263,12 @@ func _run_sheet(entry: SheetEntry) -> void:
 
 		# Lookup provider instance by (sheet uid + unit personal_id)
 		var key := _event_provider_key(sheet_uid, event_unit.uid)
-		var provider = _event_unit_providers.get(key, null)
+		var provider: FKEvent = _event_unit_providers.get(key, null)
 		if not provider:
 			continue
 
 		# Signal events fire via callback — skip them in the poll loop
-		if provider.has_method("is_signal_event") and provider.is_signal_event():
+		if provider.is_signal_event():
 			continue
 
 		# Skip events that belong to the wrong callback
@@ -316,11 +310,11 @@ func _setup_signal_events(entry: SheetEntry) -> void:
 			continue
 
 		var key := _event_provider_key(sheet_uid, event_unit.uid)
-		var provider = _event_unit_providers.get(key, null)
+		var provider: FKEvent = _event_unit_providers.get(key, null)
 		if not provider:
 			continue
 
-		if not (provider.has_method("is_signal_event") and provider.is_signal_event()):
+		if not provider.is_signal_event():
 			continue
 
 		var target := str(event_unit.target_node)
@@ -330,8 +324,7 @@ func _setup_signal_events(entry: SheetEntry) -> void:
 
 		# Build a trigger callback that runs this unit's conditions & actions
 		var trigger_cb: Callable = _make_trigger_callback(event_unit, root_node)
-		if provider.has_method("setup"):
-			provider.setup(node, trigger_cb, event_unit.uid)
+		provider.setup(node, trigger_cb, event_unit.uid)
 
 ## Teardown all signal events across every active sheet.
 func _teardown_all_signal_events() -> void:
@@ -350,7 +343,7 @@ func _teardown_all_signal_events() -> void:
 				continue
 
 			var key := _event_provider_key(sheet_uid, event_unit.uid)
-			var provider = _event_unit_providers.get(key, null)
+			var provider: FKEvent = _event_unit_providers.get(key, null)
 			if not provider:
 				continue
 
@@ -359,8 +352,7 @@ func _teardown_all_signal_events() -> void:
 			if not node:
 				continue
 
-			if provider.has_method("teardown"):
-				provider.teardown(node, event_unit.uid)
+			provider.teardown(node, event_unit.uid)
 
 ## Create a Callable that evaluates a unit's conditions and runs its actions.
 ## This is what signal events call when their signal fires.
@@ -399,23 +391,6 @@ func _execute_unit(unit: FKEventUnit, current_root: Node) -> void:
 func _execute_actions_list(actions: Array, current_root: Node, unit_id: int) -> void:
 	await _branch_executor._execute_actions(actions, current_root, unit_id)
 	
-func _is_multi_frame_provider(provider: Variant) -> bool:
-	return provider and provider.has_method("requires_multi_frames") and provider.requires_multi_frames()
-
-func _collect_events_from_groups(groups: Array, out_events: Array) -> void:
-	for group in groups:
-		if group is FKGroupUnit:
-			for child_item in group.children:
-				var child_type: String = child_item.get("type", "")
-				var child_data: Variant = child_item.get("data", null)
-				
-				if child_type == "event" and child_data is FKEventUnit:
-					out_events.append(child_data)
-				elif child_type == "group" and child_data is FKGroupUnit:
-					# Recursively collect from nested groups
-					_collect_events_from_groups([child_data], out_events)
-
-
 # --- Behavior processing ---------------------------------------------------
 func _scan_and_activate_behaviors(scene_root: Node) -> void:
 	# Recursively scan all nodes in the scene for behaviors
@@ -463,7 +438,7 @@ func _process_behaviors(delta: float, is_physics: bool) -> void:
 		if behavior_id.is_empty():
 			continue
 		
-		var behavior: Variant = registry.get_behavior(behavior_id)
+		var behavior := registry.get_behavior(behavior_id)
 		if not behavior:
 			continue
 		

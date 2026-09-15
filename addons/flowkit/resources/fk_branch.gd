@@ -5,9 +5,6 @@ extends FKProvider
 ## Extend this class to create custom branch types that appear in the "Add..." menu.
 class_name FKBranch
 
-func get_provider_kind() -> String:
-	return KIND_BRANCH
-
 func get_type() -> String:
 	## Returns "single" or "chain".
 	## "single" — the branch stands alone; no else-if / else units can follow.

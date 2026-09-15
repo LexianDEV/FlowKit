@@ -115,12 +115,6 @@ func duplicate_block() -> FKUnit:
 		
 	return copy
 	
-static func _to_action_unit_arr(arr: Array) -> Array[FKActionUnit]:
-	var result: Array[FKActionUnit] = []
-	for child in arr:
-		if child is FKActionUnit:
-			result.append(child)
-	return result
 		
 func get_class() -> String:
 	return "FKActionUnit"

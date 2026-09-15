@@ -12,7 +12,7 @@ func get_display_name() -> String:
 func get_supported_types() -> Array:
 	return ["System"]
 	
-func requires_multi_frames() -> bool:
+func may_need_multi_frames() -> bool:
 	return true
 	
 func get_inputs() -> Array[FKActionInput]:
