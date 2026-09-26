@@ -30,6 +30,11 @@ func load_all() -> FKProviderLoadResult:
 	_collect_duplicate_id_diagnostics(result.branch_providers, "branch", result)
 	return result
 
+## Public view used by editor tooling that needs the exact same discovery paths.
+func get_provider_paths() -> Array[String]:
+	return _get_provider_paths()
+
+
 func _get_provider_paths() -> Array[String]:
 	var result: Array[String] = []
 	for provider_path in [default_provider_path, default_test_path]:

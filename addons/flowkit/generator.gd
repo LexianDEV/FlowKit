@@ -2,18 +2,22 @@
 extends RefCounted
 class_name FKGenerator
 
-const ACTIONS_DIR = "res://addons/flowkit/actions/"
-const CONDITIONS_DIR = "res://addons/flowkit/conditions/"
-const EVENTS_DIR = "res://addons/flowkit/events/"
-const BEHAVIORS_DIR = "res://addons/flowkit/behaviors/"
-const BRANCHES_DIR = "res://addons/flowkit/branches/"
+const ACTIONS_DIR = "res://addons/flowkit/providers/actions/"
+const CONDITIONS_DIR = "res://addons/flowkit/providers/conditions/"
+const EVENTS_DIR = "res://addons/flowkit/providers/events/"
+const BEHAVIORS_DIR = "res://addons/flowkit/providers/behaviors/"
+const BRANCHES_DIR = "res://addons/flowkit/providers/branches/"
 const MANIFEST_PATH = "res://addons/flowkit/saved/provider_manifest.tres"
 const PROVIDER_MANIFEST_SCRIPT = "res://addons/flowkit/resources/provider_manifest.gd"
 
 var editor_interface: EditorInterface
+var project_settings: FKProjectSettings = null
 
 func _init(p_editor_interface: EditorInterface) -> void:
 	editor_interface = p_editor_interface
+
+func set_project_settings(settings: FKProjectSettings) -> void:
+	project_settings = settings
 
 func generate_all() -> Dictionary:
 	var result = {
@@ -703,6 +707,9 @@ func generate_manifest() -> Dictionary:
 		"total_available": 0,
 		"total_included": 0,
 		"total_excluded": 0,
+		"included_script_paths": [],
+		"excluded_script_paths": [],
+		"manifest": null,
 		"errors": []
 	}
 
@@ -718,18 +725,22 @@ func generate_manifest() -> Dictionary:
 	print("  Branches:   ", used_ids.branch_ids)
 	print("  Behaviors:  ", used_ids.behavior_ids)
 
-	# Step 2: Collect all available provider scripts
+	# Step 2: Collect all available provider scripts from the same configured
+	# directories used by FKProviderLoader. This keeps editor discovery,
+	# manifest generation, and exported runtime loading in sync.
 	var all_action_scripts: Array[GDScript] = []
 	var all_condition_scripts: Array[GDScript] = []
 	var all_event_scripts: Array[GDScript] = []
 	var all_behavior_scripts: Array[GDScript] = []
 	var all_branch_scripts: Array[GDScript] = []
 
-	_collect_scripts_recursive(ACTIONS_DIR, all_action_scripts)
-	_collect_scripts_recursive(CONDITIONS_DIR, all_condition_scripts)
-	_collect_scripts_recursive(EVENTS_DIR, all_event_scripts)
-	_collect_scripts_recursive(BEHAVIORS_DIR, all_behavior_scripts)
-	_collect_scripts_recursive(BRANCHES_DIR, all_branch_scripts)
+	_collect_all_provider_scripts(
+		all_action_scripts,
+		all_condition_scripts,
+		all_event_scripts,
+		all_behavior_scripts,
+		all_branch_scripts
+	)
 
 	var total_available: int = all_action_scripts.size() + all_condition_scripts.size() + all_event_scripts.size() + all_behavior_scripts.size() + all_branch_scripts.size()
 
@@ -757,6 +768,8 @@ func generate_manifest() -> Dictionary:
 	result.total_available = total_available
 	result.total_included = included_paths.size()
 	result.total_excluded = excluded_paths.size()
+	result.included_script_paths = included_paths.duplicate()
+	result.excluded_script_paths = excluded_paths.duplicate()
 
 	# Step 4: Create and save the manifest
 	var manifest: Resource = load(PROVIDER_MANIFEST_SCRIPT).new()
@@ -767,6 +780,10 @@ func generate_manifest() -> Dictionary:
 	manifest.set("branch_scripts", branch_scripts)
 	manifest.set("included_script_paths", included_paths)
 	manifest.set("excluded_script_paths", excluded_paths)
+	# Return the exact in-memory manifest used for this generation pass. Export
+	# code must consume this object directly instead of reloading MANIFEST_PATH,
+	# which may still be represented by a stale editor/export cache entry.
+	result.manifest = manifest
 
 	var error = ResourceSaver.save(manifest, MANIFEST_PATH)
 	if error != OK:
@@ -825,18 +842,22 @@ func _extract_ids_from_sheet(sheet: FKEventSheet, used: Dictionary) -> void:
 
 ## Extract IDs from a group unit (which can contain events, nested groups, etc.)
 func _extract_ids_from_group(group: FKGroupUnit, used: Dictionary) -> void:
-	for child in group.children:
-		var child_type: String = child.get("type", "")
-		var child_data = child.get("data", null)
-		if not child_data:
-			continue
-		match child_type:
-			"event":
-				if child_data is FKEventUnit:
-					_extract_ids_from_event_unit(child_data, used)
-			"group":
-				if child_data is FKGroupUnit:
-					_extract_ids_from_group(child_data, used)
+	for child_variant in group.children:
+		var child: FKUnit = null
+
+		# Current format: children are FKUnit subresources.
+		if child_variant is FKUnit:
+			child = child_variant
+		# Legacy format: {"type": ..., "data": FKUnit}.
+		elif child_variant is Dictionary:
+			var legacy_data: Variant = child_variant.get("data", null)
+			if legacy_data is FKUnit:
+				child = legacy_data
+
+		if child is FKEventUnit:
+			_extract_ids_from_event_unit(child, used)
+		elif child is FKGroupUnit:
+			_extract_ids_from_group(child, used)
 
 
 ## Extract IDs from a single event unit and all its contents.
@@ -944,26 +965,42 @@ func _filter_scripts_by_usage(
 	included_paths: Array[String],
 	excluded_paths: Array[String]
 ) -> void:
-	# First pass: categorise scripts into providers (have get_id) and base classes (don't)
+	# First pass: concrete providers participate in ID matching. Abstract
+	# providers and ID-less provider scripts are dependency/base candidates.
 	var providers: Array[GDScript] = []
-	var base_classes: Array[GDScript] = []  # Scripts without get_id — utility / base classes
+	var base_classes: Array[GDScript] = []
 
 	for script in all_scripts:
-		var instance = script.new()
-		if instance.has_method("get_provider_id"):
+		var instance: FKProvider = script.new() as FKProvider
+		if instance == null:
+			continue
+		var provider_id: String = instance.get_provider_id().strip_edges()
+		var is_abstract: bool = instance.is_abstract_provider()
+		if not is_abstract and not provider_id.is_empty():
 			providers.append(script)
 		else:
 			base_classes.append(script)
 
-	# Second pass: keep providers whose id is in the used set
-	var kept_provider_paths: Dictionary = {}  # path -> true
+	# Second pass: keep concrete providers whose canonical OR legacy ID is in
+	# the used set. Runtime FKRegistry intentionally supports both so event
+	# sheets saved before canonical provider IDs were introduced keep working.
+	# Export pruning must follow the same compatibility rule or it can strip the
+	# provider that runtime would otherwise resolve (for example, legacy "play"
+	# -> canonical "audio_stream_player_2d_play").
 	for script in providers:
-		var instance = script.new()
-		var script_id: String = instance.get_id()
-		if used_ids.has(script_id):
+		var instance: FKProvider = script.new() as FKProvider
+		if instance == null:
+			continue
+
+		var canonical_id: String = instance.get_provider_id().strip_edges()
+		var legacy_id: String = instance.get_id().strip_edges()
+		var is_used: bool = used_ids.has(canonical_id)
+		if not is_used and not legacy_id.is_empty() and legacy_id != canonical_id:
+			is_used = used_ids.has(legacy_id)
+
+		if is_used:
 			out_scripts.append(script)
 			included_paths.append(script.resource_path)
-			kept_provider_paths[script.resource_path] = true
 		else:
 			excluded_paths.append(script.resource_path)
 
@@ -988,6 +1025,50 @@ func _script_extends(child_script: GDScript, ancestor_script: GDScript) -> bool:
 	var current: GDScript = child_script.get_base_script()
 	while current:
 		if current.resource_path == ancestor_script.resource_path:
+			return true
+		current = current.get_base_script()
+	return false
+
+
+## Collect and categorize providers from the same paths used by FKProviderLoader.
+func _collect_all_provider_scripts(
+	actions: Array[GDScript],
+	conditions: Array[GDScript],
+	events: Array[GDScript],
+	behaviors: Array[GDScript],
+	branches: Array[GDScript]
+) -> void:
+	var loader: FKProviderLoader = FKProviderLoader.new()
+	loader.project_settings = project_settings
+
+	var discovered: Array[GDScript] = []
+	for provider_path in loader.get_provider_paths():
+		_collect_scripts_recursive(provider_path, discovered)
+
+	for script in discovered:
+		if not _script_extends_provider_base(script):
+			continue
+
+		var instance: FKProvider = script.new() as FKProvider
+		if instance == null:
+			continue
+
+		if instance is FKAction:
+			actions.append(script)
+		elif instance is FKCondition:
+			conditions.append(script)
+		elif instance is FKEvent:
+			events.append(script)
+		elif instance is FKBehavior:
+			behaviors.append(script)
+		elif instance is FKBranch:
+			branches.append(script)
+
+
+func _script_extends_provider_base(script: GDScript) -> bool:
+	var current: GDScript = script
+	while current != null:
+		if current.get_global_name() == &"FKProvider":
 			return true
 		current = current.get_base_script()
 	return false

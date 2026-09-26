@@ -32,9 +32,9 @@ var _exec_actions: Callable
 
 ## Handles connecting and disconnecting the signals. ##
 func _toggle_subs_for(target_node: Node, on: bool):
-	var type := target_node.get_class()
-	var globals := FlowKitSystem.global_signals
-	var use_our_own_signal := !auto_signals_own_text_changes.has(type)
+	var type: StringName = target_node.get_class()
+	var globals: FKGlobalSignals = FlowKitSystem.global_signals
+	var use_our_own_signal: bool = !auto_signals_own_text_changes.has(type)
 	
 	if on:
 		if use_our_own_signal:

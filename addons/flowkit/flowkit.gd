@@ -21,7 +21,9 @@ func _disable_plugin() -> void:
 func _enter_tree() -> void:
 	_prep_editor_globals()
 	_prep_settings_window()
-	action_registry.set_project_settings(settings_window.get_project_settings())
+	var project_settings: FKProjectSettings = settings_window.get_project_settings()
+	action_registry.set_project_settings(project_settings)
+	generator.set_project_settings(project_settings)
 	action_registry.load_providers()
 	_prep_main_editor()
 	_prep_tool_submenu_entries()

@@ -80,7 +80,7 @@ item_1/id = 1
 [node name="Edit" type="PopupMenu" parent="OuterVBox/TopMargin/TopBar/MenuBar" unique_id=341846292]
 oversampling_override = 1.0
 size = Vector2i(150, 180)
-item_count = 5
+item_count = 4
 item_0/text = "Undo (Ctrl+Z)"
 item_0/id = 0
 item_1/text = "Redo (Ctrl+Shift+Z)"
@@ -89,8 +89,6 @@ item_2/id = -1
 item_2/separator = true
 item_3/text = "Generate Events/Conditions/Actions (MAY BE UNSTABLE)"
 item_3/id = 2
-item_4/text = "Generate Provider Manifest (for Export)"
-item_4/id = 3
 
 [node name="AddCommentButton" type="Button" parent="OuterVBox/TopMargin/TopBar" unique_id=1151977613]
 layout_mode = 2
@@ -159,7 +157,6 @@ theme_override_styles/pressed = SubResource("StyleBoxFlat_button")
 theme_override_styles/hover = SubResource("StyleBoxFlat_button")
 text = "➕ Add Event"
 
-[connection signal="generate_manifest" from="OuterVBox/TopMargin/TopBar/MenuBar" to="." method="_on_generate_manifest"]
 [connection signal="generate_providers" from="OuterVBox/TopMargin/TopBar/MenuBar" to="." method="_on_generate_providers"]
 [connection signal="new_sheet" from="OuterVBox/TopMargin/TopBar/MenuBar" to="." method="_on_new_sheet"]
 [connection signal="redo_requested" from="OuterVBox/TopMargin/TopBar/MenuBar" to="." method="_redo"]

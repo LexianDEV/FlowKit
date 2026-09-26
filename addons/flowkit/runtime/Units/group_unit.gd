@@ -14,8 +14,6 @@ class_name FKGroupUnit
 ## If accessing from outside FKGroupUnit, best use get_children instead.
 @export var children: Array = []
 
-static var _serialization_manager := FKSerializationManager.new()
-
 func _init() -> void:
 	block_type = "group"
 
@@ -108,12 +106,41 @@ func deserialize(dict: Dictionary) -> void:
 
 	children.clear()
 
-	for child_dict in dict.get("children", []):
-		var child_block := _serialization_manager.deserialize_unit(child_dict)
+	for child_dict_variant in dict.get("children", []):
+		if not (child_dict_variant is Dictionary):
+			continue
+
+		var child_dict: Dictionary = child_dict_variant
+		var child_block: FKUnit = _deserialize_child_unit(child_dict)
 		if child_block:
 			children.append(child_block)
 
 	normalize_children(true)
+
+
+static func _deserialize_child_unit(dict: Dictionary) -> FKUnit:
+	var unit_type: String = str(dict.get("type", ""))
+	var unit: FKUnit = null
+
+	match unit_type:
+		"event":
+			unit = FKEventUnit.new()
+		"action":
+			unit = FKActionUnit.new()
+		"comment":
+			unit = FKComment.new()
+		"group":
+			unit = FKGroupUnit.new()
+		"condition":
+			unit = FKConditionUnit.new()
+
+	if unit == null:
+		push_error("[FKGroupUnit] Unknown child unit type '%s'." % unit_type)
+		return null
+
+	unit.deserialize(dict)
+	return unit
+
 
 func copy_deep() -> FKGroupUnit:
 	var result := duplicate_block()

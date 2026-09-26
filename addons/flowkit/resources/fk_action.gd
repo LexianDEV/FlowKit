@@ -7,13 +7,19 @@ func get_description() -> String:
 func get_inputs() -> Array[FKActionInput]:
 	return []
 
+const GENERAL_INPUT_MODAL_PATH := "res://addons/flowkit/editor/scenes/modals/FKActionCustom/general_action_input_modal.tscn"
+
+## Backwards-compatible editor-only accessor. This stays lazy so exported builds
+## do not retain the editor modal as a hard runtime dependency.
+static var GENERAL_INPUT_MODAL: PackedScene:
+	get:
+		if not OS.has_feature("editor"):
+			return null
+		return load(GENERAL_INPUT_MODAL_PATH) as PackedScene
+
 ## Returns an optional editor modal scene for configuring this action's inputs.
 func get_input_modal_scene() -> PackedScene:
 	return GENERAL_INPUT_MODAL
-
-const GENERAL_INPUT_MODAL := preload(
-	"res://addons/flowkit/editor/scenes/modals/FKActionCustom/general_action_input_modal.tscn"
-)
 
 ## Whether or not this Action might need more than one frame to finish doing its thing.
 func may_need_multi_frames() -> bool:

@@ -976,53 +976,6 @@ var generator: FKGenerator:
 			result = editor_globals.generator
 		return result
 
-func _on_generate_manifest() -> void:
-	if not generator:
-		print("[FKMainEditor]: Generator not available")
-		return
-
-	print("[FKMainEditor]: Generating optimized provider manifest for export...")
-
-	var result = generator.generate_manifest()
-
-	var message := "[FKMainEditor]: Optimized manifest generated!\n\n"
-	message += "Included providers (actively used):\n"
-	message += "  Actions:	%d\n" % result.actions
-	message += "  Conditions: %d\n" % result.conditions
-	message += "  Events:	 %d\n" % result.events
-	message += "  Behaviors:  %d\n" % result.behaviors
-	message += "  Branches:   %d\n" % result.branches
-	message += "\nBuild optimization:\n"
-	message += "  Total available: %d providers\n" % result.total_available
-	message += "  Included:		%d providers\n" % result.total_included
-	message += "  Excluded:		%d unused providers\n" % result.total_excluded
-
-	if result.total_available > 0:
-		var pct: float = (float(result.total_excluded) / float(result.total_available)) * 100.0
-		message += "  Size reduction:  ~%.0f%%\n" % pct
-
-	if result.errors.size() > 0:
-		message += "\nErrors:\n"
-		for error in result.errors:
-			message += "- " + error + "\n"
-	else:
-		message += "\nThe manifest has been saved. Unused provider files\n"
-		message += "will be automatically excluded from exported builds."
-
-	print(message)
-
-	# Show info dialog
-	var dialog := AcceptDialog.new()
-	dialog.dialog_text = message
-	dialog.title = "FlowKit Build Optimizer"
-	dialog.ok_button_text = "OK"
-	add_child(dialog)
-	_popup_centered_on_editor(dialog)
-
-	dialog.confirmed.connect(func():
-		dialog.queue_free()
-	)
-
 func _on_add_event_button_pressed() -> void:
 	if not editor_interface:
 		return
