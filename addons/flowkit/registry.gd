@@ -99,10 +99,12 @@ func create_event_instance(event_id: String) -> FKEvent:
 			return provider.get_script().new()
 	return null
 
-## Call setup() on an event provider so it can connect to signals on the target node.
+## Set up an event provider so it can connect to signals on the target node.
+## Configured inputs are evaluated before being passed to input-aware signal events.
 ## trigger_callback is a Callable the provider can call to fire the unit immediately.
-func setup_event(event_id: String, node: Node, trigger_callback: Callable, unit_id: int = -1) -> void:
-	_provider_executor.setup_event(event_id, node, trigger_callback, unit_id)
+func setup_event(event_id: String, node: Node, trigger_callback: Callable, unit_id: int = -1, \
+inputs: Dictionary = {}, scene_root: Node = null) -> void:
+	_provider_executor.setup_event(event_id, node, trigger_callback, unit_id, inputs, scene_root)
 
 ## Call teardown() on an event provider so it can disconnect signals / clean up.
 func teardown_event(event_id: String, node: Node, unit_id: int = -1) -> void:
