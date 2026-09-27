@@ -6,7 +6,7 @@ func poll(node: Node, inputs: Dictionary = {}, unit_id: int = -1) -> bool:
 
 ## Override to return true when this event fires via signals instead of polling.
 ## Signal events skip the per-frame poll() loop and instead call trigger_callback
-## directly from setup() when the connected signal fires.
+## directly from the setup lifecycle when the connected signal fires.
 func is_signal_event() -> bool:
 	return false
 
