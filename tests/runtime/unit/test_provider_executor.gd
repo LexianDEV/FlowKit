@@ -43,6 +43,45 @@ class RecordingEvent extends FKEvent:
 		received_inputs = inputs
 		return true
 
+class RecordingSignalEvent extends FKEvent:
+	var received_inputs: Dictionary = {}
+	var received_unit_id: int = -1
+
+	func get_provider_id() -> String:
+		return "record_signal_event"
+
+	func get_supported_types() -> Array[String]:
+		return ["Node"]
+
+	func is_signal_event() -> bool:
+		return true
+
+	func setup_with_inputs(
+		_node: Node,
+		inputs: Dictionary,
+		_trigger_callback: Callable,
+		unit_id: int = -1
+	) -> void:
+		received_inputs = inputs
+		received_unit_id = unit_id
+
+class LegacySetupEvent extends FKEvent:
+	var setup_called: bool = false
+	var received_unit_id: int = -1
+
+	func get_provider_id() -> String:
+		return "legacy_setup_event"
+
+	func get_supported_types() -> Array[String]:
+		return ["Node"]
+
+	func is_signal_event() -> bool:
+		return true
+
+	func setup(_node: Node, _trigger_callback: Callable, unit_id: int = -1) -> void:
+		setup_called = true
+		received_unit_id = unit_id
+
 class RecordingBehavior extends FKBehavior:
 	var applied_to: Node
 	var applied_inputs: Dictionary = {}
@@ -93,6 +132,46 @@ func test_poll_event_evaluates_inputs_before_dispatch() -> void:
 
 	assert_true(registry.poll_event("record_event", target_node, {"enabled": "true"}))
 	assert_eq(event.received_inputs, {"enabled": true})
+
+func test_setup_event_evaluates_inputs_before_dispatch() -> void:
+	var registry: FKRegistry = FKRegistry.new()
+	var event: RecordingSignalEvent = RecordingSignalEvent.new()
+	var target_node: Node = Node.new()
+	var trigger_callback: Callable = func() -> void:
+		pass
+	registry.event_providers.append(event)
+
+	registry.setup_event(
+		"record_signal_event",
+		target_node,
+		trigger_callback,
+		23,
+		{"interval": "2.5"}
+	)
+
+	assert_eq(event.received_inputs, {"interval": 2.5})
+	assert_eq(event.received_unit_id, 23)
+
+
+func test_setup_event_keeps_legacy_setup_providers_compatible() -> void:
+	var registry: FKRegistry = FKRegistry.new()
+	var event: LegacySetupEvent = LegacySetupEvent.new()
+	var target_node: Node = Node.new()
+	var trigger_callback: Callable = func() -> void:
+		pass
+	registry.event_providers.append(event)
+
+	registry.setup_event(
+		"legacy_setup_event",
+		target_node,
+		trigger_callback,
+		31,
+		{"event_name": "Hello World"}
+	)
+
+	assert_true(event.setup_called)
+	assert_eq(event.received_unit_id, 31)
+
 
 func test_behavior_dispatch_evaluates_apply_inputs_and_forwards_remove() -> void:
 	var registry := FKRegistry.new()
