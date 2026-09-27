@@ -18,10 +18,12 @@ scene_root: Node = null) -> bool:
 	var evaluated_inputs: Dictionary = FKExpressionEvaluator.evaluate_inputs(inputs, node, scene_root)
 	return provider.poll(node, evaluated_inputs, unit_id)
 
-func setup_event(event_id: String, node: Node, trigger_callback: Callable, unit_id: int = -1) -> void:
-	var provider := registry.get_event_provider(event_id)
+func setup_event(event_id: String, node: Node, trigger_callback: Callable, unit_id: int = -1, \
+inputs: Dictionary = {}, scene_root: Node = null) -> void:
+	var provider: FKEvent = registry.get_event_provider(event_id)
 	if provider:
-		provider.setup(node, trigger_callback, unit_id)
+		var evaluated_inputs: Dictionary = FKExpressionEvaluator.evaluate_inputs(inputs, node, scene_root)
+		provider.setup_with_inputs(node, evaluated_inputs, trigger_callback, unit_id)
 
 func teardown_event(event_id: String, node: Node, unit_id: int = -1) -> void:
 	var provider := registry.get_event_provider(event_id)
