@@ -327,7 +327,12 @@ func _setup_signal_events(entry: SheetEntry) -> void:
 
 		# Build a trigger callback that runs this unit's conditions & actions
 		var trigger_cb: Callable = _make_trigger_callback(event_unit, root_node)
-		provider.setup(node, trigger_cb, event_unit.uid)
+		var evaluated_inputs: Dictionary = ExpressionEvaluator.evaluate_inputs(
+			event_unit.inputs,
+			node,
+			root_node
+		)
+		provider.setup_with_inputs(node, evaluated_inputs, trigger_cb, event_unit.uid)
 
 ## Teardown all signal events across every active sheet.
 func _teardown_all_signal_events() -> void:
