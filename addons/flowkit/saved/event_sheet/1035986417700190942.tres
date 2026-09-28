@@ -10,7 +10,7 @@
 
 [sub_resource type="Resource" id="Resource_ehuoq"]
 script = ExtResource("1_ehuoq")
-_latest_id_given = 7
+_latest_id_given = 32
 
 [sub_resource type="Resource" id="Resource_ehuxe"]
 script = ExtResource("1_opms0")
@@ -26,7 +26,7 @@ inputs = {
 "Y": "0"
 }
 block_type = "action"
-uid = 5
+uid = 11
 
 [sub_resource type="Resource" id="Resource_iu3q8"]
 script = ExtResource("4_at6cs")
@@ -36,7 +36,7 @@ inputs = {
 "X": "n_initial_x"
 }
 block_type = "action"
-uid = 6
+uid = 12
 
 [sub_resource type="Resource" id="Resource_n0pkj"]
 script = ExtResource("4_at6cs")
@@ -46,9 +46,61 @@ inputs = {
 "Y": "n_initial_y"
 }
 block_type = "action"
-uid = 7
+uid = 13
 
 [sub_resource type="Resource" id="Resource_hkb6h"]
+script = ExtResource("5_1wrk8")
+condition_id = "compare_node_variable"
+target_node = NodePath("System")
+inputs = {
+"Comparison": "\">\"",
+"Property": "system.get_var(\"Lives\")",
+"Value": "1"
+}
+block_type = "condition"
+
+[sub_resource type="Resource" id="Resource_rqmq1"]
+script = ExtResource("4_at6cs")
+is_branch = true
+branch_type = "if"
+branch_id = "if_branch"
+branch_condition = SubResource("Resource_hkb6h")
+branch_actions = Array[ExtResource("4_at6cs")]([SubResource("Resource_1wrk8"), SubResource("Resource_iu3q8"), SubResource("Resource_n0pkj")])
+block_type = "action"
+uid = 10
+
+[sub_resource type="Resource" id="Resource_ch42c"]
+script = ExtResource("4_at6cs")
+action_id = "call_custom_event"
+target_node = NodePath("System")
+inputs = {
+"Event Name": "\"FallOff\""
+}
+block_type = "action"
+uid = 15
+
+[sub_resource type="Resource" id="Resource_paa45"]
+script = ExtResource("5_1wrk8")
+condition_id = "compare_node_variable"
+target_node = NodePath("System")
+inputs = {
+"Comparison": "\">=\"",
+"Property": "system.get_var(\"Lives\")",
+"Value": "1"
+}
+block_type = "condition"
+
+[sub_resource type="Resource" id="Resource_4vgbi"]
+script = ExtResource("4_at6cs")
+is_branch = true
+branch_type = "if"
+branch_id = "if_branch"
+branch_condition = SubResource("Resource_paa45")
+branch_actions = Array[ExtResource("4_at6cs")]([SubResource("Resource_ch42c")])
+block_type = "action"
+uid = 14
+
+[sub_resource type="Resource" id="Resource_2hyto"]
 script = ExtResource("5_1wrk8")
 condition_id = "compare_node_variable"
 target_node = NodePath("CharacterBody2D")
@@ -58,29 +110,199 @@ inputs = {
 "Value": "n_lowest_y"
 }
 block_type = "condition"
-uid = 4
+uid = 9
 
-[sub_resource type="Resource" id="Resource_rqmq1"]
+[sub_resource type="Resource" id="Resource_jt35n"]
 script = ExtResource("2_at6cs")
 event_id = "on_process"
 target_node = NodePath("CharacterBody2D")
-conditions = Array[ExtResource("5_1wrk8")]([SubResource("Resource_hkb6h")])
-actions = Array[ExtResource("4_at6cs")]([SubResource("Resource_1wrk8"), SubResource("Resource_iu3q8"), SubResource("Resource_n0pkj")])
+conditions = Array[ExtResource("5_1wrk8")]([SubResource("Resource_2hyto")])
+actions = Array[ExtResource("4_at6cs")]([SubResource("Resource_rqmq1"), SubResource("Resource_4vgbi")])
 block_type = "event"
-uid = 3
+uid = 8
 
-[sub_resource type="Resource" id="Resource_ch42c"]
+[sub_resource type="Resource" id="Resource_452x5"]
 script = ExtResource("3_ehuoq")
 title = "Prevent falling off map"
-children = [SubResource("Resource_ehuxe"), SubResource("Resource_rqmq1")]
+children = [SubResource("Resource_ehuxe"), SubResource("Resource_jt35n")]
 block_type = "group"
 uid = 1
 
+[sub_resource type="Resource" id="Resource_05edj"]
+script = ExtResource("4_at6cs")
+action_id = "set_variable"
+target_node = NodePath("System")
+inputs = {
+"Name": "\"Points\"",
+"Value": "0"
+}
+block_type = "action"
+uid = 18
+
+[sub_resource type="Resource" id="Resource_uhc5b"]
+script = ExtResource("2_at6cs")
+event_id = "on_ready"
+target_node = NodePath("System")
+actions = Array[ExtResource("4_at6cs")]([SubResource("Resource_05edj")])
+block_type = "event"
+uid = 17
+
+[sub_resource type="Resource" id="Resource_ejtoo"]
+script = ExtResource("4_at6cs")
+action_id = "set_variable"
+target_node = NodePath("System")
+inputs = {
+"Name": "\"Points\"",
+"Value": "system.get_var(\"Points\") +1"
+}
+block_type = "action"
+uid = 20
+
+[sub_resource type="Resource" id="Resource_pisf7"]
+script = ExtResource("4_at6cs")
+action_id = "Set Text"
+target_node = NodePath("HUD/PointsLabel")
+inputs = {
+"New Text": "\"POINTS: \" + str(system.get_var(\"Points\"))"
+}
+block_type = "action"
+uid = 21
+
+[sub_resource type="Resource" id="Resource_lu3gr"]
+script = ExtResource("2_at6cs")
+event_id = "on_custom_event"
+target_node = NodePath("System")
+inputs = {
+"Event Name": "\"AddPoint\""
+}
+actions = Array[ExtResource("4_at6cs")]([SubResource("Resource_ejtoo"), SubResource("Resource_pisf7")])
+block_type = "event"
+uid = 19
+
+[sub_resource type="Resource" id="Resource_ahqu5"]
+script = ExtResource("3_ehuoq")
+title = "Detect coin collection"
+children = [SubResource("Resource_uhc5b"), SubResource("Resource_lu3gr")]
+block_type = "group"
+uid = 16
+
+[sub_resource type="Resource" id="Resource_25ggj"]
+script = ExtResource("4_at6cs")
+action_id = "set_variable"
+target_node = NodePath("System")
+inputs = {
+"Name": "\"Lives\"",
+"Value": "3"
+}
+block_type = "action"
+uid = 24
+
+[sub_resource type="Resource" id="Resource_dw7o8"]
+script = ExtResource("2_at6cs")
+event_id = "on_ready"
+target_node = NodePath("System")
+actions = Array[ExtResource("4_at6cs")]([SubResource("Resource_25ggj")])
+block_type = "event"
+uid = 23
+
+[sub_resource type="Resource" id="Resource_12dkb"]
+script = ExtResource("4_at6cs")
+action_id = "set_variable"
+target_node = NodePath("System")
+inputs = {
+"Name": "\"Lives\"",
+"Value": "system.get_var(\"Lives\") - 1"
+}
+block_type = "action"
+uid = 26
+
+[sub_resource type="Resource" id="Resource_e33yh"]
+script = ExtResource("4_at6cs")
+action_id = "Set Text"
+target_node = NodePath("HUD/PointsLabel2")
+inputs = {
+"New Text": "\"LIVES: \" + str(system.get_var(\"Lives\"))"
+}
+block_type = "action"
+uid = 27
+
+[sub_resource type="Resource" id="Resource_rme8g"]
+script = ExtResource("2_at6cs")
+event_id = "on_custom_event"
+target_node = NodePath("System")
+inputs = {
+"Event Name": "\"FallOff\""
+}
+actions = Array[ExtResource("4_at6cs")]([SubResource("Resource_12dkb"), SubResource("Resource_e33yh")])
+block_type = "event"
+uid = 25
+
+[sub_resource type="Resource" id="Resource_gcw2f"]
+script = ExtResource("4_at6cs")
+action_id = "Set Text"
+target_node = NodePath("HUD/PointsLabel2")
+inputs = {
+"New Text": "\"Game Over!\""
+}
+block_type = "action"
+uid = 30
+
+[sub_resource type="Resource" id="Resource_afnw6"]
+script = ExtResource("4_at6cs")
+action_id = "destroy"
+target_node = NodePath("HUD/PointsLabel")
+block_type = "action"
+uid = 31
+
+[sub_resource type="Resource" id="Resource_fcdrj"]
+script = ExtResource("4_at6cs")
+action_id = "destroy"
+target_node = NodePath("CharacterBody2D")
+block_type = "action"
+uid = 32
+
+[sub_resource type="Resource" id="Resource_vijo0"]
+script = ExtResource("5_1wrk8")
+condition_id = "compare_variable"
+target_node = NodePath("System")
+inputs = {
+"Comparison": "\"==\"",
+"Name": "\"Lives\"",
+"Value": "0"
+}
+block_type = "condition"
+uid = 29
+
+[sub_resource type="Resource" id="Resource_72j2b"]
+script = ExtResource("2_at6cs")
+event_id = "on_custom_event"
+target_node = NodePath("System")
+inputs = {
+"Event Name": "\"FallOff\""
+}
+conditions = Array[ExtResource("5_1wrk8")]([SubResource("Resource_vijo0")])
+actions = Array[ExtResource("4_at6cs")]([SubResource("Resource_gcw2f"), SubResource("Resource_afnw6"), SubResource("Resource_fcdrj")])
+block_type = "event"
+uid = 28
+
+[sub_resource type="Resource" id="Resource_1g3qq"]
+script = ExtResource("3_ehuoq")
+title = "Take away life when falls off map"
+children = [SubResource("Resource_dw7o8"), SubResource("Resource_rme8g"), SubResource("Resource_72j2b")]
+block_type = "group"
+uid = 22
+
 [resource]
 script = ExtResource("4_ehuxe")
-groups = Array[ExtResource("3_ehuoq")]([SubResource("Resource_ch42c")])
+groups = Array[ExtResource("3_ehuoq")]([SubResource("Resource_452x5"), SubResource("Resource_ahqu5"), SubResource("Resource_1g3qq")])
 item_order = Array[Dictionary]([{
 "index": 0,
+"type": "group"
+}, {
+"index": 1,
+"type": "group"
+}, {
+"index": 2,
 "type": "group"
 }])
 _id_assigner = SubResource("Resource_ehuoq")

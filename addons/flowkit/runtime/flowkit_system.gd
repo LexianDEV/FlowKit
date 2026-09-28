@@ -7,6 +7,7 @@ class_name FKSystem
 # Signals that can be used with events
 signal on_ready_triggered
 signal on_process_triggered
+signal custom_event_called(event_name: String)
 
 var _ready_fired: bool = false
 
@@ -28,6 +29,10 @@ func _ready() -> void:
 
 func _process(_delta: float) -> void:
 	on_process_triggered.emit()
+
+# Custom events
+func call_custom_event(event_name: String) -> void:
+	custom_event_called.emit(event_name)
 
 # Global print function
 func print_message(message: String) -> void:

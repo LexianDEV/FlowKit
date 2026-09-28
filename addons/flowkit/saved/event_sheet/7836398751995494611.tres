@@ -1,0 +1,95 @@
+[gd_resource type="Resource" script_class="FKEventSheet" format=3 uid="uid://c5trbqldik8k2"]
+
+[ext_resource type="Script" uid="uid://bfctyysd72b6p" path="res://addons/flowkit/runtime/id_assigner.gd" id="1_ges4m"]
+[ext_resource type="Script" uid="uid://b1y3c8rnt2rcg" path="res://addons/flowkit/runtime/Units/comment_unit.gd" id="2_lvpe7"]
+[ext_resource type="Script" uid="uid://bxdhylwvr4osy" path="res://addons/flowkit/runtime/Units/event_block.gd" id="3_3blan"]
+[ext_resource type="Script" uid="uid://bwbi0utcwmxwf" path="res://addons/flowkit/runtime/Units/action_unit.gd" id="4_ljxth"]
+[ext_resource type="Script" uid="uid://bmaxurgrsv4ct" path="res://addons/flowkit/runtime/Units/condition_unit.gd" id="5_5ck04"]
+[ext_resource type="Script" path="res://addons/flowkit/runtime/Units/group_unit.gd" id="6_hg6qw"]
+[ext_resource type="Script" uid="uid://bumsyiqkp46l1" path="res://addons/flowkit/resources/event_sheet.gd" id="7_bb0sn"]
+
+[sub_resource type="Resource" id="Resource_ges4m"]
+script = ExtResource("1_ges4m")
+_latest_id_given = 8
+
+[sub_resource type="Resource" id="Resource_lvpe7"]
+script = ExtResource("2_lvpe7")
+text = "When walked into it:
+
+1. Hides the sprite
+2. Disables the collision
+3. Plays sound effect
+4. waits
+5. Deletes root"
+block_type = "comment"
+uid = 8
+
+[sub_resource type="Resource" id="Resource_3blan"]
+script = ExtResource("4_ljxth")
+action_id = "audio_stream_player_2d_play"
+target_node = NodePath("Coin")
+block_type = "action"
+uid = 2
+
+[sub_resource type="Resource" id="Resource_ljxth"]
+script = ExtResource("4_ljxth")
+action_id = "call_custom_event"
+target_node = NodePath("System")
+inputs = {
+"Event Name": "\"AddPoint\""
+}
+block_type = "action"
+uid = 3
+
+[sub_resource type="Resource" id="Resource_5ck04"]
+script = ExtResource("4_ljxth")
+action_id = "destroy"
+target_node = NodePath("CollisionShape2D")
+block_type = "action"
+uid = 4
+
+[sub_resource type="Resource" id="Resource_hg6qw"]
+script = ExtResource("4_ljxth")
+action_id = "destroy"
+target_node = NodePath("AnimatedSprite2D")
+block_type = "action"
+uid = 5
+
+[sub_resource type="Resource" id="Resource_bb0sn"]
+script = ExtResource("3_3blan")
+event_id = "on_body_enter"
+target_node = NodePath(".")
+actions = Array[ExtResource("4_ljxth")]([SubResource("Resource_3blan"), SubResource("Resource_ljxth"), SubResource("Resource_5ck04"), SubResource("Resource_hg6qw")])
+block_type = "event"
+uid = 1
+
+[sub_resource type="Resource" id="Resource_6sru7"]
+script = ExtResource("4_ljxth")
+action_id = "destroy"
+target_node = NodePath(".")
+block_type = "action"
+uid = 7
+
+[sub_resource type="Resource" id="Resource_s2ekb"]
+script = ExtResource("3_3blan")
+event_id = "on_finished"
+target_node = NodePath("Coin")
+actions = Array[ExtResource("4_ljxth")]([SubResource("Resource_6sru7")])
+block_type = "event"
+uid = 6
+
+[resource]
+script = ExtResource("7_bb0sn")
+events = Array[ExtResource("3_3blan")]([SubResource("Resource_bb0sn"), SubResource("Resource_s2ekb")])
+comments = Array[ExtResource("2_lvpe7")]([SubResource("Resource_lvpe7")])
+item_order = Array[Dictionary]([{
+"index": 0,
+"type": "comment"
+}, {
+"index": 0,
+"type": "event"
+}, {
+"index": 1,
+"type": "event"
+}])
+_id_assigner = SubResource("Resource_ges4m")
