@@ -20,6 +20,7 @@ var last_scene: Node = null
 var active_behavior_nodes: Array = []  # Track nodes with active behaviors
 var _event_unit_providers: Dictionary = {}  # Scene instance + FKUnit uid -> event provider instance
 var _branch_executor := FKBranchExecutor.new()
+var _warned_keys: Dictionary = {}  # Keys of warnings already emitted (see _warn_once)
 
 const PROJECT_SETTINGS_PATH := "res://addons/flowkit/editor/_fk_project_settings.tres"
 
@@ -95,6 +96,7 @@ func _on_scene_changed(scene_root: Node) -> void:
 	# Teardown signal events on previous sheets before clearing
 	_teardown_all_signal_events()
 	_event_unit_providers.clear()
+	_warned_keys.clear()
 	
 	if scene_root == null:
 		# Scene unloaded: clear active sheets (optional)
@@ -207,6 +209,14 @@ func _create_unit_providers(entry: SheetEntry) -> void:
 			if instance:
 				_event_unit_providers[key] = instance
 
+## Targets can be freed at runtime (e.g. by a "destroy" action), so these
+## warnings would otherwise repeat every frame.
+func _warn_once(key: String, message: String) -> void:
+	if _warned_keys.has(key):
+		return
+	_warned_keys[key] = true
+	push_warning(message)
+
 func _event_provider_key(sheet_uid: int, root_instance_id: int, event_unit_id: int) -> String:
 	return "%d:%d:%d" % [sheet_uid, root_instance_id, event_unit_id]
 
@@ -237,7 +247,7 @@ func _run_sheet(entry: SheetEntry) -> void:
 				if not anode:
 					log_message = "[FlowKit] Standalone condition action target " +\
 					"node not found: %s" % str(act.target_node)
-					push_warning(log_message)
+					_warn_once("standalone:%d:%d:%d" % [entry.uid, current_root.get_instance_id(), act.uid], log_message)
 					continue
 				var provider: Variant = await registry.execute_action(act.action_id, anode, 
 				act.inputs, current_root)
@@ -253,15 +263,6 @@ func _run_sheet(entry: SheetEntry) -> void:
 		if not event_unit:
 			continue
 
-		# Resolve target node for polling
-		var target: String = str(event_unit.target_node)
-		var node: Node = _resolve_target(target, current_root)
-		if not node:
-			log_message = "[FlowKit] Event polling target node not found: %s in scene root: %s" \
-			% [str(event_unit.target_node), current_root.name]
-			push_warning(log_message)
-			continue
-
 		# Lookup provider instance by scene resource, scene instance, and event unit.
 		var root_instance_id: int = current_root.get_instance_id()
 		var key: String = _event_provider_key(sheet_uid, root_instance_id, event_unit.uid)
@@ -271,6 +272,15 @@ func _run_sheet(entry: SheetEntry) -> void:
 
 		# Signal events fire via callback — skip them in the poll loop
 		if provider.is_signal_event():
+			continue
+
+		# Resolve target node for polling
+		var target: String = str(event_unit.target_node)
+		var node: Node = _resolve_target(target, current_root)
+		if not node:
+			log_message = "[FlowKit] Event polling target node not found: %s in scene root: %s" \
+			% [str(event_unit.target_node), current_root.name]
+			_warn_once("poll:%d:%d:%d" % [entry.uid, current_root.get_instance_id(), event_unit.uid], log_message)
 			continue
 
 		# Skip events that belong to the wrong callback
@@ -321,6 +331,11 @@ func _setup_signal_events(entry: SheetEntry) -> void:
 		var target := str(event_unit.target_node)
 		var node: Node = _resolve_target(target, root_node)
 		if not node:
+			_warn_once(
+				"signal:%d:%d:%d" % [sheet_uid, root_instance_id, event_unit.uid],
+				"[FlowKit] Signal event target node not found: %s in scene root: %s" \
+				% [target, root_node.name]
+			)
 			continue
 
 		# Build a trigger callback that runs this unit's conditions & actions

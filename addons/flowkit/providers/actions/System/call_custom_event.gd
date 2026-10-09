@@ -1,4 +1,5 @@
 extends FKAction
+class_name FKCallCustomEvent
 
 static var _event_name_input: FKStringActionInput:
 	get:
