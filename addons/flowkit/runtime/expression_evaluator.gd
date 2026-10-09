@@ -244,7 +244,10 @@ target_node: Node = null) -> FKEvalResult:
 	
 	# Try to get FlowKitSystem for accessing global variables
 	if context_node:
-		var system = context_node.get_tree().root.get_node_or_null("/root/FlowKitSystem")
+		# A node outside the scene tree has no get_tree(), so it can't reach the system.
+		var system = null
+		if context_node.is_inside_tree():
+			system = context_node.get_tree().root.get_node_or_null("/root/FlowKitSystem")
 		if system:
 			input_names.append("system")
 			input_values.append(system)

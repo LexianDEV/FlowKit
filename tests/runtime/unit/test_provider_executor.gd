@@ -166,7 +166,7 @@ func test_setup_event_keeps_legacy_setup_providers_compatible() -> void:
 		target_node,
 		trigger_callback,
 		31,
-		{"event_name": "Hello World"}
+		{"event_name": "\"Hello World\""}
 	)
 
 	assert_true(event.setup_called)
